@@ -384,6 +384,11 @@ STR_UNITS_VELOCITY_METRIC                                       :{COMMA} km/h
 STR_UNITS_VELOCITY_SI                                           :{COMMA} m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}pločica/dan
 
+STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :milja na sat
+STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
+STR_UNIT_NAME_VELOCITY_SI                                       :m/s
+STR_UNIT_NAME_VELOCITY_GAMEUNITS                                :pločica/dan
+
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}ks
 STR_UNITS_POWER_METRIC                                          :{COMMA}ks
 STR_UNITS_POWER_SI                                              :{COMMA}kW
@@ -422,6 +427,7 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Odaberit
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Odaberite kriterijum za sortiranje
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Izaberite način filtriranja
 STR_BUTTON_SORT_BY                                              :{BLACK}Sortiraj po
+STR_BUTTON_RENAME                                               :{BLACK}Preimenuj
 STR_BUTTON_CATCHMENT                                            :{BLACK}Pokrivenost
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Uključi/isključi prikaz zahvaćenog područja
 
@@ -3334,6 +3340,9 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Pokriven
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Povećaj pokrivenost pustinjom za deset procenata
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Smanji pokrivenost pustinjom za deset procenata
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}%
+STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Nivo snežnog pokrivača:
+STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Sužava snežni pokrivač naviše za jedan
+STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Proširuje snežni pojas naniže za jedan
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Oblikovanje reljefa:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Vrsta terena:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Nivo mora:
@@ -3363,6 +3372,7 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Ciljna v
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Najviši vrh
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Pokrivenost snegom (u %)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Pokrivenost pustinjom (u %)
+STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Promena donjeg nivoa snežnog pojasa
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Promena početne godine
 
 # SE Map generation
@@ -5248,6 +5258,11 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Originalni skup
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Originalna muzika za TTD za DOS izdanje.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Originalna muzika TTD (Original / World Editor) DOS izdanja.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Prazan skup muzičkih numera.
+
+STR_TRADITIONAL_TRAIN_NAME                                      :Voz {COMMA}
+STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Drumsko Vozilo {COMMA}
+STR_TRADITIONAL_SHIP_NAME                                       :Brod {COMMA}
+STR_TRADITIONAL_AIRCRAFT_NAME                                   :Letilica {COMMA}
 
 ##id 0x2000
 # Town building names

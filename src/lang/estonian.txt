@@ -253,6 +253,11 @@ STR_UNITS_VELOCITY_METRIC                                       :{COMMA} km/h
 STR_UNITS_VELOCITY_SI                                           :{COMMA} m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}ruutu/päev
 
+STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :miili tunnis
+STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
+STR_UNIT_NAME_VELOCITY_SI                                       :m/s
+STR_UNIT_NAME_VELOCITY_GAMEUNITS                                :ruutu/päev
+
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}hj
 STR_UNITS_POWER_METRIC                                          :{COMMA}hj
 STR_UNITS_POWER_SI                                              :{COMMA}kW
@@ -291,6 +296,7 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Vali jä
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Vali järjestus
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Vali sõelumisalused
 STR_BUTTON_SORT_BY                                              :{BLACK}Järjestus:
+STR_BUTTON_RENAME                                               :{BLACK}Nimevahetus
 STR_BUTTON_CATCHMENT                                            :{BLACK}Mõjupiirkond
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Vahelda mõjuala näitamist
 
@@ -2359,6 +2365,7 @@ STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Ettevõt
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Ühendatud mängijad
+STR_NETWORK_COMPANY_LIST_SPECTATE                               :Jälgi
 
 # Network client list
 STR_NETWORK_CLIENT_LIST_CAPTION                                 :{WHITE}Mitmikmäng
@@ -3148,6 +3155,9 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Kõrbeka
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Suurenda kõrbekatvust kümne protsendi võrra
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Vähenda kõrbekatvust kümne protsendi võrra
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}%
+STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Lumepiiri kõrgus:
+STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Lumepiiri liigutamine ühe võrra üles
+STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Lumepiiri liigutamine ühe võrra alla
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Maatekituse meetod:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Maapinna tüüp:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Merepinna tase:
@@ -3177,6 +3187,7 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Soovitud
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Kõrgpunkt
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Lumekatvus (%)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Kõrbekatvus (%)
+STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Muuda lumepiiri kõrgust
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Muuda algusaastat
 
 # SE Map generation
@@ -5041,6 +5052,11 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Algse Transport
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Algse Transport Tycoon Deluxe DOSi versiooni muusika.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Algupärase Transport Tycooni (Original/World Editor) DOS-versiooni muusika.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Muusikakogu ilma muusikata.
+
+STR_TRADITIONAL_TRAIN_NAME                                      :Rong {COMMA}
+STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Mootorsõiduk {COMMA}
+STR_TRADITIONAL_SHIP_NAME                                       :Laev {COMMA}
+STR_TRADITIONAL_AIRCRAFT_NAME                                   :Õhusõiduk {COMMA}
 
 ##id 0x2000
 # Town building names

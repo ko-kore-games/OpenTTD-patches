@@ -196,6 +196,11 @@ STR_UNITS_VELOCITY_METRIC                                       :{COMMA} km/h
 STR_UNITS_VELOCITY_SI                                           :{COMMA} m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}dale/zi
 
+STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mph
+STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
+STR_UNIT_NAME_VELOCITY_SI                                       :m/s
+STR_UNIT_NAME_VELOCITY_GAMEUNITS                                :dale/zi
+
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}cp
 STR_UNITS_POWER_METRIC                                          :{COMMA}cp
 STR_UNITS_POWER_SI                                              :{COMMA}kW
@@ -234,6 +239,7 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Alegeți
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Alegeți criteriul de sortare
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Alegeți criteriul de filtrare
 STR_BUTTON_SORT_BY                                              :{BLACK}Ordonează
+STR_BUTTON_RENAME                                               :{BLACK}Nume nou
 STR_BUTTON_CATCHMENT                                            :Arie de acoperire
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Comută afișajul ariei de acoperire
 
@@ -3124,6 +3130,9 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Acoperir
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Mărește întinderea deșertului cu zece procente
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Reduce întinderea deșertului cu zece procente
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}%
+STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Înălţimea zăpezii:
+STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Mută linia zăpezii cu un punct în sus
+STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Mută linia zăpezii cu un punct în jos
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Generator de teren:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Tip teren:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Nivelul mării:
@@ -3153,6 +3162,7 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Înălț
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Cel mai înalt vârf
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Acoperire cu zăpadă (în %)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Acoperire cu deșert (în %)
+STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Modifică înălţimea zăpezii
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Modifică anul de început
 
 # SE Map generation
@@ -5020,6 +5030,11 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Muzica original
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Muzica originală a ediției Transport Tycoon Deluxe pentru DOS.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Setul original de muzică al Transport Tycoon (Original/World Editor) pentru DOS.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Un set de muzică fără muzică inclusă.
+
+STR_TRADITIONAL_TRAIN_NAME                                      :Trenul {COMMA}
+STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Autovehiculul {COMMA}
+STR_TRADITIONAL_SHIP_NAME                                       :Nava {COMMA}
+STR_TRADITIONAL_AIRCRAFT_NAME                                   :Aeronava {COMMA}
 
 ##id 0x2000
 # Town building names

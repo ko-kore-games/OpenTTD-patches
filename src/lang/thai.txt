@@ -193,6 +193,10 @@ STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA} ไม�
 STR_UNITS_VELOCITY_METRIC                                       :{COMMA} กม./ชม.
 STR_UNITS_VELOCITY_SI                                           :{COMMA} ม./วิ.
 
+STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :ไมล์/ชม.
+STR_UNIT_NAME_VELOCITY_METRIC                                   :กม./ชม.
+STR_UNIT_NAME_VELOCITY_SI                                       :ม./วิ.
+
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA} แรงม้า
 STR_UNITS_POWER_METRIC                                          :{COMMA} แรงม้า
 STR_UNITS_POWER_SI                                              :{COMMA} กิโลวัตต์
@@ -231,6 +235,7 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}เล�
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}เลือกเกณฑ์การเรียงลำดับ
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}เลือกเกณฑ์การกรอง
 STR_BUTTON_SORT_BY                                              :{BLACK}เรียงตาม
+STR_BUTTON_RENAME                                               :{BLACK}เปลี่ยนชื่อ
 
 STR_TOOLTIP_CLOSE_WINDOW                                        :{BLACK}ปิดหน้าต่าง
 STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS                              :{BLACK}ชื่อของหน้าต่าง - คลิกค้างแล้วลากเพื่อเลื่อนหน้าต่าง
@@ -2123,6 +2128,7 @@ STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}บร�
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :รายการลูกข่าย
+STR_NETWORK_COMPANY_LIST_SPECTATE                               :ผู้ชม
 
 # Network client list
 
@@ -2776,6 +2782,9 @@ STR_MAPGEN_BY                                                   :{BLACK}*
 STR_MAPGEN_NUMBER_OF_TOWNS                                      :{BLACK}จำนวนเมือง
 STR_MAPGEN_DATE                                                 :{BLACK}วันที่:
 STR_MAPGEN_NUMBER_OF_INDUSTRIES                                 :{BLACK}จำนวนอุตสาหกรรม:
+STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}เส้นความสูงเขตหิมะ:
+STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}ปรับเปลี่ยนความสูงของหิมะขึ้นไป 1 ระดับ
+STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}ปรับเปลี่ยนความสูงของหิมะลงมา 1 ระดับ
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}เครื่องมือสร้างสภาพพื้นดิน:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}ประเภทภูมิประเทศ:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}ระดับทะเล:
@@ -2801,6 +2810,7 @@ STR_MAPGEN_HEIGHTMAP_NAME                                       :{BLACK}ชื�
 STR_MAPGEN_HEIGHTMAP_SIZE_LABEL                                 :{BLACK}ขนาด:
 STR_MAPGEN_HEIGHTMAP_SIZE                                       :{ORANGE}{NUM} x {NUM}
 
+STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}ปรับเปลี่ยนความสูงของระดับหิมะ
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}เปลี่ยนปีที่เริ่มต้นเกม
 
 # SE Map generation
@@ -3267,6 +3277,7 @@ STR_COMPANY_VIEW_RELOCATE_HQ                                    :{BLACK}ย้�
 STR_COMPANY_VIEW_RELOCATE_COMPANY_HEADQUARTERS                  :{BLACK}ย้ายที่ตั้งที่ทำการบริษัท
 STR_COMPANY_VIEW_INFRASTRUCTURE_BUTTON                          :{BLACK}รายละเอียด
 STR_COMPANY_VIEW_INFRASTRUCTURE_TOOLTIP                         :{BLACK}ดูรายละเอียดเกี่ยวกับโครงสร้างพื้นฐาน
+STR_COMPANY_VIEW_GIVE_MONEY_BUTTON                              :{BLACK}ให้เงิน
 
 STR_COMPANY_VIEW_NEW_FACE_BUTTON                                :{BLACK}เลือกใบหน้าใหม่
 STR_COMPANY_VIEW_NEW_FACE_TOOLTIP                               :{BLACK}เลือกใบหน้าใหม่ของผู้ประธานบริษัท
@@ -3284,6 +3295,7 @@ STR_COMPANY_VIEW_SELL_SHARE_TOOLTIP                             :{BLACK}ขา�
 
 STR_COMPANY_VIEW_COMPANY_NAME_QUERY_CAPTION                     :ชื่อบริษัท
 STR_COMPANY_VIEW_PRESIDENT_S_NAME_QUERY_CAPTION                 :ชื่อประธานบริษัท
+STR_COMPANY_VIEW_GIVE_MONEY_QUERY_CAPTION                       :กรอกจำนวนเงินที่ต้องการจะให้
 
 STR_BUY_COMPANY_MESSAGE                                         :{WHITE}เรากำลังมองหาบริษัทขนส่งอื่นๆที่จะเข้ามากู้วิกฤตบริษัทเรา และซื้อกิจการเราไป.{}{}คุณต้องการจะซื้อกิจการของเราหรือไม่ ? {COMPANY} for {CURRENCY_LONG}?
 
@@ -4526,6 +4538,11 @@ STR_BASESOUNDS_WIN_DESCRIPTION                                  :เสียง
 STR_BASESOUNDS_NONE_DESCRIPTION                                 :ชุดเสียงแบบไร้เสียง
 STR_BASEMUSIC_WIN_DESCRIPTION                                   :เพลงต้นตำหรับชอง Transport Tycoon Deluxe Windows edition
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :ชุดเพลงประกอบแบบไม่มีเสียงเพลง
+
+STR_TRADITIONAL_TRAIN_NAME                                      :รถไฟ {COMMA}
+STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :พาหนะทางบก {COMMA}
+STR_TRADITIONAL_SHIP_NAME                                       :พาหนะทางน้ำ {COMMA}
+STR_TRADITIONAL_AIRCRAFT_NAME                                   :อากาศยาน {COMMA}
 
 ##id 0x2000
 # Town building names

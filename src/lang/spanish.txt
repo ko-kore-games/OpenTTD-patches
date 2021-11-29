@@ -197,6 +197,11 @@ STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}km
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}casillas/día
 
+STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mph
+STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
+STR_UNIT_NAME_VELOCITY_SI                                       :m/s
+STR_UNIT_NAME_VELOCITY_GAMEUNITS                                :casillas/día
+
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}hp
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}cv
 STR_UNITS_POWER_SI                                              :{COMMA}{NBSP}kW
@@ -235,6 +240,7 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Seleccio
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Selecciona el orden de clasificación
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Selecciona el criterio de filtrado
 STR_BUTTON_SORT_BY                                              :{BLACK}Ordenar por
+STR_BUTTON_RENAME                                               :{BLACK}Renombrar
 STR_BUTTON_CATCHMENT                                            :{BLACK}Cobertura
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Muestra/Oculta el área de cobertura
 
@@ -3144,6 +3150,9 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Extensi�
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Incrementar la extensión del desierto en un diez por ciento
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Reducir la extensión del desierto en un diez por ciento
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}%
+STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Altura cota nieve:
+STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Sube la cota de nieve una unidad
+STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Baja la cota de nieve una unidad
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Generador terreno:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Tipo de terreno
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Nivel del mar:
@@ -3173,6 +3182,7 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Objetivo
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Punto más alto
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Extensión de la nieve (en %)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Extensión del desierto (en %)
+STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Cambiar la altura de la cota de nieve
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Cambiar año de inicio
 
 # SE Map generation
@@ -5042,6 +5052,11 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Música origina
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Música original de Transport Tycoon Deluxe, versión DOS.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Música original de Transport Tycoon (Original/Editor de Mundos), versión DOS.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Un conjunto de música vacío.
+
+STR_TRADITIONAL_TRAIN_NAME                                      :Tren {COMMA}
+STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Vehículo de carretera {COMMA}
+STR_TRADITIONAL_SHIP_NAME                                       :Barco {COMMA}
+STR_TRADITIONAL_AIRCRAFT_NAME                                   :Aeronave {COMMA}
 
 ##id 0x2000
 # Town building names
