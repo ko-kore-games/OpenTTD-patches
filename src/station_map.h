@@ -17,6 +17,8 @@
 #include "water_map.h"
 #include "station_func.h"
 #include "rail.h"
+#include "tunnelbridge_map.h"
+#include "map_func.h"
 
 typedef byte StationGfx; ///< Index of station graphics. @see _station_display_datas
 
@@ -28,7 +30,9 @@ typedef byte StationGfx; ///< Index of station graphics. @see _station_display_d
  */
 static inline StationID GetStationIndex(TileIndex t)
 {
-	assert(IsTileType(t, MP_STATION));
+//  for Existing objects tunnels and bridges as stations
+//	assert(IsTileType(t, MP_STATION));
+	assert(IsTileType(t, MP_STATION) || IsTileType(t, MP_TUNNELBRIDGE));
 	return (StationID)_m[t].m2;
 }
 
@@ -92,7 +96,10 @@ static inline void SetStationGfx(TileIndex t, StationGfx gfx)
  */
 static inline bool IsRailStation(TileIndex t)
 {
+//  for Existing objects tunnels and bridges as stations
+//  WARNING! This change can create a lot of ERRORS further. If so, then need to turn back to the stable version. 
 	return GetStationType(t) == STATION_RAIL;
+//	return (GetStationType(t) == STATION_RAIL) || ((GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL) && (GetStationIndex(t) > 0));
 }
 
 /**
@@ -102,7 +109,10 @@ static inline bool IsRailStation(TileIndex t)
  */
 static inline bool IsRailStationTile(TileIndex t)
 {
+//  for Existing objects tunnels and bridges as stations
+//  Need to repeat || ... from IsRailStation(t) because here is "&&": IsTileType(t, MP_STATION) && ...
 	return IsTileType(t, MP_STATION) && IsRailStation(t);
+//	return (IsTileType(t, MP_STATION) && IsRailStation(t)) || ((GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL) && (GetStationIndex(t) > 0));
 }
 
 /**
@@ -146,7 +156,9 @@ static inline bool HasStationRail(TileIndex t)
  */
 static inline bool HasStationTileRail(TileIndex t)
 {
+//  for Existing objects tunnels and bridges as stations
 	return IsTileType(t, MP_STATION) && HasStationRail(t);
+//	return (IsTileType(t, MP_STATION) || IsTileType(t, MP_TUNNELBRIDGE)) && HasStationRail(t);
 }
 
 /**
@@ -543,6 +555,22 @@ static inline void MakeStation(TileIndex t, Owner o, StationID sid, StationType 
 	SB(_me[t].m6, 3, 3, st);
 	_me[t].m7 = 0;
 	_me[t].m8 = 0;
+//  for Existing objects tunnels and bridges as stations
+/*	TileIndex t222;
+//	TileIndex t333;
+	// For all directly adjacent tiles 
+	// check if there is a TunnelBridge entance with TRANSPORT_RAIL type with StationIndex == 0. 
+	for (int ii = -1; 1; ii++) {
+		for (int jj = -1; 1; jj++) {
+			t222 = t + TileDiffXY(ii, jj);
+//			if ((GetTunnelBridgeTransportType(t222) == TRANSPORT_RAIL) && (GetStationIndex(t222) == 0) && (IsTileOwner(t222, o))) {
+//				t333 = GetOtherTunnelBridgeEnd(t222);
+				// Assume ((GetStationIndex(t222) == 0) == (GetStationIndex(t333) == 0)) == true
+//				_m[t222].m2 = sid;
+//				_m[t333].m2 = sid;
+//			}
+		}
+	} */
 }
 
 /**

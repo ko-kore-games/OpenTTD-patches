@@ -105,7 +105,10 @@ CommandCost GetStationAround(TileArea ta, StationID closest_station, CompanyID c
 
 	/* check around to see if there are any stations there owned by the company */
 	TILE_AREA_LOOP(tile_cur, ta) {
-		if (IsTileType(tile_cur, MP_STATION)) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+		// if (IsTileType(tile_cur, MP_STATION)) {
+		// if (IsTileType(tile_cur, MP_STATION) || IsTileType(tile_cur, MP_TUNNELBRIDGE)) {
+		if (IsTileType(tile_cur, MP_STATION) || IsTileType(tile_cur, MP_TUNNELBRIDGE) && !(GetStationIndex(tile_cur) == 0)) {
 			StationID t = GetStationIndex(tile_cur);
 			if (!T::IsValidID(t) || Station::Get(t)->owner != company) continue;
 			if (closest_station == INVALID_STATION) {
@@ -765,7 +768,9 @@ CommandCost ClearTile_Station(TileIndex tile, DoCommandFlag flags);
  */
 CommandCost CheckBuildableTile(TileIndex tile, uint invalid_dirs, int &allowed_z, bool allow_steep, bool check_bridge = true)
 {
-	if (check_bridge && IsBridgeAbove(tile)) {
+//  for Allow stations under bridges
+	// if (check_bridge && IsBridgeAbove(tile)) {
+	if (check_bridge && (IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 0 >= GetBridgeHeight(GetSouthernBridgeEnd(tile))))) {
 		return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
 	}
 
@@ -855,11 +860,21 @@ static CommandCost CheckFlatLandRailStation(TileArea tile_area, DoCommandFlag fl
 	bool slope_cb = statspec != NULL && HasBit(statspec->callback_mask, CBM_STATION_SLOPE_CHECK);
 
 	TILE_AREA_LOOP(tile_cur, tile_area) {
-		CommandCost ret = CheckBuildableTile(tile_cur, invalid_dirs, allowed_z, false);
-		if (ret.Failed()) return ret;
-		cost.AddCost(ret);
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+//		CommandCost ret = CheckBuildableTile(tile_cur, invalid_dirs, allowed_z, false);
+//		if (ret.Failed()) return ret;
+//		cost.AddCost(ret);
+		CommandCost ret;
+		if (!(IsTileType(tile_cur, MP_TUNNELBRIDGE) && (GetTunnelBridgeTransportType(tile_cur) == TRANSPORT_RAIL))) {
+			ret = CheckBuildableTile(tile_cur, invalid_dirs, allowed_z, false);
+			if (ret.Failed()) return ret;
+			cost.AddCost(ret);
+		}
 
-		if (slope_cb) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+		// if (slope_cb) {
+		// if (slope_cb && (!IsTileType(tile_cur, MP_TUNNELBRIDGE) || (plat_len > 1) || (numtracks > 1))) {
+		if (slope_cb && (!IsTileType(tile_cur, MP_TUNNELBRIDGE))) {
 			/* Do slope check if requested. */
 			ret = PerformStationTileSlopeCheck(tile_area.tile, tile_cur, statspec, axis, plat_len, numtracks);
 			if (ret.Failed()) return ret;
@@ -868,17 +883,26 @@ static CommandCost CheckFlatLandRailStation(TileArea tile_area, DoCommandFlag fl
 		/* if station is set, then we have special handling to allow building on top of already existing stations.
 		 * so station points to INVALID_STATION if we can build on any station.
 		 * Or it points to a station if we're only allowed to build on exactly that station. */
-		if (station != NULL && IsTileType(tile_cur, MP_STATION)) {
-			if (!IsRailStation(tile_cur)) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+//		if (station != NULL && IsTileType(tile_cur, MP_STATION)) {
+//			if (!IsRailStation(tile_cur)) {
+		if (station != NULL && (IsTileType(tile_cur, MP_STATION) || IsTileType(tile_cur, MP_TUNNELBRIDGE))) {
+			if (!IsRailStation(tile_cur) && !(GetTunnelBridgeTransportType(tile_cur) == TRANSPORT_RAIL)) {
 				return ClearTile_Station(tile_cur, DC_AUTO); // get error message
 			} else {
+				// We need to add tunnel-stations and bridge-station to this check. That's why we need to change conditions in if-operators above. 
 				StationID st = GetStationIndex(tile_cur);
 				if (*station == INVALID_STATION) {
-					*station = st;
-				} else if (*station != st) {
+					// Exceptions for MP_TUNNELBRIDGE: 
+					// *station = st;
+					if (!(IsTileType(tile_cur, MP_TUNNELBRIDGE) && st == 0)) *station = st;
+				// } else if (*station != st) {
+				} else if ((*station != st) && !(IsTileType(tile_cur, MP_TUNNELBRIDGE) && st == 0)) {
 					return_cmd_error(STR_ERROR_ADJOINS_MORE_THAN_ONE_EXISTING);
 				}
 			}
+// End   for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
 		} else {
 			/* Rail type is only valid when building a railway station; if station to
 			 * build isn't a rail station it's INVALID_RAILTYPE. */
@@ -910,9 +934,17 @@ static CommandCost CheckFlatLandRailStation(TileArea tile_area, DoCommandFlag fl
 					continue;
 				}
 			}
-			ret = DoCommand(tile_cur, 0, 0, flags, CMD_LANDSCAPE_CLEAR);
-			if (ret.Failed()) return ret;
-			cost.AddCost(ret);
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+			// ret = DoCommand(tile_cur, 0, 0, flags, CMD_LANDSCAPE_CLEAR);
+			// if (ret.Failed()) return ret;
+			// cost.AddCost(ret);
+			if (!IsTileType(tile_cur, MP_TUNNELBRIDGE)) {
+				ret = DoCommand(tile_cur, 0, 0, flags, CMD_LANDSCAPE_CLEAR);
+				if (ret.Failed()) return ret;
+				cost.AddCost(ret);
+			}
+// End for Existing objects tunnels and bridges as stations
 		}
 	}
 
@@ -1334,108 +1366,215 @@ CommandCost CmdBuildRailStation(TileIndex tile_org, DoCommandFlag flags, uint32 
 		numtracks_orig = numtracks;
 
 		Company *c = Company::Get(st->owner);
+
+
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+		if (false && IsTileType(tile_org, MP_TUNNELBRIDGE)) {
+
+			// Check other end of tunnelbridge first.
+			// But if true then this will disallow to make 2 ends of 1 tunnelbridge object as 2 different stations.  
+			if (false) {
+				// WARNING! The next row will create infitite programm loop! Maybe, it can be avoid using the (unused) "text" variable. 
+				// ret = CmdBuildRailStation(GetOtherTunnelBridgeEnd(tile_org), flags, p1, p2, text);
+				// The correct edition of this check is: 
+				TileIndex tile22 = GetOtherTunnelBridgeEnd(tile_org);
+				// if (!(_m[GetOtherTunnelBridgeEnd(tile_org)].m2 == st->index)) {
+					// ret = CmdBuildRailStation(GetOtherTunnelBridgeEnd(tile_org), flags, p1, p2, text);
+				if (!(_m[tile22].m2 == st->index)) {
+					ret = CmdBuildRailStation(tile22, flags, p1, p2, text);
+					if (ret.Failed()) return ret;
+					// cost.AddCost(*ret->cost);
+					cost.AddCost(ret.GetCost());
+				}
+			}
+
+			if (!(_m[tile_org].m2 == st->index)) {
+				_m[tile_org].m2 = st->index;
+
+				c->infrastructure.station++;   // Do we need this? (Payment for c->infrastructure.station and for tunnelbridge for the same 1 tile?) 
+
+				// There is no need to check track reservation or signal buffers because we don't create any new tracks -
+				// just convert the given existing tunnelbridge object. 
+
+				st->AfterStationTileSetChange(true, STATION_RAIL);
+			}
+			return cost;
+		}
+// End   for Existing objects tunnels and bridges as stations
+
+
 		TileIndex tile_track = tile_org;
 		do {
 			TileIndex tile = tile_track;
 			int w = plat_len;
 			do {
 				byte layout = *layout_ptr++;
-				if (IsRailStationTile(tile) && HasStationReservation(tile)) {
-					/* Check for trains having a reservation for this tile. */
-					Train *v = GetTrainForReservation(tile, AxisToTrack(GetRailStationAxis(tile)));
-					if (v != NULL) {
-						*affected_vehicles.Append() = v;
-						FreeTrainReservation(v);
-					}
-				}
 
-				/* Railtype can change when overbuilding. */
-				if (IsRailStationTile(tile)) {
-					if (!IsStationTileBlocked(tile)) c->infrastructure.rail[GetRailType(tile)]--;
-					c->infrastructure.station--;
-				}
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+				if (IsTileType(tile, MP_TUNNELBRIDGE)) {
 
-				/* Remove animation if overbuilding */
-				DeleteAnimatedTile(tile);
-				byte old_specindex = HasStationTileRail(tile) ? GetCustomStationSpecIndex(tile) : 0;
-				MakeRailStation(tile, st->owner, st->index, axis, layout & ~1, rt);
-				/* Free the spec if we overbuild something */
-				DeallocateSpecFromStation(st, old_specindex);
-
-				SetCustomStationSpecIndex(tile, specindex);
-				SetStationTileRandomBits(tile, GB(Random(), 0, 4));
-				SetAnimationFrame(tile, 0);
-
-				if (!IsStationTileBlocked(tile)) c->infrastructure.rail[rt]++;
-				c->infrastructure.station++;
-
-				if (statspec != NULL) {
-					/* Use a fixed axis for GetPlatformInfo as our platforms / numtracks are always the right way around */
-					uint32 platinfo = GetPlatformInfo(AXIS_X, GetStationGfx(tile), plat_len, numtracks_orig, plat_len - w, numtracks_orig - numtracks, false);
-
-					/* As the station is not yet completely finished, the station does not yet exist. */
-					uint16 callback = GetStationCallback(CBID_STATION_TILE_LAYOUT, platinfo, 0, statspec, NULL, tile);
-					if (callback != CALLBACK_FAILED) {
-						if (callback < 8) {
-							SetStationGfx(tile, (callback & ~1) + axis);
-						} else {
-							ErrorUnknownCallbackResult(statspec->grf_prop.grffile->grfid, CBID_STATION_TILE_LAYOUT, callback);
+					// Check other end of tunnelbridge first.
+					// But if true then this will disallow to make 2 ends of 1 tunnelbridge object as 2 different stations.  
+					if (false) {
+						// WARNING! The next row will create infitite programm loop! Maybe, it can be avoid using the (unused) "text" variable. 
+						// ret = CmdBuildRailStation(GetOtherTunnelBridgeEnd(tile), flags, p1, p2, text);
+						// The correct edition of this check is: 
+						TileIndex tile22 = GetOtherTunnelBridgeEnd(tile);
+						// if (!(_m[GetOtherTunnelBridgeEnd(tile)].m2 == st->index)) {
+							// ret = CmdBuildRailStation(GetOtherTunnelBridgeEnd(tile), flags, p1, p2, text);
+						if (!(_m[tile22].m2 == st->index)) {
+							ret = CmdBuildRailStation(tile22, flags, p1, p2, text);
+							if (ret.Failed()) return ret;
+							// cost.AddCost(*ret->cost);
+							cost.AddCost(ret.GetCost());
 						}
 					}
 
-					/* Trigger station animation -- after building? */
-					TriggerStationAnimation(st, tile, SAT_BUILT);
+					if (!(_m[tile].m2 == st->index)) {
+
+						// The next check we need to make earlier - inside function CheckFlatLandRailStation():
+						// before command st->AddFacility(FACIL_TRAIN, new_location.tile);
+						// Here it is too late. 
+						if (_m[tile].m2 != INVALID_STATION && _m[tile].m2 != 0) {
+							// But we can do not error message but CmdRemoveFromRailStation() here... :) :| :/ 
+							// return_cmd_error(STR_ERROR_MUST_REMOVE_RAILWAY_STATION_FIRST);
+							// CmdRemoveFromRailStation(tile, flags, p1, p2, text); // Definition is below, so call is possible via DoCommand(). 
+						} else {
+							// if (_m[tile].m2 == INVALID_STATION || _m[tile].m2 == 0)
+							_m[tile].m2 = st->index;
+
+							c->infrastructure.station++;   // Do we need this? (Payment for c->infrastructure.station and for tunnelbridge for the same 1 tile?) 
+
+							// There is no need to check track reservation or signal buffers because we don't create any new tracks -
+							// just convert the given existing tunnelbridge object. 
+
+							// st->AfterStationTileSetChange(true, STATION_RAIL);
+						}
+					}
+					// return cost;
+
+				} else {
+
+
+					if (IsRailStationTile(tile) && HasStationReservation(tile)) {
+						/* Check for trains having a reservation for this tile. */
+						Train *v = GetTrainForReservation(tile, AxisToTrack(GetRailStationAxis(tile)));
+						if (v != NULL) {
+							*affected_vehicles.Append() = v;
+							FreeTrainReservation(v);
+						}
+					}
+
+					/* Railtype can change when overbuilding. */
+					if (IsRailStationTile(tile)) {
+						if (!IsStationTileBlocked(tile)) c->infrastructure.rail[GetRailType(tile)]--;
+						c->infrastructure.station--;
+					}
+
+					/* Remove animation if overbuilding */
+					DeleteAnimatedTile(tile);
+					byte old_specindex = HasStationTileRail(tile) ? GetCustomStationSpecIndex(tile) : 0;
+					MakeRailStation(tile, st->owner, st->index, axis, layout & ~1, rt);
+					/* Free the spec if we overbuild something */
+					DeallocateSpecFromStation(st, old_specindex);
+
+					SetCustomStationSpecIndex(tile, specindex);
+					SetStationTileRandomBits(tile, GB(Random(), 0, 4));
+					SetAnimationFrame(tile, 0);
+
+					if (!IsStationTileBlocked(tile)) c->infrastructure.rail[rt]++;
+					c->infrastructure.station++;
+
+					if (statspec != NULL) {
+						/* Use a fixed axis for GetPlatformInfo as our platforms / numtracks are always the right way around */
+						uint32 platinfo = GetPlatformInfo(AXIS_X, GetStationGfx(tile), plat_len, numtracks_orig, plat_len - w, numtracks_orig - numtracks, false);
+
+						/* As the station is not yet completely finished, the station does not yet exist. */
+						uint16 callback = GetStationCallback(CBID_STATION_TILE_LAYOUT, platinfo, 0, statspec, NULL, tile);
+						if (callback != CALLBACK_FAILED) {
+							if (callback < 8) {
+								SetStationGfx(tile, (callback & ~1) + axis);
+							} else {
+								ErrorUnknownCallbackResult(statspec->grf_prop.grffile->grfid, CBID_STATION_TILE_LAYOUT, callback);
+							}
+						}
+
+						/* Trigger station animation -- after building? */
+						TriggerStationAnimation(st, tile, SAT_BUILT);
+					}
 				}
+// End   for Existing objects tunnels and bridges as stations
 
 				tile += tile_delta;
 			} while (--w);
-			AddTrackToSignalBuffer(tile_track, track, _current_company);
-			YapfNotifyTrackLayoutChange(tile_track, track);
+
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+			if (IsTileType(tile_track, MP_TUNNELBRIDGE)) {
+
+			} else {
+				AddTrackToSignalBuffer(tile_track, track, _current_company);
+				YapfNotifyTrackLayoutChange(tile_track, track);
+			}
+// End   for Existing objects tunnels and bridges as stations
+
 			tile_track += tile_delta ^ TileDiffXY(1, 1); // perpendicular to tile_delta
 		} while (--numtracks);
 
-		for (uint i = 0; i < affected_vehicles.Length(); ++i) {
-			/* Restore reservations of trains. */
-			RestoreTrainReservation(affected_vehicles[i]);
-		}
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+		if (IsTileType(tile_org, MP_TUNNELBRIDGE)) {
 
-		/* Check whether we need to expand the reservation of trains already on the station. */
-		TileArea update_reservation_area;
-		if (axis == AXIS_X) {
-			update_reservation_area = TileArea(tile_org, 1, numtracks_orig);
 		} else {
-			update_reservation_area = TileArea(tile_org, numtracks_orig, 1);
+
+			for (uint i = 0; i < affected_vehicles.Length(); ++i) {
+				/* Restore reservations of trains. */
+				RestoreTrainReservation(affected_vehicles[i]);
+			}
+
+			/* Check whether we need to expand the reservation of trains already on the station. */
+			TileArea update_reservation_area;
+			if (axis == AXIS_X) {
+				update_reservation_area = TileArea(tile_org, 1, numtracks_orig);
+			} else {
+				update_reservation_area = TileArea(tile_org, numtracks_orig, 1);
+			}
+
+			TILE_AREA_LOOP(tile, update_reservation_area) {
+				/* Don't even try to make eye candy parts reserved. */
+				if (IsStationTileBlocked(tile)) continue;
+
+				DiagDirection dir = AxisToDiagDir(axis);
+				TileIndexDiff tile_offset = TileOffsByDiagDir(dir);
+				TileIndex platform_begin = tile;
+				TileIndex platform_end = tile;
+
+				/* We can only account for tiles that are reachable from this tile, so ignore primarily blocked tiles while finding the platform begin and end. */
+				for (TileIndex next_tile = platform_begin - tile_offset; IsCompatibleTrainStationTile(next_tile, platform_begin); next_tile -= tile_offset) {
+					platform_begin = next_tile;
+				}
+				for (TileIndex next_tile = platform_end + tile_offset; IsCompatibleTrainStationTile(next_tile, platform_end); next_tile += tile_offset) {
+					platform_end = next_tile;
+				}
+
+				/* If there is at least on reservation on the platform, we reserve the whole platform. */
+				bool reservation = false;
+				for (TileIndex t = platform_begin; !reservation && t <= platform_end; t += tile_offset) {
+					reservation = HasStationReservation(t);
+				}
+
+				if (reservation) {
+					SetRailStationPlatformReservation(platform_begin, dir, true);
+				}
+			}
+
+			st->MarkTilesDirty(false);
+
 		}
+// End   for Existing objects tunnels and bridges as stations
 
-		TILE_AREA_LOOP(tile, update_reservation_area) {
-			/* Don't even try to make eye candy parts reserved. */
-			if (IsStationTileBlocked(tile)) continue;
-
-			DiagDirection dir = AxisToDiagDir(axis);
-			TileIndexDiff tile_offset = TileOffsByDiagDir(dir);
-			TileIndex platform_begin = tile;
-			TileIndex platform_end = tile;
-
-			/* We can only account for tiles that are reachable from this tile, so ignore primarily blocked tiles while finding the platform begin and end. */
-			for (TileIndex next_tile = platform_begin - tile_offset; IsCompatibleTrainStationTile(next_tile, platform_begin); next_tile -= tile_offset) {
-				platform_begin = next_tile;
-			}
-			for (TileIndex next_tile = platform_end + tile_offset; IsCompatibleTrainStationTile(next_tile, platform_end); next_tile += tile_offset) {
-				platform_end = next_tile;
-			}
-
-			/* If there is at least on reservation on the platform, we reserve the whole platform. */
-			bool reservation = false;
-			for (TileIndex t = platform_begin; !reservation && t <= platform_end; t += tile_offset) {
-				reservation = HasStationReservation(t);
-			}
-
-			if (reservation) {
-				SetRailStationPlatformReservation(platform_begin, dir, true);
-			}
-		}
-
-		st->MarkTilesDirty(false);
 		st->AfterStationTileSetChange(true, STATION_RAIL);
 	}
 
@@ -1451,7 +1590,10 @@ restart:
 	/* too small? */
 	if (ta.w != 0 && ta.h != 0) {
 		/* check the left side, x = constant, y changes */
-		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(0, i));) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+		// Switch this changes on after DoClearTunnel() and DoClearBridge() will be modified to MakeRailStationAreaSmaller and RemoveFromRailBaseStation too. 
+		// for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(0, i));) {
+		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(0, i)) && !(IsTileType(ta.tile + TileDiffXY(0, i), MP_TUNNELBRIDGE) && (GetStationIndex(ta.tile + TileDiffXY(0, i)) == st->index));) {
 			/* the left side is unused? */
 			if (++i == ta.h) {
 				ta.tile += TileDiffXY(1, 0);
@@ -1461,7 +1603,9 @@ restart:
 		}
 
 		/* check the right side, x = constant, y changes */
-		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(ta.w - 1, i));) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+		// for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(ta.w - 1, i));) {
+		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(ta.w - 1, i)) && !(IsTileType(ta.tile + TileDiffXY(ta.w - 1, i), MP_TUNNELBRIDGE) && (GetStationIndex(ta.tile + TileDiffXY(ta.w - 1, i)) == st->index));) {
 			/* the right side is unused? */
 			if (++i == ta.h) {
 				ta.w--;
@@ -1470,7 +1614,9 @@ restart:
 		}
 
 		/* check the upper side, y = constant, x changes */
-		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(i, 0));) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+		// for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(i, 0));) {
+		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(i, 0)) && !(IsTileType(ta.tile + TileDiffXY(i, 0), MP_TUNNELBRIDGE) && (GetStationIndex(ta.tile + TileDiffXY(i, 0)) == st->index));) {
 			/* the left side is unused? */
 			if (++i == ta.w) {
 				ta.tile += TileDiffXY(0, 1);
@@ -1480,7 +1626,9 @@ restart:
 		}
 
 		/* check the lower side, y = constant, x changes */
-		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(i, ta.h - 1));) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+		// for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(i, ta.h - 1));) {
+		for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(i, ta.h - 1)) && !(IsTileType(ta.tile + TileDiffXY(i, ta.h - 1), MP_TUNNELBRIDGE) && (GetStationIndex(ta.tile + TileDiffXY(i, ta.h - 1)) == st->index));) {
 			/* the left side is unused? */
 			if (++i == ta.w) {
 				ta.h--;
@@ -1518,7 +1666,12 @@ CommandCost RemoveFromRailBaseStation(TileArea ta, SmallVector<T *, 4> &affected
 	/* Do the action for every tile into the area */
 	TILE_AREA_LOOP(tile, ta) {
 		/* Make sure the specified tile is a rail station */
-		if (!HasStationTileRail(tile)) continue;
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+		// if (!HasStationTileRail(tile)) continue;
+		// if (!HasStationTileRail(tile) && !IsTileType(tile, MP_TUNNELBRIDGE) || (GetStationIndex(tile) == INVALID_STATION)) continue;
+		if (!(HasStationTileRail(tile) || IsTileType(tile, MP_TUNNELBRIDGE) && (GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL))) continue;
+			// && !(GetStationIndex(tile) == INVALID_STATION))) continue;
+			// && !(GetStationIndex(tile) == 0) && !(GetStationIndex(tile) == INVALID_STATION))) continue;
 
 		/* If there is a vehicle on ground, do not allow to remove (flood) the tile */
 		CommandCost ret = EnsureNoVehicleOnGround(tile);
@@ -1544,38 +1697,61 @@ CommandCost RemoveFromRailBaseStation(TileArea ta, SmallVector<T *, 4> &affected
 			total_cost.AddCost(-_price[PR_CLEAR_RAIL]);
 		}
 
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+// Begin for Existing objects tunnels and bridges as stations 
+
 		if (flags & DC_EXEC) {
 			/* read variables before the station tile is removed */
-			uint specindex = GetCustomStationSpecIndex(tile);
-			Track track = GetRailStationTrack(tile);
 			Owner owner = GetTileOwner(tile);
 			RailType rt = GetRailType(tile);
-			Train *v = NULL;
+			Train* v = NULL;
 
-			if (HasStationReservation(tile)) {
-				v = GetTrainForReservation(tile, track);
-				if (v != NULL) FreeTrainReservation(v);
+			if (IsTileType(tile, MP_TUNNELBRIDGE)) {
+				if (!(GetStationIndex(tile) == 0) && !(GetStationIndex(tile) == INVALID_STATION)) {
+					Company::Get(owner)->infrastructure.station--;
+					DirtyCompanyInfrastructureWindows(owner);
+				}
+				st->rect.AfterRemoveTile(st, tile); // Needed station with StationID = 0.
+				// SetStationIndex(tile) == INVALID_STATION
+				// Because rail tunnel can be a tunnel-station (when _m[t].m2 contains a valid StationID (including 0)). 
+				_m[tile].m2 = 0;
+				// _m[tile].m2 = INVALID_STATION; // ???
+			} else {
+				uint specindex = GetCustomStationSpecIndex(tile);
+				Track track = GetRailStationTrack(tile);
+				// Owner owner = GetTileOwner(tile);
+				// RailType rt = GetRailType(tile);
+				// Train *v = NULL;
+
+				if (HasStationReservation(tile)) {
+					v = GetTrainForReservation(tile, track);
+					if (v != NULL) FreeTrainReservation(v);
+				}
+
+				bool build_rail = keep_rail && !IsStationTileBlocked(tile);
+				if (!build_rail && !IsStationTileBlocked(tile)) Company::Get(owner)->infrastructure.rail[rt]--;
+
+				DoClearSquare(tile);
+				DeleteNewGRFInspectWindow(GSF_STATIONS, tile);
+				if (build_rail) MakeRailNormal(tile, owner, TrackToTrackBits(track), rt);
+				Company::Get(owner)->infrastructure.station--;
+				DirtyCompanyInfrastructureWindows(owner);
+
+				st->rect.AfterRemoveTile(st, tile);
+				AddTrackToSignalBuffer(tile, track, owner);
+				YapfNotifyTrackLayoutChange(tile, track);
+
+				DeallocateSpecFromStation(st, specindex);
+
+				if (v != NULL) RestoreTrainReservation(v);
 			}
-
-			bool build_rail = keep_rail && !IsStationTileBlocked(tile);
-			if (!build_rail && !IsStationTileBlocked(tile)) Company::Get(owner)->infrastructure.rail[rt]--;
-
-			DoClearSquare(tile);
-			DeleteNewGRFInspectWindow(GSF_STATIONS, tile);
-			if (build_rail) MakeRailNormal(tile, owner, TrackToTrackBits(track), rt);
-			Company::Get(owner)->infrastructure.station--;
-			DirtyCompanyInfrastructureWindows(owner);
-
-			st->rect.AfterRemoveTile(st, tile);
-			AddTrackToSignalBuffer(tile, track, owner);
-			YapfNotifyTrackLayoutChange(tile, track);
-
-			DeallocateSpecFromStation(st, specindex);
 
 			affected_stations.Include(st);
 
-			if (v != NULL) RestoreTrainReservation(v);
+			// if (v != NULL) RestoreTrainReservation(v);
 		}
+// End   for Existing objects tunnels and bridges as stations
+
 	}
 
 	if (quantity == 0) return error.Failed() ? error : CommandCost(STR_ERROR_THERE_IS_NO_STATION);
@@ -1686,7 +1862,9 @@ CommandCost RemoveRailStation(T *st, DoCommandFlag flags, Money removal_cost)
 	/* clear all areas of the station */
 	TILE_AREA_LOOP(tile, ta) {
 		/* only remove tiles that are actually train station tiles */
-		if (st->TileBelongsToRailStation(tile)) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+		// if (st->TileBelongsToRailStation(tile)) {
+		if (st->TileBelongsToRailStation(tile) || IsTileType(tile, MP_TUNNELBRIDGE) && !(GetStationIndex(tile) == 0) && !(GetStationIndex(tile) == INVALID_STATION)) {
 			SmallVector<T*, 4> affected_stations; // dummy
 			CommandCost ret = RemoveFromRailBaseStation(TileArea(tile, 1, 1), affected_stations, flags, removal_cost, false);
 			if (ret.Failed()) return ret;
@@ -2501,7 +2679,9 @@ CommandCost CmdBuildDock(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 
 	CommandCost ret = CheckIfAuthorityAllowsNewStation(tile, flags);
 	if (ret.Failed()) return ret;
 
-	if (IsBridgeAbove(tile)) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+//  for Allow stations under bridges
+	// if (IsBridgeAbove(tile)) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+	if (IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 0 >= GetBridgeHeight(GetSouthernBridgeEnd(tile)))) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
 
 	ret = DoCommand(tile, 0, 0, flags, CMD_LANDSCAPE_CLEAR);
 	if (ret.Failed()) return ret;
@@ -2512,7 +2692,10 @@ CommandCost CmdBuildDock(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 
 		return_cmd_error(STR_ERROR_SITE_UNSUITABLE);
 	}
 
-	if (IsBridgeAbove(tile_cur)) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+//  for Allow stations under bridges
+	// if (IsBridgeAbove(tile_cur)) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+															// +1 of height distance (from water) for on-water part of doc: 
+	if (IsBridgeAbove(tile_cur) && (GetTileMaxZ(tile_cur) + 0 + 1 >= GetBridgeHeight(GetSouthernBridgeEnd(tile_cur)))) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
 
 	/* Get the water class of the water tile before it is cleared.*/
 	WaterClass wc = GetWaterClass(tile_cur);
@@ -2930,6 +3113,9 @@ draw_default_foundation:
 	}
 
 	DrawRailTileSeq(ti, t, TO_BUILDINGS, total_offset, relocation, palette);
+
+//  for Allow stations under bridges
+	DrawBridgeMiddle(ti);
 }
 
 void StationPickerDrawSprite(int x, int y, StationType st, RailType railtype, RoadType roadtype, int image)
@@ -3151,7 +3337,9 @@ static VehicleEnterTileStatus VehicleEnter_Station(Vehicle *v, TileIndex tile, i
 	if (v->type == VEH_TRAIN) {
 		StationID station_id = GetStationIndex(tile);
 		if (!v->current_order.ShouldStopAtStation(v, station_id)) return VETSB_CONTINUE;
-		if (!IsRailStation(tile) || !v->IsFrontEngine()) return VETSB_CONTINUE;
+//  for Existing objects tunnels and bridges as stations
+		// if (!IsRailStation(tile) || !v->IsFrontEngine()) return VETSB_CONTINUE;
+		if (!IsRailStation(tile) && !(GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL) || !v->IsFrontEngine()) return VETSB_CONTINUE;
 
 		int station_ahead;
 		int station_length;
@@ -3173,7 +3361,9 @@ static VehicleEnterTileStatus VehicleEnter_Station(Vehicle *v, TileIndex tile, i
 			if (dir != DIAGDIR_SE && dir != DIAGDIR_SW) x = TILE_SIZE - 1 - x;
 			stop &= TILE_SIZE - 1;
 
-			if (x == stop) {
+//  for Existing objects tunnels and bridges as stations
+			// if (x == stop) {
+			if (x >= stop) { x = stop; 
 				return VETSB_ENTERED_STATION | (VehicleEnterTileStatus)(station_id << VETS_STATION_ID_OFFSET); // enter station
 			} else if (x < stop) {
 				v->vehstatus |= VS_TRAIN_SLOWING;
@@ -3811,7 +4001,9 @@ void FindStationsAroundTiles(const TileArea &location, StationList *stations)
 	for (uint cy = min_y; cy < max_y; cy++) {
 		for (uint cx = min_x; cx < max_x; cx++) {
 			TileIndex cur_tile = TileXY(cx, cy);
-			if (!IsTileType(cur_tile, MP_STATION)) continue;
+//  for Existing objects tunnels and bridges as stations
+			// if (!IsTileType(cur_tile, MP_STATION)) continue;
+			if (!IsTileType(cur_tile, MP_STATION) && !IsTileType(cur_tile, MP_TUNNELBRIDGE)) continue;
 
 			Station *st = Station::GetByTile(cur_tile);
 			/* st can be NULL in case of waypoints */

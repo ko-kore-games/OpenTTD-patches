@@ -2142,7 +2142,9 @@ static bool AddNearbyStation(TileIndex tile, void *user_data)
 	}
 
 	/* Check if own station and if we stay within station spread */
-	if (!IsTileType(tile, MP_STATION)) return false;
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+	// if (!IsTileType(tile, MP_STATION)) return false;
+	if (!(IsTileType(tile, MP_STATION) || (IsTileType(tile, MP_TUNNELBRIDGE) && (GetStationIndex(tile) != INVALID_STATION)))) return false;
 
 	StationID sid = GetStationIndex(tile);
 
@@ -2178,7 +2180,9 @@ static const T *FindStationsNearby(TileArea ta, bool distant_join)
 
 	/* Check the inside, to return, if we sit on another station */
 	TILE_AREA_LOOP(t, ta) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
 		if (t < MapSize() && IsTileType(t, MP_STATION) && T::IsValidID(GetStationIndex(t))) return T::GetByTile(t);
+		// if (t < MapSize() && (IsTileType(t, MP_STATION) || (IsTileType(t, MP_TUNNELBRIDGE) && (GetStationIndex(t) != INVALID_STATION))) && T::IsValidID(GetStationIndex(t))) return T::GetByTile(t);
 	}
 
 	/* Look for deleted stations */

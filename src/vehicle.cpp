@@ -1674,7 +1674,24 @@ Direction GetDirectionTowards(const Vehicle *v, int x, int y)
  */
 VehicleEnterTileStatus VehicleEnterTile(Vehicle *v, TileIndex tile, int x, int y)
 {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+	// Get back to the original (openttd v. 1.9.1) function, optimized via indexed addressation of functions.
 	return _tile_type_procs[GetTileType(tile)]->vehicle_enter_tile_proc(v, tile, x, y);
+
+	// All the next (below) will not run here after this return (above). 
+	// This all (below) was replaced to the function VehicleEnter_TunnelBridge() in tunnelbridge_cmd.cpp to optimize speed of openttd.exe . 
+/*
+// Begin for Existing objects tunnels and bridges as stations
+	// return _tile_type_procs[GetTileType(tile)]->vehicle_enter_tile_proc(v, tile, x, y);
+	if (IsTileType(tile, MP_TUNNELBRIDGE) && (GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL)) {
+//		return _tile_type_procs[MP_STATION]->vehicle_enter_tile_proc(v, tile, x, y) | _tile_type_procs[MP_TUNNELBRIDGE]->vehicle_enter_tile_proc(v, tile, x, y);
+		VehicleEnterTileStatus rr1 = _tile_type_procs[MP_TUNNELBRIDGE]->vehicle_enter_tile_proc(v, tile, x, y);
+		VehicleEnterTileStatus rr2 = _tile_type_procs[MP_STATION]->vehicle_enter_tile_proc(v, tile, x, y);
+		return rr1 | rr2;
+	}
+// End   for Existing objects tunnels and bridges as stations
+	return _tile_type_procs[GetTileType(tile)]->vehicle_enter_tile_proc(v, tile, x, y);
+*/
 }
 
 /**
@@ -2031,7 +2048,9 @@ void Vehicle::DeleteUnreachedImplicitOrders()
  */
 void Vehicle::BeginLoading()
 {
-	assert(IsTileType(this->tile, MP_STATION) || this->type == VEH_SHIP);
+//  for Existing objects tunnels and bridges as stations
+	// assert(IsTileType(this->tile, MP_STATION) || this->type == VEH_SHIP);
+	assert(IsTileType(this->tile, MP_STATION) || IsTileType(t, MP_TUNNELBRIDGE) || this->type == VEH_SHIP);
 
 	if (this->current_order.IsType(OT_GOTO_STATION) &&
 			this->current_order.GetDestination() == this->last_station_visited) {
@@ -2214,6 +2233,7 @@ void Vehicle::LeaveStation()
 
 	if (this->type == VEH_TRAIN && !(this->vehstatus & VS_CRASHED)) {
 		/* Trigger station animation (trains only) */
+//  for Existing objects tunnels and bridges as stations
 		if (IsTileType(this->tile, MP_STATION)) {
 			TriggerStationRandomisation(st, this->tile, SRT_TRAIN_DEPARTS);
 			TriggerStationAnimation(st, this->tile, SAT_TRAIN_DEPARTS);
@@ -2533,7 +2553,9 @@ void Vehicle::ShowVisualEffect() const
 		 * - is entering a station with an order to stop there and its speed is equal to maximum station entering speed
 		 */
 		if (HasBit(t->flags, VRF_REVERSING) ||
-				(IsRailStationTile(t->tile) && t->IsFrontEngine() && t->current_order.ShouldStopAtStation(t, GetStationIndex(t->tile)) &&
+//  for Existing objects tunnels and bridges as stations
+			// (IsRailStationTile(t->tile) && t->IsFrontEngine() && t->current_order.ShouldStopAtStation(t, GetStationIndex(t->tile)) &&
+			((IsRailStationTile(t->tile) || IsTileType(t->tile, MP_TUNNELBRIDGE)) && t->IsFrontEngine() && t->current_order.ShouldStopAtStation(t, GetStationIndex(t->tile)) &&
 				t->cur_speed >= max_speed)) {
 			return;
 		}

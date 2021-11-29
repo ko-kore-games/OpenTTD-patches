@@ -256,6 +256,9 @@ static void DrawTile_Town(TileInfo *ti)
 
 		if (proc >= 0) _town_draw_tile_procs[proc](ti);
 	}
+
+//  for Allow houses under bridges
+	DrawBridgeMiddle(ti);
 }
 
 static int GetSlopePixelZ_Town(TileIndex tile, uint x, uint y)
@@ -2109,7 +2112,9 @@ static inline bool CanBuildHouseHere(TileIndex tile, bool noslope)
 	if ((noslope && slope != SLOPE_FLAT) || IsSteepSlope(slope)) return false;
 
 	/* building under a bridge? */
-	if (IsBridgeAbove(tile)) return false;
+//  for Allow houses under bridges
+	// if (IsBridgeAbove(tile)) return false;
+	if (IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 2 >= GetBridgeHeight(GetSouthernBridgeEnd(tile)))) return false;
 
 	/* can we clear the land? */
 	return DoCommand(tile, 0, 0, DC_AUTO | DC_NO_WATER, CMD_LANDSCAPE_CLEAR).Succeeded();

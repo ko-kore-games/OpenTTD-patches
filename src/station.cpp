@@ -31,6 +31,9 @@
 
 #include "safeguards.h"
 
+#include "tunnelbridge_map.h"
+#include "tunnelbridge.h"
+
 /** The pool of stations. */
 StationPool _station_pool("Station");
 INSTANTIATE_POOL_METHODS(Station)
@@ -224,7 +227,8 @@ void Station::MarkTilesDirty(bool cargo_change) const
 	}
 }
 
-/* virtual */ uint Station::GetPlatformLength(TileIndex tile) const
+/* BEGIN of OpenTTD 1.9.1 stable code: */
+/* virtual / uint Station::GetPlatformLength(TileIndex tile) const
 {
 	assert(this->TileBelongsToRailStation(tile));
 
@@ -245,8 +249,10 @@ void Station::MarkTilesDirty(bool cargo_change) const
 
 	return len - 1;
 }
+// END of OpenTTD 1.9.1 stable code */
 
-/* virtual */ uint Station::GetPlatformLength(TileIndex tile, DiagDirection dir) const
+/* BEGIN of OpenTTD 1.9.1 stable code: */
+/* virtual / uint Station::GetPlatformLength(TileIndex tile, DiagDirection dir) const
 {
 	TileIndex start_tile = tile;
 	uint length = 0;
@@ -260,6 +266,450 @@ void Station::MarkTilesDirty(bool cargo_change) const
 
 	return length;
 }
+// END of OpenTTD 1.9.1 stable code */
+
+/* BEGIN of Allow existing tunnelbridge to increase "platform length" parameter for directly adjacent station tiles */
+/* virtual */ uint Station::GetPlatformLength(TileIndex tile) const   // virtual
+{
+	// Main idea is: to account into the platform length all cases, enabled by advanced settings.
+
+	// For this stage it's enough to call this func. from station tiles only.
+//  for Existing objects tunnels and bridges as stations
+	// assert(this->TileBelongsToRailStation(tile));
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+	assert(this->TileBelongsToRailStation(tile) || (IsTileType(tile, MP_TUNNELBRIDGE) && (GetStationIndex(tile) > 0))); // Need to compare additionally with this->StationID ?
+	// assert(this->TileBelongsToRailStation(tile) || (IsTileType(tile, MP_TUNNELBRIDGE) && (GetStationIndex(tile) != INVALID_STATION))); // Need to compare additionally with this->StationID ?
+
+	TileIndexDiff delta = (GetRailStationAxis(tile) == AXIS_X ? TileDiffXY(1, 0) : TileDiffXY(0, 1));
+
+	// ADVANCED SETTING Allow existing tunnelbridge
+	// to increase "platform length" parameter for directly adjacent station tiles.
+	// bool A_SETTING_TBIPL_1;
+	// A_SETTING_TBIPL_1 = true;
+	// ADVANCED SETTING Allow existing rail UNDER bridge
+	// to increase "platform length" parameter for directly adjacent station tiles.
+	// bool A_SETTING_RUBIPL_1;
+	// A_SETTING_RUBIPL_1 = true;
+	// ADVANCED SETTING Allow OTHER station
+	// to increase "platform length" parameter for directly adjacent station tiles.
+	// I.e. other station of the same type but with other StationIndex.
+	// For example, to use 2nd station as WayPoint inside the 1st station.  
+	// bool A_SETTING_OSIPL_1;
+	// A_SETTING_OSIPL_1 = true;
+
+	bool bb1;
+	bb1 = false;
+
+	DiagDirection dd1;
+	dd1 = DIAGDIR_END;
+	TransportType tt1;
+	tt1 = INVALID_TRANSPORT;
+	TileIndex t12;
+	t12 = tile;
+	uint dl1;
+	dl1 = 0;
+
+	int reverse_delta_1 = 1;
+	TileType ctt1 = MP_CLEAR;
+
+	TileIndex t = tile;
+	uint len = 0;
+
+	do {
+		reverse_delta_1 = -reverse_delta_1;
+
+		t = tile;
+
+// Begin for Existing objects tunnels and bridges as stations
+
+		// If the 1st tile is MP_TUNNELBRIDGE AND has direction corresponding to delta * reverse_delta_1, then go 1 step back relatively to delta * reverse_delta_1.
+
+		if (IsTileType(tile, MP_TUNNELBRIDGE)) {
+			// Need to check tunnelbridge direction and compare it with (delta * reverse_delta_1): 
+			// We need the direction of delta to be onto the bridge and into the tunnel. 
+			// Get the direction pointing to the other end. 
+			dd1 = GetTunnelBridgeDirection(t);
+			// (delta == TileDiffXY(1, 0)) : -delta <--> DIAGDIR_NE && +delta <--> DIAGDIR_SW
+			// (delta == TileDiffXY(0, 1)) : -delta <--> DIAGDIR_NW && +delta <--> DIAGDIR_SE
+			bb1 = ((delta == TileDiffXY(1, 0)) && ((reverse_delta_1 < 0) && (dd1 == DIAGDIR_NE) || (reverse_delta_1 > 0) && (dd1 == DIAGDIR_SW))) ||
+				  ((delta == TileDiffXY(0, 1)) && ((reverse_delta_1 < 0) && (dd1 == DIAGDIR_NW) || (reverse_delta_1 > 0) && (dd1 == DIAGDIR_SE)));
+			// If the 1st tile is MP_TUNNELBRIDGE then go 1 step back relatively to (delta * reverse_delta_1)
+			if ((reverse_delta_1 < 0) && bb1) {
+				t += delta;
+			} else {
+				t -= delta;
+			}
+		}
+// End   for Existing objects tunnels and bridges as stations
+
+		do {
+
+			if (reverse_delta_1 < 0) {
+				t -= delta;
+			} else {
+				t += delta;
+			}
+			// t = t + reverse_delta_1 * delta;
+			len++;
+			bb1 = false;
+
+			// This is like "if IsCompatibleTrainStationTile2(t, tile)" but with 
+			// tunnels, bridges, rails under bridges,
+			// even with other stations as waypoints (inside main station). 
+
+			ctt1 = GetTileType(t);
+			// ctt1 = (TileType)GB(_m[t].type, 4, 4);
+			switch (ctt1) {
+				// default: NOT_REACHED();
+
+				case MP_STATION:
+					bb1 = IsCompatibleTrainStationTile(t, tile);
+					// The next is a copy from IsCompatibleTrainStationTile(t, tile), but
+					// without checking of StationIndex. 
+					// bb1 = bb1 || (A_SETTING_OSIPL_1 == true) &&
+					bb1 = bb1 || IsRailStationTile(t) && IsCompatibleRail(GetRailType(t), GetRailType(tile)) &&
+								GetRailStationAxis(t) == GetRailStationAxis(tile) &&
+								!IsStationTileBlocked(t);
+								// GetStationIndex(t) == GetStationIndex(tile) &&
+
+					break;
+
+				case MP_RAILWAY:
+					// If t is tile with railway of compatible railtype.
+					// bb1 = (A_SETTING_RUBIPL_1 == true);
+					bb1 = true;
+// Begin for Existing objects tunnels and bridges as stations
+					// If (HasSignals(t)) then terminate this platform (do not continue it).
+					bb1 = bb1 && !HasSignals(t);
+// End   for Existing objects tunnels and bridges as stations
+					bb1 = bb1 && IsCompatibleRail(GetRailType(t), GetRailType(tile));
+					// If rails on t are compatible (parallel) to the current station tile.
+					// dd1 = GetRailDirection(t);
+					dd1 = (DiagDirection)GB(_m[t].m5, 0, 2);
+					// BE CAREFUL: other (non-native for (DiagDirection)-type) directions encoding!
+					// if ((dd == DIAGDIR_SE) && (delta == TileDiffXY(1, 0)) ||
+						// (dd == DIAGDIR_SW) && (delta == TileDiffXY(0, 1)) ||
+						// (dd == DIAGDIR_NW)) {
+					// if ((dd == 1) && (delta == TileDiffXY(1, 0)) ||
+						// (dd == 2) && (delta == TileDiffXY(0, 1)) ||
+						// (dd == 3)) {
+					bb1 = bb1 && ((dd1 == 1) && (delta == TileDiffXY(1, 0)) ||
+								  (dd1 == 2) && (delta == TileDiffXY(0, 1)) ||
+								  (dd1 == 3));
+					// Add + 1 condition: is bridge over t (if is, then it's orthogonal automaticaly).
+					bb1 = bb1 && IsBridgeAbove(t);
+					// bb1 = bb1 && (GB(_m[t].type, 2, 2) != 0);
+
+				// It doesn't exist yet, but it have to be:
+				// bb1 = bb1 && !IsRailTileBlocked(t);
+
+					break;
+
+				case MP_TUNNELBRIDGE:
+					// If t is tile with entrance to tunnel or bridge.
+					// If directions of AXIS_X or AXIS_Y correspond for this tunnelbridge and this station.
+					dd1 = GetTunnelBridgeDirection(t);
+					// dd1 = (DiagDirection)GB(_m[t].m5, 0, 2);
+					tt1 = GetTunnelBridgeTransportType(t);
+					// tt1 = (TransportType)GB(_m[t].m5, 2, 2);
+					// if ((((dd == DIAGDIR_NE) || (dd == DIAGDIR_SW)) && (delta == TileDiffXY(1, 0)) ||
+					// ((dd == DIAGDIR_SE) || (dd == DIAGDIR_NW)) && (delta == TileDiffXY(0, 1))) &&
+					// (tt == TRANSPORT_RAIL)) {
+
+					// Without if-s order in sequence of boolean checks is not important (all checks have to be done). 
+					// But shorter notation is next: 
+// Begin for Existing objects tunnels and bridges as stations
+					// bb1 = (((dd1 == DIAGDIR_NE) || (dd1 == DIAGDIR_SW)) && (delta == TileDiffXY(1, 0)) ||
+					// 	      ((dd1 == DIAGDIR_SE) || (dd1 == DIAGDIR_NW)) && (delta == TileDiffXY(0, 1)));
+
+					// Need to check tunnelbridge direction and compare it with (sign of) delta: 
+					// (delta == TileDiffXY(1, 0)) : -delta <--> DIAGDIR_NE && +delta <--> DIAGDIR_SW
+					// (delta == TileDiffXY(0, 1)) : -delta <--> DIAGDIR_NW && +delta <--> DIAGDIR_SE
+					bb1 = ((delta == TileDiffXY(1, 0)) && ((reverse_delta_1 < 0) && (dd1 == DIAGDIR_NE) || (reverse_delta_1 > 0) && (dd1 == DIAGDIR_SW))) ||
+						  ((delta == TileDiffXY(0, 1)) && ((reverse_delta_1 < 0) && (dd1 == DIAGDIR_NW) || (reverse_delta_1 > 0) && (dd1 == DIAGDIR_SE)));
+// End   for Existing objects tunnels and bridges as stations
+
+					bb1 = bb1 && (tt1 == TRANSPORT_RAIL);
+					// bb1 = bb1 && (A_SETTING_TBIPL_1 == true);
+
+				// It doesn't exist yet, but it have to be:
+				// bb1 = bb1 && !IsTunnelBridgeTileBlocked(t);
+
+					if (bb1) {
+						// GetOtherTunnelBridgeEnd(t) contains a cycle (loop), then faster way is to call it only once (and store result).
+						t12 = GetOtherTunnelBridgeEnd(t);
+						// length of bridge/tunnel middle + 2 (entrances included)
+						// GetTunnelBridgeLength(TileIndex begin, TileIndex end);
+						dl1 = GetTunnelBridgeLength(t, t12) + 2;
+						// dl1 = abs(TileX(t12) - TileX(t) + TileY(t12) - TileY(t)) - 1 + 2;
+						// len = len + dl1;
+						len += (dl1 - 1); // -1 because +1 tile will be added to this variable on the next loop of the do..while cycle.
+						t = t12;
+					}
+					break;
+			}
+
+		// } while (IsCompatibleTrainStationTile(t, tile));
+		} while (bb1);
+	} while (reverse_delta_1 < 1);
+	
+	return len - 1;
+}
+// END of   Allow existing tunnelbridge to increase "platform length" parameter for directly adjacent station tiles */
+
+/* BEGIN of OpenTTD 1.9.1 stable code: */
+/* virtual / uint Station::GetPlatformLength(TileIndex tile, DiagDirection dir) const
+{
+	TileIndex start_tile = tile;
+	uint length = 0;
+	assert(IsRailStationTile(tile));
+	assert(dir < DIAGDIR_END);
+
+	do {
+		length++;
+		tile += TileOffsByDiagDir(dir);
+	} while (IsCompatibleTrainStationTile(tile, start_tile));
+
+	return length;
+}
+// END of OpenTTD 1.9.1 stable code */
+
+/* BEGIN of Allow existing tunnelbridge to increase "platform length" parameter for directly adjacent station tiles */
+/* virtual */ uint Station::GetPlatformLength(TileIndex tile, DiagDirection dir) const
+{
+	TileIndex start_tile = tile;
+	uint length = 0;
+//  for Existing objects tunnels and bridges as stations
+	// assert(IsRailStationTile(tile));
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+	assert(IsRailStationTile(tile) || (IsTileType(tile, MP_TUNNELBRIDGE) && (GetStationIndex(tile) > 0))); // Need to compare additionally with this->StationID ?
+	// assert(IsRailStationTile(tile) || (IsTileType(tile, MP_TUNNELBRIDGE) && (GetStationIndex(tile) != INVALID_STATION))); // Need to compare additionally with this->StationID ?
+	assert(dir < DIAGDIR_END);
+
+	bool bb2;
+	bb2 = false;
+	TileType ctt2;
+	ctt2 = MP_CLEAR;
+	TileIndexDiff tid2;
+	tid2 = TileOffsByDiagDir(dir);
+
+	uint length2;
+	length2 = 0;
+	TileIndex tile2;
+	tile2 = tile;
+/**/
+	DiagDirection dd2;
+	dd2 = DIAGDIR_END;
+	TransportType tt2;
+	tt2 = INVALID_TRANSPORT;
+	TileIndex t22;
+	t22 = tile;
+	uint dl2;
+	dl2 = 0;
+/**/
+
+// Begin for Existing objects tunnels and bridges as stations
+
+	// If the 1st tile is MP_TUNNELBRIDGE AND has direction corresponding to dir (tid2), then go 1 step back relatively to dir (tid2).
+
+	if (IsTileType(tile, MP_TUNNELBRIDGE)) {
+		// Need to check tunnelbridge direction and compare it with dir (tid2):
+		// We need the direction of dir (delta, tid2) to be onto the bridge and into the tunnel. 
+		// Get the direction pointing to the other end. 
+		dd2 = GetTunnelBridgeDirection(tile2);
+		// (delta == TileDiffXY(1, 0)) : -delta <--> DIAGDIR_NE && +delta <--> DIAGDIR_SW
+		// (delta == TileDiffXY(0, 1)) : -delta <--> DIAGDIR_NW && +delta <--> DIAGDIR_SE
+		bb2 = ((tid2 == -TileDiffXY(1, 0)) && (dd2 == DIAGDIR_NE)) || ((tid2 == TileDiffXY(1, 0)) && (dd2 == DIAGDIR_SW)) ||
+			  ((tid2 == -TileDiffXY(0, 1)) && (dd2 == DIAGDIR_NW)) || ((tid2 == TileDiffXY(0, 1)) && (dd2 == DIAGDIR_SE));
+		if (bb2) {
+			tile2 -= tid2;
+		}
+	}
+// End   for Existing objects tunnels and bridges as stations
+
+	do {
+//		length2++;
+		length++;
+		tile2 += tid2;
+		bb2 = false;
+
+		// This is like "if IsCompatibleTrainStationTile2(t, tile)" but with 
+		// tunnels, bridges, rails under bridges,
+		// even with other stations as waypoints (inside main station). 
+
+		// ctt2 = GetTileType(tile);
+		ctt2 = GetTileType(tile2);
+		// ctt2 = (TileType)GB(_m[tile2].type, 4, 4);
+		switch (ctt2) {
+			// default: NOT_REACHED();
+
+			case MP_STATION:
+				// bb2 = IsCompatibleTrainStationTile(tile, start_tile);
+				bb2 = IsCompatibleTrainStationTile(tile2, start_tile);
+				if (bb2) {
+					// if (IsCompatibleTrainStationTile(tile2, start_tile)) {
+						// Everytime a complette compatible station tile is the signal 
+						// to accept previously passed tiles into account of platform length (AHEAD! - it's important), 
+						// because they are between the start_tile and this (complette compatible) station tile. 
+						// length = length + length2;
+//					length += length2;
+
+					// Don't know if this is needed. If don't, then we can don't use the variable tile2 at all. 
+//					tile2 = tile;
+					tile = tile2;
+//					tile += tid2 * length2;
+					length2 = 0;
+				} else {
+					// The next is a copy from IsCompatibleTrainStationTile(tile, start_tile), but
+					// without checking of StationIndex. 
+					// bb2 = (A_SETTING_OSIPL_2 == true) &&
+					bb2 = true;
+					bb2 = bb2 && IsRailStationTile(tile2) && IsCompatibleRail(GetRailType(tile2), GetRailType(start_tile)) &&
+						GetRailStationAxis(tile2) == GetRailStationAxis(start_tile) &&
+						!IsStationTileBlocked(tile2);
+						// GetStationIndex(tile2) == GetStationIndex(start_tile) &&
+					if (bb2) { length2++; }
+				}
+				// Maybe, we could enable diagonal platforms too?
+// /* /
+				break;
+/* / */
+			case MP_RAILWAY:
+				// If t (tile2) is tile with railway of compatible railtype.
+				// bb2 = (A_SETTING_RUBIPL_2 == true);
+				bb2 = true;
+// Begin for Existing objects tunnels and bridges as stations
+				// If (HasSignals(t)) then terminate this platform (do not continue it).
+				bb2 = bb2 && !HasSignals(tile2);
+// End   for Existing objects tunnels and bridges as stations
+				bb2 = bb2 && IsCompatibleRail(GetRailType(tile2), GetRailType(start_tile));
+				// If rails on t (tile2) are compatible (parallel) to the current station tile.
+				// dd2 = GetRailsDirection(tile2);
+				dd2 = (DiagDirection)GB(_m[tile2].m5, 0, 2);
+				// BE CAREFUL: other (non-native for (DiagDirection)-type) directions encoding!
+				// if ((dd == DIAGDIR_SE) && (delta == TileDiffXY(1, 0)) ||
+					// (dd == DIAGDIR_SW) && (delta == TileDiffXY(0, 1)) ||
+					// (dd == DIAGDIR_NW)) {
+				// if ((dd == 1) && (delta == TileDiffXY(1, 0)) ||
+					// (dd == 2) && (delta == TileDiffXY(0, 1)) ||
+					// (dd == 3)) {
+				// BE CAREFUL: other formula (including 2 directions relative to tid):
+				bb2 = bb2 && ((dd2 == 1) && ((tid2 == TileDiffXY(1, 0)) || (tid2 == -TileDiffXY(1, 0))) ||
+							  (dd2 == 2) && ((tid2 == TileDiffXY(0, 1)) || (tid2 == -TileDiffXY(0, 1))) ||
+							  (dd2 == 3));
+			// Maybe, we could enable diagonal rails too?
+
+				// Add + 1 condition: is bridge over t (if is, then it's orthogonal automaticaly).
+				bb2 = bb2 && IsBridgeAbove(tile2);
+				// bb2 = bb2 && (GB(_m[tile2].type, 2, 2) != 0);
+
+			// Here we can add +1 condition on type of bridge to enable only bridges with graphics of stations on them. 
+				
+				// It doesn't exist yet, but it have to be:
+				// bb2 = bb2 && !IsRailTileBlocked(tile2);
+				if (bb2) { length2++; }
+				break;
+//* */
+/* / */
+			case MP_TUNNELBRIDGE:
+				// If t (tile2) is tile with entrance to tunnel or bridge.
+				// If directions of AXIS_X or AXIS_Y correspond for this tunnelbridge and this station.
+				dd2 = GetTunnelBridgeDirection(tile2);
+				// dd2 = (DiagDirection)GB(_m[tile2].m5, 0, 2);
+				tt2 = GetTunnelBridgeTransportType(tile2);
+				// tt2 = (TransportType)GB(_m[tile2].m5, 2, 2);
+				// if ((((dd == DIAGDIR_NE) || (dd == DIAGDIR_SW)) && (delta == TileDiffXY(1, 0)) ||
+				// ((dd == DIAGDIR_SE) || (dd == DIAGDIR_NW)) && (delta == TileDiffXY(0, 1))) &&
+				// (tt == TRANSPORT_RAIL)) {
+
+				// Without if-s order in sequence of boolean checks is not important (all checks have to be done).
+				// But shorter notation is next:
+
+				// start_tile can not be a platform tile UNDER any TUNNEL or ABOVE any BRIDGE, then
+				// any tile2 of type MP_TUNNELBRIDGE can be only an entrance to the tunnel or bridge.
+				// But formula is other because of 2 possible directions of tid (parallel to tid).
+// Begin for Existing objects tunnels and bridges as stations
+				// bb2 = (((dd2 == DIAGDIR_NE) || (dd2 == DIAGDIR_SW)) && ((tid2 == TileDiffXY(1, 0)) || (tid2 == -TileDiffXY(1, 0))) ||
+				//		  ((dd2 == DIAGDIR_SE) || (dd2 == DIAGDIR_NW)) && ((tid2 == TileDiffXY(0, 1)) || (tid2 == -TileDiffXY(0, 1))));
+
+				// (delta == TileDiffXY(1, 0)) : -delta <--> DIAGDIR_NE && +delta <--> DIAGDIR_SW
+				// (delta == TileDiffXY(0, 1)) : -delta <--> DIAGDIR_NW && +delta <--> DIAGDIR_SE
+				bb2 = ((tid2 == -TileDiffXY(1, 0)) && (dd2 == DIAGDIR_NE)) || ((tid2 == TileDiffXY(1, 0)) && (dd2 == DIAGDIR_SW)) ||
+					  ((tid2 == -TileDiffXY(0, 1)) && (dd2 == DIAGDIR_NW)) || ((tid2 == TileDiffXY(0, 1)) && (dd2 == DIAGDIR_SE));
+// End   for Existing objects tunnels and bridges as stations
+
+				bb2 = bb2 && (tt2 == TRANSPORT_RAIL);
+				// bb2 = bb2 && (A_SETTING_TBIPL_2 == true);
+
+				// It doesn't exist yet, but it have to be:
+				// bb2 = bb2 && !IsTunnelBridgeTileBlocked(tile2);
+
+				if (bb2) {
+					// GetOtherTunnelBridgeEnd(t) contains a cycle (loop), then faster way is to call it only once (and store result).
+					t22 = GetOtherTunnelBridgeEnd(tile2);
+					// length of bridge/tunnel middle + 2 (entrances included)
+					// GetTunnelBridgeLength(TileIndex begin, TileIndex end);
+					dl2 = GetTunnelBridgeLength(tile2, t22) + 2;
+					// dl2 = abs(TileX(t22) - TileX(tile2) + TileY(t22) - TileY(tile2)) - 1 + 2;
+					// length2 = length2 + dl2;
+					length += (dl2 - 1); // -1 because +1 tile will be added to this variable on the next loop of the do..while cycle. 
+					length2 += dl2;
+// Begin for Existing objects tunnels and bridges as stations
+					// We need GetStationIndex(t22) > 0 actually at the FAR END of tunnelbridge: 
+					// if ((GetStationIndex(tile2) > 0) || (GetStationIndex(t22) > 0)) {
+					// if (GetStationIndex(t22) == GetStationIndex(start_tile)) {
+					if (true) {
+					// Assume that we somehow forget to set the StationIndex value to some tiles with tunnelbridge entrances (dir.adj.to st.tiles),
+					// then we can set it here. :$ 
+					// if (length > length2) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+						if (false && !(_m[tile2].m2 == _m[start_tile].m2)) { // No need for this after // 20190724: // 2nd stage: Allow users to convert objects via UI.
+						// if (!(_m[tile2].m2 == _m[start_tile].m2)) {
+							_m[tile2].m2 = _m[start_tile].m2; // GetStationIndex(start_tile);
+							_m[t22].m2 =   _m[start_tile].m2; // GetStationIndex(start_tile);
+							// _m[tile2].m4 = _m[start_tile].m4; // GetCustomStationSpecIndex(start_tile);
+							// _m[t22].m4 =   _m[start_tile].m4; // GetCustomStationSpecIndex(start_tile);
+						}
+						length2 = 0;
+						tile = t22;
+					} else {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+						if (!(_m[tile2].m2 == 0)) {
+						// if (!(_m[tile2].m2 == INVALID_STATION)) {
+							_m[tile2].m2 = 0;
+							_m[t22].m2 = 0;
+							// _m[tile2].m2 = INVALID_STATION;
+							// _m[t22].m2 = INVALID_STATION; 
+							// _m[tile2].m4 = 0;
+							// _m[t22].m4 = 0;
+						}
+					}
+// End   for Existing objects tunnels and bridges as stations
+					tile2 = t22;
+				}
+				break;
+//* */
+		}
+
+	// } while (IsCompatibleTrainStationTile(tile, start_tile));
+	} while (bb2);
+
+	return (length - length2);
+}
+
+/* BEGIN of Existing objects tunnels and bridges as stations --> look above /
+uint Station::GetPlatformLength(TileIndex tile, int32 z_position) const   // virtual
+{
+	//    !!!!!!!    z_position needed as argument to check tunnel or bridge stations !!!!!!!
+
+	// if (this->TileBelongsToRailStation(tile))
+	// else if (IsTileType(tile, MP_TUNNELBRIDGE))
+	// else if ( !((this->TileBelongsToRailStation(tile)) || (IsTileType(tile, MP_TUNNELBRIDGE))) )  // (train->track == TRACK_BIT_WORMHOLE )
+
+	// assert(this->TileBelongsToRailStation(tile) || (IsTileType(tile, MP_TUNNELBRIDGE) && (StationID)_m[tile].m2 > 0));
+
+}
+// END of   Existing objects tunnels and bridges as stations */
 
 /**
  * Determines the catchment radius of the station
@@ -472,7 +922,9 @@ CommandCost StationRect::BeforeAddRect(TileIndex tile, int w, int h, StationRect
 {
 	TileArea ta(TileXY(left_a, top_a), TileXY(right_a, bottom_a));
 	TILE_AREA_LOOP(tile, ta) {
-		if (IsTileType(tile, MP_STATION) && GetStationIndex(tile) == st_id) return true;
+//  for Existing objects tunnels and bridges as stations
+		// if (IsTileType(tile, MP_STATION) && GetStationIndex(tile) == st_id) return true;
+		if ((IsTileType(tile, MP_STATION) || IsTileType(tile, MP_TUNNELBRIDGE)) && GetStationIndex(tile) == st_id) return true;
 	}
 
 	return false;

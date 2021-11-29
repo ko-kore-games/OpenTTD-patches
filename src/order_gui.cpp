@@ -389,8 +389,17 @@ static Order GetOrderCmdFromTile(const Vehicle *v, TileIndex tile)
 		return order;
 	}
 
-	if (IsTileType(tile, MP_STATION)) {
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+	// if (IsTileType(tile, MP_STATION)) {
+	if (IsTileType(tile, MP_STATION) || IsTileType(tile, MP_TUNNELBRIDGE)) {
 		StationID st_index = GetStationIndex(tile);
+		if ((st_index == INVALID_STATION) || IsTileType(tile, MP_TUNNELBRIDGE) && (st_index == 0)) {
+			/* not found */
+			order.Free();
+			return order;
+		}
+// End   for Existing objects tunnels and bridges as stations 
 		const Station *st = Station::Get(st_index);
 
 		if (st->owner == _local_company || st->owner == OWNER_NONE) {

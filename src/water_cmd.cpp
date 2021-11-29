@@ -105,6 +105,113 @@ CommandCost CmdBuildShipDepot(TileIndex tile, DoCommandFlag flags, uint32 p1, ui
 
 	TileIndex tile2 = tile + (axis == AXIS_X ? TileDiffXY(1, 0) : TileDiffXY(0, 1));
 
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+// Begin for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+	// If 1 of 2 tiles is an entrance to tunnel (but not to a bridge) and the other is a water tile.
+	// So, this means we have to convert this tunnel to the water-tunnel for ships
+	// (with 2-tiles-entrances at every side, looking like a ship-depot each.
+	// So, we have to draw a ship-depot but with TileType = MP_TUNNELBRIDGE.
+	bool tont1 = IsTileType(tile, MP_TUNNELBRIDGE) && IsTunnel(tile) && HasTileWaterGround(tile2) && IsTileFlat(tile2);
+	bool tont2 = IsTileType(tile2, MP_TUNNELBRIDGE) && IsTunnel(tile2) && HasTileWaterGround(tile) && IsTileFlat(tile);
+	if (tont1 || tont2) {
+		// function ConvertRailTunnelToA2TilesLongWaterTunnel:
+		TileIndex start_tile;
+		TileIndex end_tile;
+		TileIndex start_tile_adjacent;
+		TileIndex end_tile_adjacent;
+		if (tont1) {
+			start_tile = tile;
+			start_tile_adjacent = tile2;
+		} else if (tont2) {
+			start_tile = tile2;
+			start_tile_adjacent = tile;
+		}
+		end_tile = GetOtherTunnelBridgeEnd(start_tile);
+		DiagDirection start_tile_tunnel_direction = GetTunnelBridgeDirection(start_tile);
+		TileIndexDiff delta = TileOffsByDiagDir(start_tile_tunnel_direction);
+		// if (start_tile - delta != tile2) return_cmd_error(STR_ERROR_SITE_UNSUITABLE);
+		if (!(start_tile - delta == start_tile_adjacent)) return_cmd_error(STR_ERROR_LAND_SLOPED_IN_WRONG_DIRECTION);
+		end_tile_adjacent = end_tile + delta; 
+
+		SetWaterClass(start_tile, WATER_CLASS_CANAL);
+		SetWaterClass(end_tile, WATER_CLASS_CANAL);
+
+		// Need it? - Change Infrastructure accounting first! Because TransportType property affects Infrastructure accounting. 
+		// ... And... There is something wrong: it seems that this comand converts the given tunnel to a ROAD-tunnel. 
+		// SetTunnelBridgeTransportType(start_tile, TRANSPORT_WATER);
+		// SB(_m[start_tile].m5, 2, 2, TRANSPORT_WATER);
+		// SetTunnelBridgeTransportType(end_tile, TRANSPORT_WATER);
+		// SB(_m[end_tile].m5, 2, 2, TRANSPORT_WATER);
+
+		MarkTileDirtyByTile(start_tile);
+		MarkTileDirtyByTile(end_tile);
+
+		// Store WaterClass of rivers. 
+		WaterClass wac1 = GetWaterClass(start_tile_adjacent);
+		WaterClass wac2 = GetWaterClass(end_tile_adjacent);
+
+		// First (here) check that end_tile_adjacent has compatible form (is flat).
+		// Else will appear a critical error when player removes this tunnel:
+		// ends of tunnel with different z-level and... no way to find another end of this tunnel.
+		if (true) {
+			uint32 temp_p1 = end_tile_adjacent;
+			uint32 temp_p2 = (uint32)WATER_CLASS_CANAL;
+			// CmdBuildCanal(end_tile_adjacent, flags, temp_p1, temp_p2, text);
+			CommandCost ret1 = DoCommand(end_tile_adjacent, temp_p1, temp_p2, flags | DC_AUTO, CMD_BUILD_CANAL, text);
+			// CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags, uint32 cmd, const char *text)
+			if (ret1.Failed()) return ret1;
+		}
+		else {
+			// Actually, this would be enough: 
+			Slope slope = GetTileSlope(end_tile_adjacent);
+			WaterClass wc3 = WATER_CLASS_CANAL;
+			if (slope != SLOPE_FLAT && (wc3 != WATER_CLASS_RIVER || !IsInclinedSlope(slope))) {
+				return_cmd_error(STR_ERROR_FLAT_LAND_REQUIRED);
+			}
+		}
+		// Copy almost all tunnel information from start_tile to start_tile_adjacent. But not height.
+		_m[start_tile_adjacent].type = _m[start_tile].type;
+		_m[start_tile_adjacent].m1 = _m[start_tile].m1;
+		_m[start_tile_adjacent].m2 = _m[start_tile].m2;
+		_m[start_tile_adjacent].m3 = _m[start_tile].m3;
+		_m[start_tile_adjacent].m4 = _m[start_tile].m4;
+		_m[start_tile_adjacent].m5 = _m[start_tile].m5;
+		_me[start_tile_adjacent].m6 = _me[start_tile].m6;
+		_me[start_tile_adjacent].m7 = _me[start_tile].m7;
+		_me[start_tile_adjacent].m8 = _me[start_tile].m8;
+		// Copy almost all tunnel information from end_tile to end_tile_adjacent. 
+		_m[end_tile_adjacent].type = _m[end_tile].type;
+		_m[end_tile_adjacent].m1 = _m[end_tile].m1;
+		_m[end_tile_adjacent].m2 = _m[end_tile].m2;
+		_m[end_tile_adjacent].m3 = _m[end_tile].m3;
+		_m[end_tile_adjacent].m4 = _m[end_tile].m4;
+		_m[end_tile_adjacent].m5 = _m[end_tile].m5;
+		_me[end_tile_adjacent].m6 = _me[end_tile].m6;
+		_me[end_tile_adjacent].m7 = _me[end_tile].m7;
+		_me[end_tile_adjacent].m8 = _me[end_tile].m8;
+
+		// Restore WaterClass of rivers. To restore rivers after demolishing water-tunnels on them. 
+		if (wac1 == WATER_CLASS_RIVER) {
+			SetWaterClass(start_tile_adjacent, wac1);
+		} else {
+			SetWaterClass(start_tile_adjacent, WATER_CLASS_CANAL);
+		}
+		if (wac2 == WATER_CLASS_RIVER) {
+			SetWaterClass(end_tile_adjacent, wac2);
+		} else {
+			SetWaterClass(end_tile_adjacent, WATER_CLASS_CANAL);
+		}
+
+		MarkTileDirtyByTile(start_tile_adjacent);
+		MarkTileDirtyByTile(end_tile_adjacent);
+
+		// A command cost return with no cost and no error. Just go out of this function. 
+		return CommandCost();
+
+		// end of function ConvertRailTunnelToA2TilesLongWaterTunnel.
+	}
+// End   for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+
 	if (!HasTileWaterGround(tile) || !HasTileWaterGround(tile2)) {
 		return_cmd_error(STR_ERROR_MUST_BE_BUILT_ON_WATER);
 	}
@@ -405,6 +512,46 @@ CommandCost CmdBuildCanal(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 	if (_game_mode != GM_EDITOR && ta.w != 1 && ta.h != 1) return CMD_ERROR;
 
 	CommandCost cost(EXPENSES_CONSTRUCTION);
+
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+// Begin for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+	if (IsTileType(tile, MP_TUNNELBRIDGE)) {
+		// function ConvertRailTunnelToWaterTunnel:
+			// If 1 of 2 tiles is an entrance to tunnel (but not to a bridge) and the other is a water tile.
+			// So, this means we have to convert this tunnel to the water-tunnel for ships
+			// (with 2-tiles-entrances at every side, looking like a ship-depot each.
+			// So, we have to draw a ship-depot but with TileType = MP_TUNNELBRIDGE.
+		TileIndex start_tile = tile;
+		TileIndex end_tile = GetOtherTunnelBridgeEnd(start_tile);
+		DiagDirection start_tile_tunnel_direction = GetTunnelBridgeDirection(start_tile);
+		// bool tont1 = IsTileType(tile, MP_TUNNELBRIDGE) && IsTunnel(tile) && (GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL);
+		bool tont1 = IsTunnel(tile) && (GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL);
+		if (tont1) {
+
+			// Store WaterClass of rivers. 
+			WaterClass wac1 = GetWaterClass(start_tile);
+			WaterClass wac2 = GetWaterClass(end_tile);
+
+			if (wac1 != WATER_CLASS_RIVER) SetWaterClass(start_tile, WATER_CLASS_CANAL);
+			if (wac2 != WATER_CLASS_RIVER) SetWaterClass(end_tile, WATER_CLASS_CANAL);
+
+			// Need it? - Change Infrastructure accounting first! Because TransportType property affects Infrastructure accounting.
+			// ... And... There is something wrong: it seems that this comand converts the given tunnel to a ROAD-tunnel. 
+			// SetTunnelBridgeTransportType(start_tile, TRANSPORT_WATER);
+			// SB(_m[start_tile].m5, 2, 2, TRANSPORT_WATER);
+			// SetTunnelBridgeTransportType(end_tile, TRANSPORT_WATER);
+			// SB(_m[end_tile].m5, 2, 2, TRANSPORT_WATER);
+
+			MarkTileDirtyByTile(start_tile);
+			MarkTileDirtyByTile(end_tile);
+
+			// A command cost return with no cost and no error. Just go out of this function. 
+			return CommandCost();
+		}
+		// end of function ConvertRailTunnelToWaterTunnel.
+	}
+// End   for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+
 	TILE_AREA_LOOP(tile, ta) {
 		CommandCost ret;
 
@@ -601,7 +748,11 @@ bool IsWateredTile(TileIndex tile, Direction from)
 
 		case MP_OBJECT: return IsTileOnWater(tile);
 
-		case MP_TUNNELBRIDGE: return GetTunnelBridgeTransportType(tile) == TRANSPORT_WATER && ReverseDiagDir(GetTunnelBridgeDirection(tile)) == DirToDiagDir(from);
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+		// case MP_TUNNELBRIDGE: return GetTunnelBridgeTransportType(tile) == TRANSPORT_WATER && ReverseDiagDir(GetTunnelBridgeDirection(tile)) == DirToDiagDir(from);
+		case MP_TUNNELBRIDGE: return (GetTunnelBridgeTransportType(tile) == TRANSPORT_WATER || GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL && 
+									 (GetWaterClass(tile) == WATER_CLASS_CANAL || GetWaterClass(tile) == WATER_CLASS_RIVER)) && 
+									  ReverseDiagDir(GetTunnelBridgeDirection(tile)) == DirToDiagDir(from);
 
 		case MP_VOID: return true; // consider map border as water, esp. for rivers
 
@@ -843,26 +994,43 @@ void DrawWaterClassGround(const TileInfo *ti)
 
 static void DrawTile_Water(TileInfo *ti)
 {
-	switch (GetWaterTileType(ti->tile)) {
-		case WATER_TILE_CLEAR:
-			DrawWaterClassGround(ti);
-			DrawBridgeMiddle(ti);
-			break;
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+// Begin for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
 
-		case WATER_TILE_COAST: {
-			DrawShoreTile(ti->tileh);
-			DrawBridgeMiddle(ti);
-			break;
+	//	static void DrawWaterDepot(const TileInfo * ti)
+	if (IsTileType(ti->tile, MP_TUNNELBRIDGE) && IsTunnel(ti->tile)) {
+		// if (IsTileType(ti->tile, MP_TUNNELBRIDGE) && IsTunnel(ti->tile) && !(GetWaterClass(ti->tile) == WATER_CLASS_INVALID || GetWaterClass(ti->tile) == WATER_CLASS_SEA)) {
+			// z coordinate is a open question. 
+		DrawWaterClassGround(ti);
+		// DrawWaterTileStruct(ti, _shipdepot_display_data[GetShipDepotAxis(ti->tile)][GetShipDepotPart(ti->tile)].seq, 0, 0, COMPANY_SPRITE_COLOUR(GetTileOwner(ti->tile)), CF_END);
+		// DrawWaterTileStruct(ti, _shipdepot_display_data[(Axis)GB(_m[ti->tile].m5, WBL_DEPOT_AXIS, 1)][DEPOT_PART_NORTH].seq, 0, 0, COMPANY_SPRITE_COLOUR(GetTileOwner(ti->tile)), CF_END);
+		// DrawWaterTileStruct(ti, _shipdepot_display_data[DiagDirToAxis(GetTunnelBridgeDirection(ti->tile))][DEPOT_PART_NORTH].seq, 0, 0, COMPANY_SPRITE_COLOUR(GetTileOwner(ti->tile)), CF_END);
+		DrawWaterTileStruct(ti, _shipdepot_display_data[DiagDirToAxis(GetTunnelBridgeDirection(ti->tile))][DEPOT_PART_SOUTH].seq, 0, 0, COMPANY_SPRITE_COLOUR(GetTileOwner(ti->tile)), CF_END);
+
+	} else {
+
+		switch (GetWaterTileType(ti->tile)) {
+			case WATER_TILE_CLEAR:
+				DrawWaterClassGround(ti);
+				DrawBridgeMiddle(ti);
+				break;
+
+			case WATER_TILE_COAST: {
+				DrawShoreTile(ti->tileh);
+				DrawBridgeMiddle(ti);
+				break;
+			}
+
+			case WATER_TILE_LOCK:
+				DrawWaterLock(ti);
+				break;
+
+			case WATER_TILE_DEPOT:
+				DrawWaterDepot(ti);
+				break;
 		}
-
-		case WATER_TILE_LOCK:
-			DrawWaterLock(ti);
-			break;
-
-		case WATER_TILE_DEPOT:
-			DrawWaterDepot(ti);
-			break;
 	}
+// End   for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
 }
 
 void DrawShipDepotSprite(int x, int y, Axis axis, DepotPart part)
@@ -1078,15 +1246,30 @@ void DoFloodTile(TileIndex target)
 				break;
 		}
 	} else {
-		/* Flood vehicles */
-		FloodVehicles(target);
 
-		/* flood flat tile */
-		if (DoCommand(target, 0, 0, DC_EXEC, CMD_LANDSCAPE_CLEAR).Succeeded()) {
-			MakeSea(target);
-			MarkTileDirtyByTile(target);
-			flooded = true;
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+// Begin for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+
+		// Do not flood parts of Water-Tunnels even if they are "flat" (SLOPE_FLAT).
+
+		bool LooksLikeAWaterTunnel = false;
+		WaterClass wac1 = GetWaterClass(target);
+		LooksLikeAWaterTunnel = IsTileType(target, MP_TUNNELBRIDGE) && IsTunnel(target) && ((wac1 == WATER_CLASS_CANAL) || (wac1 == WATER_CLASS_RIVER));
+
+		if (!LooksLikeAWaterTunnel) {
+
+			/* Flood vehicles */
+			FloodVehicles(target);
+
+			/* flood flat tile */
+			if (DoCommand(target, 0, 0, DC_EXEC, CMD_LANDSCAPE_CLEAR).Succeeded()) {
+				MakeSea(target);
+				MarkTileDirtyByTile(target);
+				flooded = true;
+			}
 		}
+// End   for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+
 	}
 
 	if (flooded) {

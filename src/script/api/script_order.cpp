@@ -259,7 +259,9 @@ static int ScriptOrderPositionToRealOrderPosition(VehicleID vehicle_id, ScriptOr
 			const Station *st = ::Station::Get(order->GetDestination());
 			if (st->train_station.tile != INVALID_TILE) {
 				TILE_AREA_LOOP(t, st->train_station) {
-					if (st->TileBelongsToRailStation(t)) return t;
+//  for Existing objects tunnels and bridges as stations
+					// if (st->TileBelongsToRailStation(t)) return t;
+					if (st->TileBelongsToRailStation(t) || (IsTileType(t, MP_TUNNELBRIDGE) && (GetStationIndex(t) == st->index))) return t;
 				}
 			} else if (st->dock_tile != INVALID_TILE) {
 				return st->dock_tile;
@@ -279,7 +281,10 @@ static int ScriptOrderPositionToRealOrderPosition(VehicleID vehicle_id, ScriptOr
 			const Waypoint *wp = ::Waypoint::Get(order->GetDestination());
 			if (wp->train_station.tile != INVALID_TILE) {
 				TILE_AREA_LOOP(t, wp->train_station) {
+//  for Existing objects tunnels and bridges as stations
 					if (wp->TileBelongsToRailStation(t)) return t;
+					// Maybe this is not nessesary for Waypoints.
+					// if (wp->TileBelongsToRailStation(t) || (IsTileType(t, MP_TUNNELBRIDGE) && (GetStationIndex(t) == wp->index))) return t;
 				}
 			}
 			/* If the waypoint has no rail waypoint tiles, it must have a buoy */

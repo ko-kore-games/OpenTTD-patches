@@ -46,6 +46,10 @@
 
 #include "safeguards.h"
 
+// #include "water_cmd.cpp" // This will cause 15 Errors when this include enabled. //  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+
+
 BridgeSpec _bridge[MAX_BRIDGES]; ///< The specification of all bridges.
 TileIndex _build_tunnel_endtile; ///< The end of a tunnel; as hidden return from the tunnel build command for GUI purposes.
 
@@ -310,6 +314,13 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 	if (transport_type == TRANSPORT_WATER && (tileh_start == SLOPE_FLAT || tileh_end == SLOPE_FLAT)) return_cmd_error(STR_ERROR_LAND_SLOPED_IN_WRONG_DIRECTION);
 	if (z_start != z_end) return_cmd_error(STR_ERROR_BRIDGEHEADS_NOT_SAME_HEIGHT);
 
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+	bool is_new_bridge;
+	uint16 StationID_of_tile_start = _m[tile_start].m2;
+	uint16 StationID_of_tile_end = _m[tile_end].m2;
+// End   for Existing objects tunnels and bridges as stations 
+
 	CommandCost cost(EXPENSES_CONSTRUCTION);
 	Owner owner;
 	bool is_new_owner;
@@ -317,6 +328,9 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 			GetOtherBridgeEnd(tile_start) == tile_end &&
 			GetTunnelBridgeTransportType(tile_start) == transport_type) {
 		/* Replace a current bridge. */
+
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+		is_new_bridge = false;
 
 		/* If this is a railway bridge, make sure the railtypes match. */
 		if (transport_type == TRANSPORT_RAIL && GetRailType(tile_start) != railtype) {
@@ -369,6 +383,9 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 		}
 	} else {
 		/* Build a new bridge. */
+
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+		is_new_bridge = true;
 
 		bool allow_on_slopes = (_settings_game.construction.build_on_slopes && transport_type != TRANSPORT_WATER);
 
@@ -447,6 +464,27 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 					break;
 				}
 
+//  for Allow houses under bridges
+				case MP_HOUSE:
+					if (GetTileMaxZ(tile) + 2 > z_start) goto not_valid_below;
+					break;
+
+//  for Allow trees under bridges
+				case MP_TREES:
+					if (GetTileMaxZ(tile) + 3 > z_start) goto not_valid_below;
+					break;
+
+//  for Allow stations under bridges
+				case MP_STATION:
+					if (GetTileMaxZ(tile) + 0 > z_start) goto not_valid_below;
+					// if (IsAirport(tile)) goto not_valid_below;
+					break;
+
+//  for Allow industries under bridges
+				case MP_INDUSTRY:
+					if (GetTileMaxZ(tile) + 4 > z_start) goto not_valid_below;
+					break;
+
 				case MP_CLEAR:
 					break;
 
@@ -482,6 +520,14 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 				if (is_new_owner && c != NULL) c->infrastructure.rail[railtype] += (bridge_len + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
 				MakeRailBridgeRamp(tile_start, owner, bridge_type, dir,                 railtype);
 				MakeRailBridgeRamp(tile_end,   owner, bridge_type, ReverseDiagDir(dir), railtype);
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+				if (!is_new_bridge) {
+					// For new bridges these parameters are determined in (static inline void) MakeBridgeRamp() in bridge_map.h .
+					_m[tile_start].m2 = StationID_of_tile_start;
+					_m[tile_end].m2 = StationID_of_tile_end;
+				}
+// End   for Existing objects tunnels and bridges as stations 
 				SetTunnelBridgeReservation(tile_start, pbs_reservation);
 				SetTunnelBridgeReservation(tile_end,   pbs_reservation);
 				break;
@@ -725,6 +771,15 @@ CommandCost CmdBuildTunnel(TileIndex start_tile, DoCommandFlag flags, uint32 p1,
 			if (!IsTunnelTile(start_tile) && c != NULL) c->infrastructure.rail[railtype] += num_pieces;
 			MakeRailTunnel(start_tile, company, direction,                 railtype);
 			MakeRailTunnel(end_tile,   company, ReverseDiagDir(direction), railtype);
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+// Begin for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+			// From now on WaterClass(tile) == WATER_CLASS_INVALID means regular railroad tunnels
+			// and WaterClass(tile) == 0 means WATER_CLASS_SEA. 
+			// SetWaterClass(start_tile) = WATER_CLASS_INVALID;
+			// SB(_m[start_tile].m1, 5, 2, WATER_CLASS_INVALID);
+			// SetWaterClass(end_tile) = WATER_CLASS_INVALID;
+			// SB(_m[end_tile].m1, 5, 2, WATER_CLASS_INVALID);
+// End   for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
 			AddSideToSignalBuffer(start_tile, INVALID_DIAGDIR, company);
 			YapfNotifyTrackLayoutChange(start_tile, DiagDirToDiagTrack(direction));
 		} else {
@@ -844,6 +899,20 @@ static CommandCost DoClearTunnel(TileIndex tile, DoCommandFlag flags)
 				DirtyCompanyInfrastructureWindows(owner);
 			}
 
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+// Begin for Existing objects tunnels and bridges as stations 
+			// RemoveFromRailBaseStation first (if this is tunnelbridge-station)
+			CommandCost ret2;
+			ret2 = DoCommand(tile, 0, 0, DC_EXEC, CMD_REMOVE_FROM_RAIL_STATION);
+			if (ret2.Failed()) return ret2;
+			ret.AddCost(ret2.GetCost());
+			ret2 = DoCommand(endtile, 0, 0, DC_EXEC, CMD_REMOVE_FROM_RAIL_STATION);
+			if (ret2.Failed()) return ret2;
+			ret.AddCost(ret2.GetCost());
+//			SetTileType(tile, MP_TUNNELBRIDGE); 
+//			SetTileType(endtile, MP_TUNNELBRIDGE);
+// End   for Existing objects tunnels and bridges as stations 
+
 			DoClearSquare(tile);
 			DoClearSquare(endtile);
 
@@ -927,6 +996,21 @@ static CommandCost DoClearBridge(TileIndex tile, DoCommandFlag flags)
 		/* Update company infrastructure counts. */
 		if (rail) {
 			if (Company::IsValidID(owner)) Company::Get(owner)->infrastructure.rail[GetRailType(tile)] -= len * TUNNELBRIDGE_TRACKBIT_FACTOR;
+
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+// Begin for Existing objects tunnels and bridges as stations 
+			// RemoveFromRailBaseStation first (if this is tunnelbridge-station)
+			CommandCost ret2;
+			ret2 = DoCommand(tile, 0, 0, DC_EXEC, CMD_REMOVE_FROM_RAIL_STATION);
+			if (ret2.Failed()) return ret2;
+			ret.AddCost(ret2.GetCost());
+			ret2 = DoCommand(endtile, 0, 0, DC_EXEC, CMD_REMOVE_FROM_RAIL_STATION);
+			if (ret2.Failed()) return ret2;
+			ret.AddCost(ret2.GetCost());
+//			SetTileType(tile, MP_TUNNELBRIDGE);
+//			SetTileType(endtile, MP_TUNNELBRIDGE);
+// End   for Existing objects tunnels and bridges as stations 
+
 		} else if (GetTunnelBridgeTransportType(tile) == TRANSPORT_ROAD) {
 			RoadType rt;
 			FOR_EACH_SET_ROADTYPE(rt, GetRoadTypes(tile)) {
@@ -1146,37 +1230,50 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 	TransportType transport_type = GetTunnelBridgeTransportType(ti->tile);
 	DiagDirection tunnelbridge_direction = GetTunnelBridgeDirection(ti->tile);
 
+//  for Existing objects tunnels and bridges as stations
+	// if ((GetTunnelBridgeTransportType(ti->tile) == TRANSPORT_RAIL) && (GetStationIndex(ti->tile) > 0)) { // Switched off because the function GetStationIndex(t) is out of sight.
+	// if ((transport_type == TRANSPORT_RAIL) && ((StationID)_m[ti->tile].m2 > 0)) {
+		// (GetStationIndex(ti->tile) > 0) == ((StationID)_m[ti->tile].m2 > 0) means, that this tile is MP_TUNNELBRIDGE and MP_STATION at the same time. 
+		// _tile_type_procs[MP_STATION]->draw_tile_proc(ti); // This crush the game immeadiately. 
+		// Temporary substitute of solution - just to mark the difference with simple MP_TUNNELBRIDGE (without MP_STATION).
+		// But... this doesn't work - doesn't do any visible difference. 
+		// _tile_type_procs[MP_VOID]->draw_tile_proc(ti);
+	// }
+
 	if (IsTunnel(ti->tile)) {
+
 		/* Front view of tunnel bounding boxes:
-		 *
-		 *   122223  <- BB_Z_SEPARATOR
-		 *   1    3
-		 *   1    3                1,3 = empty helper BB
-		 *   1    3                  2 = SpriteCombine of tunnel-roof and catenary (tram & elrail)
-		 *
-		 */
+			*
+			*   122223  <- BB_Z_SEPARATOR
+			*   1    3
+			*   1    3                1,3 = empty helper BB
+			*   1    3                  2 = SpriteCombine of tunnel-roof and catenary (tram & elrail)
+			*
+			*/
 
 		static const int _tunnel_BB[4][12] = {
 			/*  tunnnel-roof  |  Z-separator  | tram-catenary
-			 * w  h  bb_x bb_y| x   y   w   h |bb_x bb_y w h */
+				* w  h  bb_x bb_y| x   y   w   h |bb_x bb_y w h */
 			{  1,  0, -15, -14,  0, 15, 16,  1, 0, 1, 16, 15 }, // NE
 			{  0,  1, -14, -15, 15,  0,  1, 16, 1, 0, 15, 16 }, // SE
 			{  1,  0, -15, -14,  0, 15, 16,  1, 0, 1, 16, 15 }, // SW
 			{  0,  1, -14, -15, 15,  0,  1, 16, 1, 0, 15, 16 }, // NW
 		};
-		const int *BB_data = _tunnel_BB[tunnelbridge_direction];
+		const int* BB_data = _tunnel_BB[tunnelbridge_direction];
 
 		bool catenary = false;
 
 		SpriteID image;
 		SpriteID railtype_overlay = 0;
 		if (transport_type == TRANSPORT_RAIL) {
-			const RailtypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
+			const RailtypeInfo* rti = GetRailTypeInfo(GetRailType(ti->tile));
 			image = rti->base_sprites.tunnel;
 			if (rti->UsesOverlay()) {
 				/* Check if the railtype has custom tunnel portals. */
 				railtype_overlay = GetCustomRailSprite(rti, ti->tile, RTSG_TUNNEL_PORTAL);
 				if (railtype_overlay != 0) image = SPR_RAILTYPE_TUNNEL_BASE; // Draw blank grass tunnel base.
+//  for Existing objects tunnels and bridges as stations
+				// if ((StationID)_m[ti->tile].m2 > 0) image = SPR_TUNNEL_ENTRY_REAR_ROAD; // Change look-out of portal for station-tunnels to road-similar one. // But... this doesn't work such way. 
 			}
 		} else {
 			image = SPR_TUNNEL_ENTRY_REAR_ROAD;
@@ -1203,7 +1300,7 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 				}
 			}
 		} else {
-			const RailtypeInfo *rti = GetRailTypeInfo(GetRailType(ti->tile));
+			const RailtypeInfo* rti = GetRailTypeInfo(GetRailType(ti->tile));
 			if (rti->UsesOverlay()) {
 				SpriteID surface = GetCustomRailSprite(rti, ti->tile, RTSG_TUNNEL);
 				if (surface != 0) DrawGroundSprite(surface + tunnelbridge_direction, PAL_NONE);
@@ -1239,8 +1336,41 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 		if (catenary || railtype_overlay != 0) EndSpriteCombine();
 
 		/* Add helper BB for sprite sorting that separates the tunnel from things beside of it. */
-		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, ti->x,              ti->y,              BB_data[6], BB_data[7], TILE_HEIGHT, ti->z);
+		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, ti->x, ti->y, BB_data[6], BB_data[7], TILE_HEIGHT, ti->z);
 		AddSortableSpriteToDraw(SPR_EMPTY_BOUNDING_BOX, PAL_NONE, ti->x + BB_data[4], ti->y + BB_data[5], BB_data[6], BB_data[7], TILE_HEIGHT, ti->z);
+
+
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+// Begin for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+		// Set conditions to draw sprite of ship-depot instead of tunnel-bridge entrance.
+
+		//		TileIndexDiff delta = TileOffsByDiagDir(tunnelbridge_direction); // Direction into a tunnel (or bridge).
+		//		TileIndex next_tile_into_tunnel = ti->tile + delta;
+		//		TileIndex next_tile_out_of_tunnel = ti->tile - delta;
+		bool looks_like_a_water_tunnel = false;
+		WaterClass wac1 = GetWaterClass(ti->tile);
+		// Tunnel with the same Direction or Water but not coast (not shore):
+		// GetWaterClass(ti->tile) == WATER_CLASS_INVALID means not water but regular railroad tunnel. 
+		// looks_like_a_water_tunnel = !(GetWaterClass(ti->tile) == WATER_CLASS_INVALID) &&
+		// Ignore WATER_CLASS_INVALID or WATER_CLASS_SEA ( == 0 - assume this a regular rail-tunnel, i.e. not a water-tunnel). 
+//		looks_like_a_water_tunnel = ((wac1 == WATER_CLASS_CANAL) || (wac1 == WATER_CLASS_RIVER)) &&
+//								(IsTileType(next_tile_forward, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_forward) == tunnelbridge_direction) ||
+//								 IsTileType(next_tile_forward, MP_WATER)); // && !HasBit(_m[next_tile_forward].m5, WBL_COAST_FLAG);
+//		looks_like_a_water_tunnel = IsTileType(next_tile_forward, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_forward) == tunnelbridge_direction) ||
+//								IsTileType(next_tile_backward, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_backward) == tunnelbridge_direction);
+		looks_like_a_water_tunnel = ((wac1 == WATER_CLASS_CANAL) || (wac1 == WATER_CLASS_RIVER));
+
+		if (looks_like_a_water_tunnel) {
+			// Draw a ship depot tile.
+			// This call just to get ship-depot graphics. Because I don't know how to get it here without calling DrawTile_Water(ti). 
+			// DrawWaterDepot(ti);
+			_tile_type_procs[MP_WATER]->draw_tile_proc(ti);
+
+		} else {
+
+
+		}
+// End   for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
 
 		DrawBridgeMiddle(ti);
 	} else { // IsBridge(ti->tile)
@@ -1623,6 +1753,19 @@ static void GetTileDesc_TunnelBridge(TileIndex tile, TileDesc *td)
 				td->rail_speed = spd;
 			}
 		}
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
+// Begin for Existing objects tunnels and bridges as stations 
+		StationID st_index = _m[tile].m2;
+		if ((st_index != 0) && (st_index != INVALID_STATION)) {
+			td->str = STR_LAI_STATION_DESCRIPTION_RAILROAD_STATION;
+			// td->station_name = STR_LAI_STATION_DESCRIPTION_RAILROAD_STATION;
+			if (IsTunnel(tile)) {
+				td->station_name = STR_LAI_TUNNEL_DESCRIPTION_RAILROAD;
+			} else { // IsBridge(tile)
+				td->station_name = GetBridgeSpec(GetBridgeType(tile))->transport_name[tt];
+			}
+		}
+// End   for Existing objects tunnels and bridges as stations
 	} else if (tt == TRANSPORT_ROAD && !IsTunnel(tile)) {
 		td->road_speed = GetBridgeSpec(GetBridgeType(tile))->speed;
 	}
@@ -1660,7 +1803,12 @@ static void TileLoop_TunnelBridge(TileIndex tile)
 static TrackStatus GetTileTrackStatus_TunnelBridge(TileIndex tile, TransportType mode, uint sub_mode, DiagDirection side)
 {
 	TransportType transport_type = GetTunnelBridgeTransportType(tile);
-	if (transport_type != mode || (transport_type == TRANSPORT_ROAD && (GetRoadTypes(tile) & sub_mode) == 0)) return 0;
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+	// if (transport_type != mode || (transport_type == TRANSPORT_ROAD && (GetRoadTypes(tile) & sub_mode) == 0)) return 0;
+	// Ignore transport_type of tunnels (and bridges) for ships (i.e. allow ships to use railroad tunnels (but not road tunels)). 
+	// if ((transport_type != mode) && (mode != TRANSPORT_WATER) || (transport_type == TRANSPORT_ROAD && (GetRoadTypes(tile) & sub_mode) == 0)) return 0;
+	// Ignore transport_type of tunnels (but not bridges) for ships (i.e. allow ships to use railroad tunnels (but not road tunels)). 
+	if ((transport_type != mode) && (mode != TRANSPORT_WATER || IsBridge(tile)) || (transport_type == TRANSPORT_ROAD && (GetRoadTypes(tile) & sub_mode) == 0)) return 0;
 
 	DiagDirection dir = GetTunnelBridgeDirection(tile);
 	if (side != INVALID_DIAGDIR && side != ReverseDiagDir(dir)) return 0;
@@ -1717,6 +1865,20 @@ static void ChangeTileOwner_TunnelBridge(TileIndex tile, Owner old_owner, Owner 
 	}
 }
 
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+// Begin for Existing objects tunnels and bridges as stations
+static bool ClickTile_TunnelBridge(TileIndex tile)
+{
+	if (IsTileType(tile, MP_TUNNELBRIDGE) && !(_m[tile].m2 == 0) && !(_m[tile].m2 == INVALID_STATION)) {
+		ClickTileProc *proc = _tile_type_procs[MP_STATION]->click_tile_proc;
+		if (proc == NULL) return false;
+		return proc(tile);
+	}
+	return true;
+}
+// End   for Existing objects tunnels and bridges as stations
+
+
 /**
  * Frame when the 'enter tunnel' sound should be played. This is the second
  * frame on a tile, so the sound is played shortly after entering the tunnel
@@ -1734,7 +1896,10 @@ static const byte TUNNEL_SOUND_FRAME = 1;
  */
 extern const byte _tunnel_visibility_frame[DIAGDIR_END] = {12, 8, 8, 12};
 
-static VehicleEnterTileStatus VehicleEnter_TunnelBridge(Vehicle *v, TileIndex tile, int x, int y)
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+// Begin for Existing objects tunnels and bridges as stations
+// static VehicleEnterTileStatus VehicleEnter_TunnelBridge(Vehicle *v, TileIndex tile, int x, int y)
+static VehicleEnterTileStatus VehicleEnter_TunnelBridge_Original(Vehicle* v, TileIndex tile, int x, int y)
 {
 	int z = GetSlopePixelZ(x, y) - v->z_pos;
 
@@ -1800,6 +1965,90 @@ static VehicleEnterTileStatus VehicleEnter_TunnelBridge(Vehicle *v, TileIndex ti
 				rv->vehstatus &= ~VS_HIDDEN;
 				return VETSB_ENTERED_WORMHOLE;
 			}
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+// Begin for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+		} else if (v->type == VEH_SHIP) {
+			Ship* ship = Ship::From(v);
+
+			bool looks_like_2tiles_long_tunnel_entrance = false;
+			// bool looks_like_a_water_tunnel = false;
+			DiagDirection tunnelbridge_direction = dir; // GetTunnelBridgeDirection(tile);
+			TileIndexDiff delta = TileOffsByDiagDir(tunnelbridge_direction); // Direction into a tunnel (or bridge).
+			TileIndex next_tile_into_tunnel = tile + delta;
+			TileIndex next_tile_out_of_tunnel = tile - delta;
+			// WaterClass wac1 = GetWaterClass(tile); // This matters for drawing sprites, but here it doesn't matter. 
+			// Tunnel with the same Direction or Water but not coast (not shore):
+			// GetWaterClass(ti->tile) == WATER_CLASS_INVALID means not water but regular raailroad tunnel. 
+			// looks_like_a_water_tunnel = !(GetWaterClass(ti->tile) == WATER_CLASS_INVALID) &&
+			// Ignore WATER_CLASS_INVALID or WATER_CLASS_SEA ( == 0 - assume this a regular rail-tunnel, i.e. not a water-tunnel). 
+//			looks_like_a_water_tunnel = ((wac1 == WATER_CLASS_CANAL) || (wac1 == WATER_CLASS_RIVER)) &&
+//				(IsTileType(next_tile_forward, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_forward) == tunnelbridge_direction) ||
+//				 IsTileType(next_tile_forward, MP_WATER)); // && !HasBit(_m[next_tile_forward].m5, WBL_COAST_FLAG);
+//			looks_like_2tiles_long_tunnel_entrance = IsTileType(next_tile_forward, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_forward) == tunnelbridge_direction) ||
+//												IsTileType(next_tile_backward, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_backward) == tunnelbridge_direction);
+			looks_like_2tiles_long_tunnel_entrance = IsTileType(next_tile_into_tunnel, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_into_tunnel) == dir) ||
+												IsTileType(next_tile_out_of_tunnel, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(next_tile_out_of_tunnel) == dir);
+
+			bool more_precision_to_visibility_frames_for_ships;
+
+			/* Enter tunnel? */
+			if (ship->state != TRACK_BIT_WORMHOLE && dir == vdir) {
+				// Experimental value of "frame" instead of _tunnel_visibility_frame[dir]:
+				// if (frame == _tunnel_visibility_frame[dir]) {
+				// if (!looks_like_2tiles_long_tunnel_entrance && (frame == 1) || looks_like_2tiles_long_tunnel_entrance && (frame == TILE_SIZE - 2)) {
+				// Hide ship not on the 1st, but on the 2nd of entrance tile of water-tunnel if (tunnelbridge_direction == DIAGDIR_NE || tunnelbridge_direction == DIAGDIR_NW)
+				// to avoid "teleport" visual effect. 
+//				more_precision_to_visibility_frames_for_ships = !looks_like_2tiles_long_tunnel_entrance && (frame == 1) ||
+//					looks_like_2tiles_long_tunnel_entrance && (tunnelbridge_direction == DIAGDIR_SE || tunnelbridge_direction == DIAGDIR_SW) && (frame == TILE_SIZE - 2) ||
+//					looks_like_2tiles_long_tunnel_entrance && (tunnelbridge_direction == DIAGDIR_NE || tunnelbridge_direction == DIAGDIR_NW) && !IsTileType(next_tile_forward, MP_TUNNELBRIDGE) && (frame == 1);
+				more_precision_to_visibility_frames_for_ships = (!looks_like_2tiles_long_tunnel_entrance) && (frame == 1) ||
+					looks_like_2tiles_long_tunnel_entrance && ((dir == DIAGDIR_SE || dir == DIAGDIR_SW) && (frame == TILE_SIZE - 2) ||
+														  (dir == DIAGDIR_NE || dir == DIAGDIR_NW) && (!IsTileType(next_tile_into_tunnel, MP_TUNNELBRIDGE)) && (frame == 4));
+				if (more_precision_to_visibility_frames_for_ships) {
+				// if (frame == 1) {
+				// if (frame == 1 || frame == 2) {   // 2 values (1 and 2) for bigger stability. 
+					/* Frame should be equal to the next frame number in the RV's movement */
+					// assert(frame == ship->frame + 1); // Error E0135: class "Ship" has no member "frame"
+					ship->tile = tile;
+					ship->state = TRACK_BIT_WORMHOLE;
+					ship->vehstatus |= VS_HIDDEN;
+					return VETSB_ENTERED_WORMHOLE;
+				} else {
+					return VETSB_CONTINUE;
+				}
+			}
+
+			/* We're at the tunnel exit ?? */
+			// Experimental value of "frame" instead of _tunnel_visibility_frame[dir]:
+			// if (dir == ReverseDiagDir(vdir) && frame == TILE_SIZE - _tunnel_visibility_frame[dir] && z == 0) {
+			// if (!looks_like_a_water_tunnel && (frame == 1) || looks_like_a_water_tunnel && (frame == TILE_SIZE - 1)) {
+//			if (!looks_like_2tiles_long_tunnel_entrance && (dir == ReverseDiagDir(vdir) && frame == TILE_SIZE - 1 && z == 0) ||
+//				 looks_like_2tiles_long_tunnel_entrance && !IsTileType(next_tile_forward, MP_TUNNELBRIDGE) && (dir == ReverseDiagDir(vdir) && frame == 2 && z == 0)) {
+//			more_precision_to_visibility_frames_for_ships = !looks_like_2tiles_long_tunnel_entrance && (frame == 1) ||
+//				looks_like_2tiles_long_tunnel_entrance && (tunnelbridge_direction == DIAGDIR_SE || tunnelbridge_direction == DIAGDIR_SW) && !IsTileType(next_tile_forward, MP_TUNNELBRIDGE) && (dir == ReverseDiagDir(vdir) && frame == 2 && z == 0) ||
+//				looks_like_2tiles_long_tunnel_entrance && (tunnelbridge_direction == DIAGDIR_NE || tunnelbridge_direction == DIAGDIR_NW) && (dir == ReverseDiagDir(vdir) && frame == TILE_SIZE - 2 && z == 0);
+			more_precision_to_visibility_frames_for_ships = (dir == ReverseDiagDir(vdir)) && ((!looks_like_2tiles_long_tunnel_entrance) && (frame == TILE_SIZE - 1) ||
+				looks_like_2tiles_long_tunnel_entrance && ((dir == DIAGDIR_SE || dir == DIAGDIR_SW) && (!IsTileType(next_tile_out_of_tunnel, MP_TUNNELBRIDGE)) && (frame == 3 && z == 0) ||
+														   (dir == DIAGDIR_NE || dir == DIAGDIR_NW) && (frame == TILE_SIZE - 4 && z == 0)));
+			if (more_precision_to_visibility_frames_for_ships) {
+				// if (dir == ReverseDiagDir(vdir) && frame == TILE_SIZE - 1 && z == 0) {
+			// if (dir == ReverseDiagDir(vdir) && (frame == TILE_SIZE - 1 || frame == TILE_SIZE - 2) && z == 0) {   // 2 values (1 and 2) for bigger stability.
+				// ship->tile = tile;
+				// ship->state = DiagDirToDiagTrackBits(vdir); // Make it visible, but not free from the wormhole. 
+				// ship->frame = frame; // Error E0135: class "Ship" has no member "frame"
+				ship->vehstatus &= ~VS_HIDDEN;
+				// return VETSB_ENTERED_WORMHOLE;
+				return VETSB_CONTINUE;
+			}
+			if ((!IsTileType(next_tile_out_of_tunnel, MP_TUNNELBRIDGE)) && (dir == ReverseDiagDir(vdir)) && (frame == TILE_SIZE - 8) && (z == 0)) {
+				ship->tile = tile;
+				// Change state on the last tile of 2-tiles-entrance (exit) only.
+				// Else the ship will behave criticaly stupid (it may turn back at the 1st of this 2 exit tiles and don't go out of the tunnel).
+				ship->state = DiagDirToDiagTrackBits(vdir); 
+				ship->vehstatus &= ~VS_HIDDEN; // Already done earlier. 
+				return VETSB_ENTERED_WORMHOLE;
+			}
+// End   for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
 		}
 	} else { // IsBridge(tile)
 		if (v->type != VEH_SHIP) {
@@ -1877,6 +2126,22 @@ static VehicleEnterTileStatus VehicleEnter_TunnelBridge(Vehicle *v, TileIndex ti
 	return VETSB_CONTINUE;
 }
 
+static VehicleEnterTileStatus VehicleEnter_TunnelBridge(Vehicle* v, TileIndex tile, int x, int y)
+{
+	// .._Original function = that was in openttd v. 1.9.1 source code. 
+	VehicleEnterTileStatus rr1 = VehicleEnter_TunnelBridge_Original(v, tile, x, y);
+	VehicleEnterTileStatus rr2;
+	// if (IsTileType(tile, MP_TUNNELBRIDGE) && (GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL)) {
+	// if (GetTunnelBridgeTransportType(tile) == TRANSPORT_RAIL) {
+	if (v->type == VEH_TRAIN) {
+		rr2 = _tile_type_procs[MP_STATION]->vehicle_enter_tile_proc(v, tile, x, y);
+		return rr1 | rr2;
+	}
+	return rr1;
+}
+// End   for Existing objects tunnels and bridges as stations
+
+
 static CommandCost TerraformTile_TunnelBridge(TileIndex tile, DoCommandFlag flags, int z_new, Slope tileh_new)
 {
 	if (_settings_game.construction.build_on_slopes && AutoslopeEnabled() && IsBridge(tile) && GetTunnelBridgeTransportType(tile) != TRANSPORT_WATER) {
@@ -1902,6 +2167,8 @@ static CommandCost TerraformTile_TunnelBridge(TileIndex tile, DoCommandFlag flag
 	return DoCommand(tile, 0, 0, flags, CMD_LANDSCAPE_CLEAR);
 }
 
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+
 extern const TileTypeProcs _tile_type_tunnelbridge_procs = {
 	DrawTile_TunnelBridge,           // draw_tile_proc
 	GetSlopePixelZ_TunnelBridge,     // get_slope_z_proc
@@ -1909,7 +2176,7 @@ extern const TileTypeProcs _tile_type_tunnelbridge_procs = {
 	NULL,                            // add_accepted_cargo_proc
 	GetTileDesc_TunnelBridge,        // get_tile_desc_proc
 	GetTileTrackStatus_TunnelBridge, // get_tile_track_status_proc
-	NULL,                            // click_tile_proc
+	ClickTile_TunnelBridge,                            // click_tile_proc // ClickTile_TunnelBridge instead NULL
 	NULL,                            // animate_tile_proc
 	TileLoop_TunnelBridge,           // tile_loop_proc
 	ChangeTileOwner_TunnelBridge,    // change_tile_owner_proc

@@ -75,7 +75,10 @@ static inline void MakeRailTunnel(TileIndex t, Owner o, DiagDirection d, RailTyp
 {
 	SetTileType(t, MP_TUNNELBRIDGE);
 	SetTileOwner(t, o);
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+	// Because rail tunnel can be a tunnel-station (when _m[t].m2 contains a valid StationID (including 0)). 
 	_m[t].m2 = 0;
+	// _m[t].m2 = INVALID_STATION; // ??? // This cause abnormal program termination when train tries to make Implicit Order with INVALID_STATION-tunnel
 	_m[t].m3 = 0;
 	_m[t].m4 = 0;
 	_m[t].m5 = TRANSPORT_RAIL << 2 | d;

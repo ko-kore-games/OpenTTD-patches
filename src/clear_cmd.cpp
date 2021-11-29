@@ -218,7 +218,9 @@ static inline bool NeighbourIsNormal(TileIndex tile)
 		TileIndex t = tile + TileOffsByDiagDir(dir);
 		if (!IsValidTile(t)) continue;
 		if (GetTropicZone(t) != TROPICZONE_DESERT) return true;
-		if (HasTileWaterClass(t) && GetWaterClass(t) == WATER_CLASS_SEA) return true;
+//  for Allow Ships to use Tunnels (Water-Tunnels or Rail-Tunnels for Ships)
+		// if (HasTileWaterClass(t) && GetWaterClass(t) == WATER_CLASS_SEA) return true;
+		if (HasTileWaterClass(t) && GetWaterClass(t) == WATER_CLASS_SEA && (!IsTileType(t, MP_TUNNELBRIDGE))) return true;
 	}
 	return false;
 }

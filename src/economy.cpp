@@ -1595,8 +1595,11 @@ static void UpdateLoadUnloadTicks(Vehicle *front, const Station *st, int ticks)
 	if (front->type == VEH_TRAIN) {
 		/* Each platform tile is worth 2 rail vehicles. */
 		int overhang = front->GetGroundVehicleCache()->cached_total_length - st->GetPlatformLength(front->tile) * TILE_SIZE;
-		if (overhang > 0) {
-			ticks <<= 1;
+		// https://www.tt-forums.net/viewtopic.php?f=32&t=85366&p=1222477#p1222477
+		// Please, add Cheat or Setting: switch to OFF (to 0) penalty if(train->cached_total_length > station->GetPlatformLength())
+		if (overhang > 0) {  // ORIGINAL PLATFORM LENGTH PENALTY FOR LOAD/UNLOAD SPEED 
+		// if (false && (overhang > 0)) {  // NO PENALTY FOR LOAD/UNLOAD SPEED 
+				ticks <<= 1;
 			ticks += (overhang * ticks) / 8;
 		}
 	}
@@ -1628,7 +1631,9 @@ static void LoadUnloadVehicle(Vehicle *front)
 	/* We have not waited enough time till the next round of loading/unloading */
 	if (front->load_unload_ticks != 0) return;
 
-	if (front->type == VEH_TRAIN && (!IsTileType(front->tile, MP_STATION) || GetStationIndex(front->tile) != st->index)) {
+//  for Existing objects tunnels and bridges as stations
+		// if (front->type == VEH_TRAIN && (!IsTileType(front->tile, MP_STATION) || GetStationIndex(front->tile) != st->index)) {
+		if (front->type == VEH_TRAIN && (!IsTileType(front->tile, MP_STATION) && !IsTileType(front->tile, MP_TUNNELBRIDGE) || GetStationIndex(front->tile) != st->index)) {
 		/* The train reversed in the station. Take the "easy" way
 		 * out and let the train just leave as it always did. */
 		SetBit(front->vehicle_flags, VF_LOADING_FINISHED);

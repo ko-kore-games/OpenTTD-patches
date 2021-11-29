@@ -67,12 +67,18 @@ static const uint16 EDITOR_TREE_DIV = 5;                   ///< Game editor tree
 static bool CanPlantTreesOnTile(TileIndex tile, bool allow_desert)
 {
 	switch (GetTileType(tile)) {
-		case MP_WATER:
-			return !IsBridgeAbove(tile) && IsCoast(tile) && !IsSlopeWithOneCornerRaised(GetTileSlope(tile));
+	case MP_WATER:
+//  for Allow trees under bridges
+		// return !IsBridgeAbove(tile) && IsCoast(tile) && !IsSlopeWithOneCornerRaised(GetTileSlope(tile));
+		return (!IsBridgeAbove(tile) || IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 3 < GetBridgeHeight(GetSouthernBridgeEnd(tile)))) &&
+				IsCoast(tile) && !IsSlopeWithOneCornerRaised(GetTileSlope(tile));
 
-		case MP_CLEAR:
-			return !IsBridgeAbove(tile) && !IsClearGround(tile, CLEAR_FIELDS) && GetRawClearGround(tile) != CLEAR_ROCKS &&
-			       (allow_desert || !IsClearGround(tile, CLEAR_DESERT));
+	case MP_CLEAR:
+//  for Allow trees under bridges
+		// return !IsBridgeAbove(tile) && !IsClearGround(tile, CLEAR_FIELDS) && GetRawClearGround(tile) != CLEAR_ROCKS &&
+		return (!IsBridgeAbove(tile) || IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 3 < GetBridgeHeight(GetSouthernBridgeEnd(tile)))) &&
+				!IsClearGround(tile, CLEAR_FIELDS) && GetRawClearGround(tile) != CLEAR_ROCKS &&
+				(allow_desert || !IsClearGround(tile, CLEAR_DESERT));
 
 		default: return false;
 	}
@@ -378,7 +384,9 @@ CommandCost CmdPlantTree(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 
 				FALLTHROUGH;
 
 			case MP_CLEAR: {
-				if (IsBridgeAbove(tile)) {
+//  for Allow trees under bridges
+				// if (IsBridgeAbove(tile)) {
+				if (IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 3 >= GetBridgeHeight(GetSouthernBridgeEnd(tile)))) {
 					msg = STR_ERROR_SITE_UNSUITABLE;
 					continue;
 				}
@@ -530,6 +538,9 @@ static void DrawTile_Trees(TileInfo *ti)
 	}
 
 	EndSpriteCombine();
+
+//  for Allow trees under bridges
+	DrawBridgeMiddle(ti);
 }
 
 

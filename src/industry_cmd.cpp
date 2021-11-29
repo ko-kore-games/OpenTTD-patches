@@ -365,6 +365,9 @@ static void DrawTile_Industry(TileInfo *ti)
 		int proc = dits->draw_proc - 1;
 		if (proc >= 0) _industry_draw_tile_procs[proc](ti);
 	}
+
+//  for Allow industries under bridges
+	DrawBridgeMiddle(ti);
 }
 
 static int GetSlopePixelZ_Industry(TileIndex tile, uint x, uint y)

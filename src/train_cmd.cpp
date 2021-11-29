@@ -375,7 +375,9 @@ int Train::GetCurrentMaxSpeed() const
 			this->gcache.cached_max_track_speed :
 			this->tcache.cached_max_curve_speed;
 
-	if (_settings_game.vehicle.train_acceleration_model == AM_REALISTIC && IsRailStationTile(this->tile)) {
+//  for Existing objects tunnels and bridges as stations
+	// if (_settings_game.vehicle.train_acceleration_model == AM_REALISTIC && IsRailStationTile(this->tile)) {
+	if (_settings_game.vehicle.train_acceleration_model == AM_REALISTIC && (IsRailStationTile(this->tile) || IsTileType(this->tile, MP_TUNNELBRIDGE))) {
 		StationID sid = GetStationIndex(this->tile);
 		if (this->current_order.ShouldStopAtStation(this, sid)) {
 			int station_ahead;
@@ -1933,7 +1935,9 @@ CommandCost CmdReverseTrainDirection(TileIndex tile, DoCommandFlag flags, uint32
 				while (last->Next() != NULL) last = last->Next();
 
 				/* not a station || different station --> leave the station */
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
 				if (!IsTileType(last->tile, MP_STATION) || GetStationIndex(last->tile) != GetStationIndex(v->tile)) {
+				// if (!(IsTileType(last->tile, MP_STATION) || IsTileType(last->tile, MP_TUNNELBRIDGE)) || GetStationIndex(last->tile) != GetStationIndex(v->tile)) {
 					v->LeaveStation();
 				}
 			}
@@ -2082,7 +2086,10 @@ static void CheckNextTrainTile(Train *v)
 			break;
 	}
 	/* Exit if we are on a station tile and are going to stop. */
-	if (IsRailStationTile(v->tile) && v->current_order.ShouldStopAtStation(v, GetStationIndex(v->tile))) return;
+//  for Existing objects tunnels and bridges as stations
+	// if (IsRailStationTile(v->tile) && v->current_order.ShouldStopAtStation(v, GetStationIndex(v->tile))) return;
+	// if ((IsRailStationTile(v->tile) || IsTileType(v->tile, MP_TUNNELBRIDGE) && (GetTunnelBridgeTransportType(v->tile) == TRANSPORT_RAIL)) && v->current_order.ShouldStopAtStation(v, GetStationIndex(v->tile))) return;
+	if ((IsRailStationTile(v->tile) || (GetTunnelBridgeTransportType(v->tile) == TRANSPORT_RAIL)) && v->current_order.ShouldStopAtStation(v, GetStationIndex(v->tile))) return;
 
 	Trackdir td = v->GetVehicleTrackdir();
 
@@ -2240,7 +2247,9 @@ void FreeTrainTrackReservation(const Train *v)
 	TileIndex tile = v->tile;
 	Trackdir  td = v->GetVehicleTrackdir();
 	bool      free_tile = !(IsRailStationTile(v->tile) || IsTileType(v->tile, MP_TUNNELBRIDGE));
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
 	StationID station_id = IsRailStationTile(v->tile) ? GetStationIndex(v->tile) : INVALID_STATION;
+	// StationID station_id = IsRailStationTile(v->tile) || IsTileType(v->tile, MP_TUNNELBRIDGE) ? GetStationIndex(v->tile) : INVALID_STATION;
 
 	/* Can't be holding a reservation if we enter a depot. */
 	if (IsRailDepotTile(tile) && TrackdirToExitdir(td) != GetRailDepotDirection(tile)) return;
@@ -2574,10 +2583,15 @@ static Track ChooseTrainTrack(Train *v, TileIndex tile, DiagDirection enterdir, 
 	 * order list itself is empty. */
 	if (v->current_order.IsType(OT_LEAVESTATION)) {
 		orders.SwitchToNextOrder(false);
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
 	} else if (v->current_order.IsType(OT_LOADING) || (!v->current_order.IsType(OT_GOTO_DEPOT) && (
 			v->current_order.IsType(OT_GOTO_STATION) ?
 			IsRailStationTile(v->tile) && v->current_order.GetDestination() == GetStationIndex(v->tile) :
 			v->tile == v->dest_tile))) {
+//	} else if (v->current_order.IsType(OT_LOADING) || (!v->current_order.IsType(OT_GOTO_DEPOT) && (
+//			v->current_order.IsType(OT_GOTO_STATION) ?
+//			(IsRailStationTile(v->tile) || (GetTunnelBridgeTransportType(v->tile) == TRANSPORT_RAIL)) && v->current_order.GetDestination() == GetStationIndex(v->tile) :
+//			v->tile == v->dest_tile))) {
 		orders.SwitchToNextOrder(true);
 	}
 
@@ -2836,6 +2850,10 @@ static void TrainEnterStation(Train *v, StationID station)
 	SetWindowDirty(WC_VEHICLE_VIEW, v->index);
 
 	v->BeginLoading();
+
+//  for Existing objects tunnels and bridges as stations
+	// Don't do Animation if IsTileType(v->tile, MP_TUNNELSBRIDGE) 
+	if (!IsTileType(v->tile, MP_STATION)) return;
 
 	TriggerStationRandomisation(st, v->tile, SRT_TRAIN_ARRIVES);
 	TriggerStationAnimation(st, v->tile, SAT_TRAIN_ARRIVES);
@@ -3266,7 +3284,9 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 					goto invalid_rail;
 				}
 
+//  for Existing objects tunnels and bridges as stations
 				if (!HasBit(r, VETS_ENTERED_WORMHOLE)) {
+				// if (!HasBit(r, VETS_ENTERED_WORMHOLE) && !HasBit(r, VETS_ENTERED_STATION)) {
 					Track track = FindFirstTrack(chosen_track);
 					Trackdir tdir = TrackDirectionToTrackdir(track, chosen_dir);
 					if (v->IsFrontEngine() && HasPbsSignalOnTrackdir(gp.new_tile, tdir)) {
@@ -3318,14 +3338,34 @@ bool TrainController(Train *v, Vehicle *nomove, bool reverse)
 				}
 			}
 		} else {
-			if (IsTileType(gp.new_tile, MP_TUNNELBRIDGE) && HasBit(VehicleEnterTile(v, gp.new_tile, gp.x, gp.y), VETS_ENTERED_WORMHOLE)) {
+// Begin for Existing objects tunnels and bridges as stations
+
+			// Don't know why it doesn't work else.
+
+			// uint32 r = VehicleEnterTile(v, gp.new_tile, gp.x, gp.y);
+			// if (IsTileType(gp.new_tile, MP_TUNNELBRIDGE) && HasBit(VehicleEnterTile(v, gp.new_tile, gp.x, gp.y), VETS_ENTERED_WORMHOLE)) {
+			uint32 rr22;
+			if (IsTileType(gp.new_tile, MP_TUNNELBRIDGE) && HasBit(rr22 = VehicleEnterTile(v, gp.new_tile, gp.x, gp.y), VETS_ENTERED_WORMHOLE)) {
+//			uint32 r;
+			// if (IsTileType(gp.new_tile, MP_TUNNELBRIDGE) && HasBit(VehicleEnterTile(v, gp.new_tile, gp.x, gp.y), VETS_ENTERED_WORMHOLE)) {
+//			if (IsTileType(gp.new_tile, MP_TUNNELBRIDGE) && HasBit(r = VehicleEnterTile(v, gp.new_tile, gp.x, gp.y), VETS_ENTERED_WORMHOLE)) {
+
 				/* Perform look-ahead on tunnel exit. */
 				if (v->IsFrontEngine()) {
 					TryReserveRailTrack(gp.new_tile, DiagDirToDiagTrack(GetTunnelBridgeDirection(gp.new_tile)));
 					CheckNextTrainTile(v);
+
+				if (HasBit(rr22, VETS_ENTERED_STATION)) {
+					/* The new position is the location where we want to stop */
+					TrainEnterStation(v, rr22 >> VETS_STATION_ID_OFFSET);
+				}
+
+//					TryReserveRailTrack(gp.new_tile, DiagDirToDiagTrack(GetTunnelBridgeDirection(gp.new_tile)));
+//					CheckNextTrainTile(v);
+// End   for Existing objects tunnels and bridges as stations
 				}
 				/* Prevent v->UpdateInclination() being called with wrong parameters.
-				 * This could happen if the train was reversed inside the tunnel/bridge. */
+					* This could happen if the train was reversed inside the tunnel/bridge. */
 				if (gp.old_tile == gp.new_tile) {
 					gp.old_tile = GetOtherTunnelBridgeEnd(gp.old_tile);
 				}
@@ -3849,10 +3889,15 @@ static bool TrainLocoHandler(Train *v, bool mode)
 
 			OrderType order_type = v->current_order.GetType();
 			/* Do not skip waypoints (incl. 'via' stations) when passing through at full speed. */
+//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
 			if ((order_type == OT_GOTO_WAYPOINT || order_type == OT_GOTO_STATION) &&
 						(v->current_order.GetNonStopType() & ONSF_NO_STOP_AT_DESTINATION_STATION) &&
 						IsTileType(v->tile, MP_STATION) &&
 						v->current_order.GetDestination() == GetStationIndex(v->tile)) {
+//			if ((order_type == OT_GOTO_WAYPOINT || order_type == OT_GOTO_STATION) &&
+//						(v->current_order.GetNonStopType() & ONSF_NO_STOP_AT_DESTINATION_STATION) &&
+//						(IsTileType(v->tile, MP_STATION) || IsTileType(v->tile, MP_TUNNELBRIDGE)) &&
+//						v->current_order.GetDestination() == GetStationIndex(v->tile)) {
 				ProcessOrders(v);
 			}
 		}
