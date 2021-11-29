@@ -804,8 +804,6 @@ static void DispatchRightClickEvent(Window *w, int x, int y)
 
 	Point pt = { x, y };
 
-	Point pt = { x, y };
-
 	/* No widget to handle, or the window is not interested in it. */
 	if (wid->index >= 0) {
 		if (w->OnRightClick(pt, wid->index)) return;
@@ -831,8 +829,6 @@ static void DispatchHoverEvent(Window *w, int x, int y)
 
 	/* No widget to handle */
 	if (wid == nullptr) return;
-
-	Point pt = { x, y };
 
 	Point pt = { x, y };
 

@@ -2625,7 +2625,7 @@ static inline CommandCost CanBuildHouseHere(TileIndex tile, TownID town, bool no
 	/* building under a bridge? */
 //  for Allow houses under bridges
 	// if (IsBridgeAbove(tile)) return false;
-	if (IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 2 >= GetBridgeHeight(GetSouthernBridgeEnd(tile)))) return false;
+	if (IsBridgeAbove(tile) && (GetTileMaxZ(tile) + 2 >= GetBridgeHeight(GetSouthernBridgeEnd(tile)))) return CMD_ERROR;
 
 	/* can we clear the land? */
 	CommandCost ret = DoCommand(tile, 0, 0, DC_AUTO | DC_NO_WATER | DC_TOWN, CMD_LANDSCAPE_CLEAR);

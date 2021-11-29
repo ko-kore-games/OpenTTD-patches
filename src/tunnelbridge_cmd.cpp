@@ -768,8 +768,8 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 					_m[tile_end].m2 = StationID_of_tile_end;
 				}
 // End   for Existing objects tunnels and bridges as stations 
-				SetTunnelBridgeReservation(tile_start, pbs_reservation);
-				SetTunnelBridgeReservation(tile_end,   pbs_reservation);
+				// SetTunnelBridgeReservation(tile_start, pbs_reservation);
+				// SetTunnelBridgeReservation(tile_end,   pbs_reservation);
 				break;
 
 			case TRANSPORT_ROAD: {
@@ -2856,24 +2856,24 @@ static void TileLoop_TunnelBridge(TileIndex tile)
 	}
 }
 
-static bool ClickTile_TunnelBridge(TileIndex tile)
-{
-	/* Show vehicles found in tunnel. */
-	if (IsTunnelTile(tile)) {
-		int count = 0;
-		TileIndex tile_end = GetOtherTunnelBridgeEnd(tile);
-		for (const Train *t : Train::Iterate()) {
-			if (!t->IsFrontEngine()) continue;
-			if (tile == t->tile || tile_end == t->tile) {
-				ShowVehicleViewWindow(t);
-				count++;
-			}
-			if (count > 19) break;  // no more than 20 windows open
-		}
-		if (count > 0) return true;
-	}
-	return false;
-}
+// static bool ClickTile_TunnelBridge(TileIndex tile)
+// {
+// 	/* Show vehicles found in tunnel. */
+// 	if (IsTunnelTile(tile)) {
+// 		int count = 0;
+// 		TileIndex tile_end = GetOtherTunnelBridgeEnd(tile);
+// 		for (const Train *t : Train::Iterate()) {
+// 			if (!t->IsFrontEngine()) continue;
+// 			if (tile == t->tile || tile_end == t->tile) {
+// 				ShowVehicleViewWindow(t);
+// 				count++;
+// 			}
+// 			if (count > 19) break;  // no more than 20 windows open
+// 		}
+// 		if (count > 0) return true;
+// 	}
+// 	return false;
+// }
 
 extern const TrackBits _road_trackbits[16];
 

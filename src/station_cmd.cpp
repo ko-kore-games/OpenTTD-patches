@@ -59,6 +59,7 @@
 #include "tunnelbridge_map.h"
 #include "cheat_type.h"
 
+#include "table/station_land.h"
 #include "table/strings.h"
 
 #include "3rdparty/cpp-btree/btree_set.h"
@@ -853,7 +854,7 @@ CommandCost ClearTile_Station(TileIndex tile, DoCommandFlag flags);
  * @param check_bridge Check for the existence of a bridge.
  * @return The cost in case of success, or an error code if it failed.
  */
-CommandCost CheckBuildableTile(TileIndex tile, uint invalid_dirs, int &allowed_z, bool allow_steep, bool check_bridge)
+CommandCost CheckBuildableTile(TileIndex tile, uint invalid_dirs, int &allowed_z, bool allow_steep, bool check_bridge = true)
 {
 //  for Allow stations under bridges
 	// if (check_bridge && IsBridgeAbove(tile)) {
@@ -1632,17 +1633,6 @@ CommandCost CmdBuildRailStation(TileIndex tile_org, DoCommandFlag flags, uint32 
 			int w = plat_len;
 			do {
 				byte layout = *layout_ptr++;
-				if (IsRailStationTile(tile) && HasStationReservation(tile)) {
-					/* Check for trains having a reservation for this tile. */
-					Train *v = GetTrainForReservation(tile, AxisToTrack(GetRailStationAxis(tile)));
-					if (v != nullptr) {
-						affected_vehicles.push_back(v);
-						/* Not necessary to call CheckTrainReservationPreventsTrackModification as that is done by CheckFlatLandRailStation */
-						FreeTrainReservation(v);
-					}
-
-					if (!(_m[tile].m2 == st->index)) {
-
 				/* Remove animation if overbuilding */
 				DeleteAnimatedTile(tile);
 				byte old_specindex = HasStationTileRail(tile) ? GetCustomStationSpecIndex(tile) : 0;
@@ -1730,7 +1720,7 @@ CommandCost CmdBuildRailStation(TileIndex tile_org, DoCommandFlag flags, uint32 
 						/* Check for trains having a reservation for this tile. */
 						Train *v = GetTrainForReservation(tile, AxisToTrack(GetRailStationAxis(tile)));
 						if (v != NULL) {
-							*affected_vehicles.Append() = v;
+							affected_vehicles.push_back(v);
 							FreeTrainReservation(v);
 						}
 					}
@@ -1760,7 +1750,7 @@ CommandCost CmdBuildRailStation(TileIndex tile_org, DoCommandFlag flags, uint32 
 						uint32 platinfo = GetPlatformInfo(AXIS_X, GetStationGfx(tile), plat_len, numtracks_orig, plat_len - w, numtracks_orig - numtracks, false);
 
 						/* As the station is not yet completely finished, the station does not yet exist. */
-						uint16 callback = GetStationCallback(CBID_STATION_TILE_LAYOUT, platinfo, 0, statspec, NULL, tile);
+						uint16 callback = GetStationCallback(CBID_STATION_TILE_LAYOUT, platinfo, 0, statspec, NULL, tile, rt);
 						if (callback != CALLBACK_FAILED) {
 							if (callback < 8) {
 								SetStationGfx(tile, (callback & ~1) + axis);
@@ -1895,7 +1885,7 @@ restart:
 		/* check the lower side, y = constant, x changes */
 //  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
 		// for (uint i = 0; !st->TileBelongsToRailStation(ta.tile + TileDiffXY(i, ta.h - 1));) {
-		for (uint i = 0; !func(st, ta.tile + TileDiffXY(i, ta.h - 1)); && !(IsTileType(ta.tile + TileDiffXY(i, ta.h - 1), MP_TUNNELBRIDGE) && (GetStationIndex(ta.tile + TileDiffXY(i, ta.h - 1)) == st->index));) {
+		for (uint i = 0; !func(st, ta.tile + TileDiffXY(i, ta.h - 1)) && !(IsTileType(ta.tile + TileDiffXY(i, ta.h - 1), MP_TUNNELBRIDGE) && (GetStationIndex(ta.tile + TileDiffXY(i, ta.h - 1)) == st->index));) {
 			/* the left side is unused? */
 			if (++i == ta.w) {
 				ta.h--;
@@ -2050,7 +2040,7 @@ CommandCost RemoveFromRailBaseStation(TileArea ta, std::vector<T *> &affected_st
 				if (v != NULL) RestoreTrainReservation(v);
 			}
 
-			affected_stations.Include(st);
+			include(affected_stations, st);
 
 			// if (v != nullptr) RestoreTrainReservation(v);
 		}
@@ -3083,7 +3073,7 @@ CommandCost CmdBuildDock(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 
 //  for Allow stations under bridges
 	// if (IsBridgeAbove(tile_cur)) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
 															// +1 of height distance (from water) for on-water part of doc: 
-	if (IsBridgeAbove(flat_tile) && (GetTileMaxZ(flat_tile) + 0 + 1 >= GetBridgeHeight(GetSouthernBridgeEnd(tile_cur)))) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+	if (IsBridgeAbove(flat_tile) && (GetTileMaxZ(flat_tile) + 0 + 1 >= GetBridgeHeight(GetSouthernBridgeEnd(flat_tile)))) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
 
 	/* Get the water class of the water tile before it is cleared.*/
 	WaterClass wc = GetWaterClass(flat_tile);
@@ -3278,8 +3268,6 @@ static CommandCost RemoveDock(TileIndex tile, DoCommandFlag flags)
 
 	return CommandCost(EXPENSES_CONSTRUCTION, _price[PR_CLEAR_STATION_DOCK]);
 }
-
-#include "table/station_land.h"
 
 const DrawTileSprites *GetStationTileLayout(StationType st, byte gfx)
 {
