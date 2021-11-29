@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -28,15 +26,18 @@
 #include "aystar.h"
 
 #include "../../safeguards.h"
+#include "core/mem_func.hpp"
 
 /**
  * This looks in the hash whether a node exists in the closed list.
  * @param node Node to search.
- * @return The #PathNode if it is available, else \c NULL
+ * @return The #PathNode if it is available, else \c nullptr
  */
 PathNode *AyStar::ClosedListIsInList(const AyStarNode *node)
 {
-	return (PathNode*)this->closedlist_hash.Get(node->tile, node->direction);
+	const auto result = this->closedlist_hash.find(std::make_pair(node->tile, node->direction));
+
+	return (result == this->closedlist_hash.end()) ? nullptr : result->second;
 }
 
 /**
@@ -47,32 +48,35 @@ PathNode *AyStar::ClosedListIsInList(const AyStarNode *node)
 void AyStar::ClosedListAdd(const PathNode *node)
 {
 	/* Add a node to the ClosedList */
-	PathNode *new_node = MallocT<PathNode>(1);
+	const auto new_node = MallocT<PathNode>(1);
 	*new_node = *node;
-	this->closedlist_hash.Set(node->node.tile, node->node.direction, new_node);
+
+	this->closedlist_hash[std::make_pair(node->node.tile, node->node.direction)] = new_node;
 }
 
 /**
  * Check whether a node is in the open list.
  * @param node Node to search.
- * @return If the node is available, it is returned, else \c NULL is returned.
+ * @return If the node is available, it is returned, else \c nullptr is returned.
  */
 OpenListNode *AyStar::OpenListIsInList(const AyStarNode *node)
 {
-	return (OpenListNode*)this->openlist_hash.Get(node->tile, node->direction);
+	const auto result = this->openlist_hash.find(std::make_pair(node->tile, node->direction));
+
+	return (result == this->openlist_hash.end()) ? nullptr : result->second;
 }
 
 /**
  * Gets the best node from the open list.
  * It deletes the returned node from the open list.
- * @returns the best node available, or \c NULL of none is found.
+ * @returns the best node available, or \c nullptr of none is found.
  */
 OpenListNode *AyStar::OpenListPop()
 {
 	/* Return the item the Queue returns.. the best next OpenList item. */
 	OpenListNode *res = (OpenListNode*)this->openlist_queue.Pop();
-	if (res != NULL) {
-		this->openlist_hash.DeleteValue(res->path.node.tile, res->path.node.direction);
+	if (res != nullptr) {
+		this->openlist_hash.erase(std::make_pair(res->path.node.tile, res->path.node.direction));
 	}
 
 	return res;
@@ -89,7 +93,7 @@ void AyStar::OpenListAdd(PathNode *parent, const AyStarNode *node, int f, int g)
 	new_node->g = g;
 	new_node->path.parent = parent;
 	new_node->path.node = *node;
-	this->openlist_hash.Set(node->tile, node->direction, new_node);
+	this->openlist_hash[std::make_pair(node->tile, node->direction)] =  new_node;
 
 	/* Add it to the queue */
 	this->openlist_queue.Push(new_node, f);
@@ -105,7 +109,7 @@ void AyStar::CheckTile(AyStarNode *current, OpenListNode *parent)
 	OpenListNode *check;
 
 	/* Check the new node against the ClosedList */
-	if (this->ClosedListIsInList(current) != NULL) return;
+	if (this->ClosedListIsInList(current) != nullptr) return;
 
 	/* Calculate the G-value for this node */
 	new_g = this->CalculateG(this, current, parent);
@@ -131,11 +135,12 @@ void AyStar::CheckTile(AyStarNode *current, OpenListNode *parent)
 
 	/* Check if this item is already in the OpenList */
 	check = this->OpenListIsInList(current);
-	if (check != NULL) {
+	if (check != nullptr) {
 		uint i;
 		/* Yes, check if this g value is lower.. */
-		if (new_g > check->g) return;
+		if (new_g >= check->g) return;
 		this->openlist_queue.Delete(check, 0);
+
 		/* It is lower, so change it to this item */
 		check->g = new_g;
 		check->path.parent = closedlist_parent;
@@ -146,14 +151,14 @@ void AyStar::CheckTile(AyStarNode *current, OpenListNode *parent)
 		/* Re-add it in the openlist_queue. */
 		this->openlist_queue.Push(check, new_f);
 	} else {
-		/* A new node, add him to the OpenList */
+		/* A new node, add it to the OpenList */
 		this->OpenListAdd(closedlist_parent, current, new_f, new_g);
 	}
 }
 
 /**
  * This function is the core of %AyStar. It handles one item and checks
- * his neighbour items. If they are valid, they are added to be checked too.
+ * its neighbour items. If they are valid, they are added to be checked too.
  * @return Possible values:
  *  - #AYSTAR_EMPTY_OPENLIST : indicates all items are tested, and no path has been found.
  *  - #AYSTAR_LIMIT_REACHED : Indicates that the max_search_nodes limit has been reached.
@@ -167,11 +172,11 @@ int AyStar::Loop()
 	/* Get the best node from OpenList */
 	OpenListNode *current = this->OpenListPop();
 	/* If empty, drop an error */
-	if (current == NULL) return AYSTAR_EMPTY_OPENLIST;
+	if (current == nullptr) return AYSTAR_EMPTY_OPENLIST;
 
 	/* Check for end node and if found, return that code */
 	if (this->EndNodeCheck(this, current) == AYSTAR_FOUND_END_NODE && !CheckIgnoreFirstTile(&current->path)) {
-		if (this->FoundEndNode != NULL) {
+		if (this->FoundEndNode != nullptr) {
 			this->FoundEndNode(this, current);
 		}
 		free(current);
@@ -193,7 +198,7 @@ int AyStar::Loop()
 	/* Free the node */
 	free(current);
 
-	if (this->max_search_nodes != 0 && this->closedlist_hash.GetSize() >= this->max_search_nodes) {
+	if (this->max_search_nodes != 0 && this->closedlist_hash.size() >= this->max_search_nodes) {
 		/* We've expanded enough nodes */
 		return AYSTAR_LIMIT_REACHED;
 	} else {
@@ -210,8 +215,14 @@ void AyStar::Free()
 	this->openlist_queue.Free(false);
 	/* 2nd argument above is false, below is true, to free the values only
 	 * once */
-	this->openlist_hash.Delete(true);
-	this->closedlist_hash.Delete(true);
+	for (const auto& pair : this->openlist_hash) {
+		free(pair.second);
+	}
+	this->openlist_hash.clear();
+	for (const auto& pair : this->closedlist_hash) {
+		free(pair.second);
+	}
+	this->closedlist_hash.clear();
 #ifdef AYSTAR_DEBUG
 	printf("[AyStar] Memory free'd\n");
 #endif
@@ -227,8 +238,15 @@ void AyStar::Clear()
 	 * the hash. */
 	this->openlist_queue.Clear(false);
 	/* Clean the hashes */
-	this->openlist_hash.Clear(true);
-	this->closedlist_hash.Clear(true);
+	for (const auto& pair : this->openlist_hash) {
+		free(pair.second);
+	}
+	this->openlist_hash.clear();
+
+	for (const auto& pair : this->closedlist_hash) {
+		free(pair.second);
+	}
+	this->closedlist_hash.clear();
 
 #ifdef AYSTAR_DEBUG
 	printf("[AyStar] Cleared AyStar\n");
@@ -285,18 +303,21 @@ void AyStar::AddStartNode(AyStarNode *start_node, uint g)
 	printf("[AyStar] Starting A* Algorithm from node (%d, %d, %d)\n",
 		TileX(start_node->tile), TileY(start_node->tile), start_node->direction);
 #endif
-	this->OpenListAdd(NULL, start_node, 0, g);
+	this->OpenListAdd(nullptr, start_node, 0, g);
 }
 
 /**
  * Initialize an #AyStar. You should fill all appropriate fields before
  * calling #Init (see the declaration of #AyStar for which fields are internal).
  */
-void AyStar::Init(Hash_HashProc hash, uint num_buckets)
+void AyStar::Init(uint num_buckets)
 {
+	MemSetT(&neighbours, 0);
+	MemSetT(&openlist_queue, 0);
+
 	/* Allocated the Hash for the OpenList and ClosedList */
-	this->openlist_hash.Init(hash, num_buckets);
-	this->closedlist_hash.Init(hash, num_buckets);
+	this->openlist_hash.reserve(num_buckets);
+	this->closedlist_hash.reserve(num_buckets);
 
 	/* Set up our sorting queue
 	 *  BinaryHeap allocates a block of 1024 nodes

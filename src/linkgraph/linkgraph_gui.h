@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -38,11 +36,24 @@ struct LinkProperties {
  */
 class LinkGraphOverlay {
 public:
-	typedef std::map<StationID, LinkProperties> StationLinkMap;
-	typedef std::map<StationID, StationLinkMap> LinkMap;
-	typedef std::vector<std::pair<StationID, uint> > StationSupplyList;
+	struct StationSupplyInfo {
+		StationID id;
+		uint quantity;
+		Point pt;
+	};
 
-	static const uint8 LINK_COLOURS[];
+	struct LinkInfo {
+		StationID from_id;
+		StationID to_id;
+		Point from_pt;
+		Point to_pt;
+		LinkProperties prop;
+	};
+
+	typedef std::vector<StationSupplyInfo> StationSupplyList;
+	typedef std::vector<LinkInfo> LinkList;
+
+	static const uint8 LINK_COLOURS[][12];
 
 	/**
 	 * Create a link graph overlay for the specified window.
@@ -52,10 +63,13 @@ public:
 	 * @param company_mask Bitmask of companies to be shown.
 	 * @param scale Desired thickness of lines and size of station dots.
 	 */
-	LinkGraphOverlay(const Window *w, uint wid, CargoTypes cargo_mask, uint32 company_mask, uint scale) :
+	LinkGraphOverlay(Window *w, uint wid, CargoTypes cargo_mask, uint32 company_mask, uint scale) :
 			window(w), widget_id(wid), cargo_mask(cargo_mask), company_mask(company_mask), scale(scale)
 	{}
 
+	void RebuildCache(bool incremental = false);
+	bool CacheStillValid() const;
+	void MarkStationViewportLinksDirty(const Station *st);
 	void Draw(const DrawPixelInfo *dpi);
 	void SetCargoMask(CargoTypes cargo_mask);
 	void SetCompanyMask(uint32 company_mask);
@@ -70,25 +84,26 @@ public:
 	uint32 GetCompanyMask() { return this->company_mask; }
 
 protected:
-	const Window *window;              ///< Window to be drawn into.
+	Window *window;                    ///< Window to be drawn into.
 	const uint widget_id;              ///< ID of Widget in Window to be drawn to.
 	CargoTypes cargo_mask;             ///< Bitmask of cargos to be displayed.
 	uint32 company_mask;               ///< Bitmask of companies to be displayed.
-	LinkMap cached_links;              ///< Cache for links to reduce recalculation.
+	LinkList cached_links;             ///< Cache for links to reduce recalculation.
 	StationSupplyList cached_stations; ///< Cache for stations to be drawn.
+	Rect cached_region;                ///< Region covered by cached_links and cached_stations.
 	uint scale;                        ///< Width of link lines.
 	bool dirty;                        ///< Set if overlay should be rebuilt.
+	uint64 last_update_number = 0;     ///< Last window update number
 
 	Point GetStationMiddle(const Station *st) const;
 
-	void AddLinks(const Station *sta, const Station *stb);
+	void RefreshDrawCache();
 	void DrawLinks(const DrawPixelInfo *dpi) const;
 	void DrawStationDots(const DrawPixelInfo *dpi) const;
 	void DrawContent(Point pta, Point ptb, const LinkProperties &cargo) const;
 	bool IsLinkVisible(Point pta, Point ptb, const DrawPixelInfo *dpi, int padding = 0) const;
 	bool IsPointVisible(Point pt, const DrawPixelInfo *dpi, int padding = 0) const;
-	void GetWidgetDpi(DrawPixelInfo *dpi) const;
-	void RebuildCache();
+	void GetWidgetDpi(DrawPixelInfo *dpi, uint margin = 0) const;
 
 	static void AddStats(uint new_cap, uint new_usg, uint new_flow, bool new_shared, LinkProperties &cargo);
 	static void DrawVertex(int x, int y, int size, int colour, int border_colour);
@@ -104,11 +119,16 @@ public:
 	LinkGraphLegendWindow(WindowDesc *desc, int window_number);
 	void SetOverlay(LinkGraphOverlay *overlay);
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize);
-	virtual void DrawWidget(const Rect &r, int widget) const;
-	virtual bool OnTooltip(Point pt, int widget, TooltipCloseCondition close_cond);
-	virtual void OnClick(Point pt, int widget, int click_count);
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true);
+	// virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize);
+	// virtual void DrawWidget(const Rect &r, int widget) const;
+	// virtual bool OnTooltip(Point pt, int widget, TooltipCloseCondition close_cond);
+	// virtual void OnClick(Point pt, int widget, int click_count);
+	// virtual void OnInvalidateData(int data = 0, bool gui_scope = true);
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override;
+	void DrawWidget(const Rect &r, int widget) const override;
+	bool OnTooltip(Point pt, int widget, TooltipCloseCondition close_cond) override;
+	void OnClick(Point pt, int widget, int click_count) override;
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override;
 
 private:
 	LinkGraphOverlay *overlay;

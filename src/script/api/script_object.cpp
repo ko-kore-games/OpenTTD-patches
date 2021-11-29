@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,12 +15,16 @@
 #include "../../network/network.h"
 #include "../../genworld.h"
 #include "../../string_func.h"
+#include "../../string_func_extra.h"
 #include "../../strings_func.h"
+#include "../../scope_info.h"
+#include "../../map_func.h"
 
 #include "../script_storage.hpp"
 #include "../script_instance.hpp"
 #include "../script_fatalerror.hpp"
 #include "script_error.hpp"
+#include "../../debug.h"
 
 #include "../../safeguards.h"
 
@@ -36,9 +38,9 @@ static ScriptStorage *GetStorage()
 }
 
 
-/* static */ ScriptInstance *ScriptObject::ActiveInstance::active = NULL;
+/* static */ ScriptInstance *ScriptObject::ActiveInstance::active = nullptr;
 
-ScriptObject::ActiveInstance::ActiveInstance(ScriptInstance *instance)
+ScriptObject::ActiveInstance::ActiveInstance(ScriptInstance *instance) : alc_scope(instance->engine)
 {
 	this->last_active = ScriptObject::ActiveInstance::active;
 	ScriptObject::ActiveInstance::active = instance;
@@ -51,7 +53,7 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 
 /* static */ ScriptInstance *ScriptObject::GetActiveInstance()
 {
-	assert(ScriptObject::ActiveInstance::active != NULL);
+	assert(ScriptObject::ActiveInstance::active != nullptr);
 	return ScriptObject::ActiveInstance::active;
 }
 
@@ -81,6 +83,29 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 /* static */ ScriptObject *ScriptObject::GetDoCommandModeInstance()
 {
 	return GetStorage()->mode_instance;
+}
+
+/* static */ void ScriptObject::SetLastCommand(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd)
+{
+	ScriptStorage *s = GetStorage();
+	DEBUG(script, 6, "SetLastCommand company=%02d tile=%06x p1=%08x p2=%08x p3=" OTTD_PRINTFHEX64PAD " cmd=%d", s->root_company, tile, p1, p2, p3, cmd);
+	s->last_tile = tile;
+	s->last_p1 = p1;
+	s->last_p2 = p2;
+	s->last_p3 = p3;
+	s->last_cmd = cmd & CMD_ID_MASK;
+}
+
+/* static */ bool ScriptObject::CheckLastCommand(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd)
+{
+	ScriptStorage *s = GetStorage();
+	DEBUG(script, 6, "CheckLastCommand company=%02d tile=%06x p1=%08x p2=%08x p3=" OTTD_PRINTFHEX64PAD " cmd=%d", s->root_company, tile, p1, p2, p3, cmd);
+	if (s->last_tile != tile) return false;
+	if (s->last_p1 != p1) return false;
+	if (s->last_p2 != p2) return false;
+	if (s->last_p3 != p3) return false;
+	if (s->last_cmd != (cmd & CMD_ID_MASK)) return false;
+	return true;
 }
 
 /* static */ void ScriptObject::SetDoCommandCosts(Money value)
@@ -263,7 +288,7 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 {
 	char buffer[64];
 	::GetString(buffer, string, lastof(buffer));
-	::str_validate(buffer, lastof(buffer), SVS_NONE);
+	::StrMakeValidInPlace(buffer, lastof(buffer), SVS_NONE);
 	return ::stredup(buffer);
 }
 
@@ -278,7 +303,7 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 	return GetStorage()->callback_value[index];
 }
 
-/* static */ bool ScriptObject::DoCommand(TileIndex tile, uint32 p1, uint32 p2, uint cmd, const char *text, Script_SuspendCallbackProc *callback)
+/* static */ bool ScriptObject::DoCommandEx(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint cmd, const char *text, uint32 binary_length, Script_SuspendCallbackProc *callback)
 {
 	if (!ScriptObject::CanSuspend()) {
 		throw Script_FatalError("You are not allowed to execute any DoCommand (even indirect) in your constructor, Save(), Load(), and any valuator.");
@@ -289,25 +314,32 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 		return false;
 	}
 
-	if (!StrEmpty(text) && (GetCommandFlags(cmd) & CMD_STR_CTRL) == 0) {
+	std::string text_validated;
+	if (binary_length == 0 && !StrEmpty(text) && (GetCommandFlags(cmd) & CMD_STR_CTRL) == 0) {
 		/* The string must be valid, i.e. not contain special codes. Since some
 		 * can be made with GSText, make sure the control codes are removed. */
-		::str_validate(const_cast<char *>(text), text + strlen(text), SVS_NONE);
+		text_validated = text;
+		::StrMakeValidInPlace(text_validated, SVS_NONE);
+		text = text_validated.c_str();
 	}
 
 	/* Set the default callback to return a true/false result of the DoCommand */
-	if (callback == NULL) callback = &ScriptInstance::DoCommandReturn;
+	if (callback == nullptr) callback = &ScriptInstance::DoCommandReturn;
 
 	/* Are we only interested in the estimate costs? */
-	bool estimate_only = GetDoCommandMode() != NULL && !GetDoCommandMode()();
+	bool estimate_only = GetDoCommandMode() != nullptr && !GetDoCommandMode()();
 
-#ifdef ENABLE_NETWORK
 	/* Only set p2 when the command does not come from the network. */
 	if (GetCommandFlags(cmd) & CMD_CLIENT_ID && p2 == 0) p2 = UINT32_MAX;
-#endif
+
+	SCOPE_INFO_FMT([=], "ScriptObject::DoCommand: tile: %X (%d x %d), p1: 0x%X, p2: 0x%X, p3: 0x" OTTD_PRINTFHEX64 ", company: %s, cmd: 0x%X (%s), estimate_only: %d",
+			tile, TileX(tile), TileY(tile), p1, p2, p3, scope_dumper().CompanyInfo(_current_company), cmd, GetCommandName(cmd), estimate_only);
+
+	/* Store the command for command callback validation. */
+	if (!estimate_only && _networking && !_generating_world) SetLastCommand(tile, p1, p2, p3, cmd);
 
 	/* Try to perform the command. */
-	CommandCost res = ::DoCommandPInternal(tile, p1, p2, cmd, (_networking && !_generating_world) ? ScriptObject::GetActiveInstance()->GetDoCommandCallback() : NULL, text, false, estimate_only);
+	CommandCost res = ::DoCommandPScript(tile, p1, p2, p3, cmd, (_networking && !_generating_world) ? ScriptObject::GetActiveInstance()->GetDoCommandCallback() : nullptr, text, false, estimate_only, binary_length);
 
 	/* We failed; set the error and bail out */
 	if (res.Failed()) {
@@ -330,7 +362,7 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 
 	if (_generating_world) {
 		IncreaseDoCommandCosts(res.GetCost());
-		if (callback != NULL) {
+		if (callback != nullptr) {
 			/* Insert return value into to stack and throw a control code that
 			 * the return value in the stack should be used. */
 			callback(GetActiveInstance());
@@ -344,7 +376,7 @@ ScriptObject::ActiveInstance::~ActiveInstance()
 		IncreaseDoCommandCosts(res.GetCost());
 
 		/* Suspend the script player for 1+ ticks, so it simulates multiplayer. This
-		 *  both avoids confusion when a developer launched his script in a
+		 *  both avoids confusion when a developer launched the script in a
 		 *  multiplayer game, but also gives time for the GUI and human player
 		 *  to interact with the game. */
 		throw Script_Suspend(GetDoCommandDelay(), callback);

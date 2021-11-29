@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -30,13 +28,6 @@
 #include <direct.h>
 #endif /* _WIN32 || __WATCOMC__ */
 
-#ifdef __MORPHOS__
-#ifdef stderr
-#undef stderr
-#endif
-#define stderr stdout
-#endif /* __MORPHOS__ */
-
 #include "../table/strgen_tables.h"
 
 #include "../safeguards.h"
@@ -55,7 +46,11 @@ void CDECL strgen_warning(const char *s, ...)
 	va_start(va, s);
 	vseprintf(buf, lastof(buf), s, va);
 	va_end(va);
-	fprintf(stderr, LINE_NUM_FMT("warning"), _file, _cur_line, buf);
+	if (_show_todo > 0) {
+		fprintf(stderr, LINE_NUM_FMT("warning"), _file, _cur_line, buf);
+	} else {
+		fprintf(stderr, LINE_NUM_FMT("info"), _file, _cur_line, buf);
+	}
 	_warnings++;
 }
 
@@ -113,7 +108,7 @@ struct FileStringReader : StringReader {
 			StringReader(data, file, master, translation)
 	{
 		this->fh = fopen(file, "rb");
-		if (this->fh == NULL) error("Could not open %s", file);
+		if (this->fh == nullptr) error("Could not open %s", file);
 	}
 
 	/** Free/close the file. */
@@ -122,14 +117,14 @@ struct FileStringReader : StringReader {
 		fclose(this->fh);
 	}
 
-	/* virtual */ char *ReadLine(char *buffer, const char *last)
+	char *ReadLine(char *buffer, const char *last) override
 	{
 		return fgets(buffer, ClampToU16(last - buffer + 1), this->fh);
 	}
 
-	/* virtual */ void HandlePragma(char *str);
+	void HandlePragma(char *str) override;
 
-	/* virtual */ void ParseFile()
+	void ParseFile() override
 	{
 		this->StringReader::ParseFile();
 
@@ -142,7 +137,7 @@ struct FileStringReader : StringReader {
 void FileStringReader::HandlePragma(char *str)
 {
 	if (!memcmp(str, "id ", 3)) {
-		this->data.next_string_id = strtoul(str + 3, NULL, 0);
+		this->data.next_string_id = strtoul(str + 3, nullptr, 0);
 	} else if (!memcmp(str, "name ", 5)) {
 		strecpy(_lang.name, str + 5, lastof(_lang.name));
 	} else if (!memcmp(str, "ownname ", 8)) {
@@ -168,14 +163,14 @@ void FileStringReader::HandlePragma(char *str)
 		strecpy(_lang.digit_decimal_separator, strcmp(str, "{NBSP}") == 0 ? NBSP : str, lastof(_lang.digit_decimal_separator));
 	} else if (!memcmp(str, "winlangid ", 10)) {
 		const char *buf = str + 10;
-		long langid = strtol(buf, NULL, 16);
+		long langid = strtol(buf, nullptr, 16);
 		if (langid > (long)UINT16_MAX || langid < 0) {
 			error("Invalid winlangid %s", buf);
 		}
 		_lang.winlangid = (uint16)langid;
 	} else if (!memcmp(str, "grflangid ", 10)) {
 		const char *buf = str + 10;
-		long langid = strtol(buf, NULL, 16);
+		long langid = strtol(buf, nullptr, 16);
 		if (langid >= 0x7F || langid < 0) {
 			error("Invalid grflangid %s", buf);
 		}
@@ -187,7 +182,7 @@ void FileStringReader::HandlePragma(char *str)
 		for (;;) {
 			const char *s = ParseWord(&buf);
 
-			if (s == NULL) break;
+			if (s == nullptr) break;
 			if (_lang.num_genders >= MAX_NUM_GENDERS) error("Too many genders, max %d", MAX_NUM_GENDERS);
 			strecpy(_lang.genders[_lang.num_genders], s, lastof(_lang.genders[_lang.num_genders]));
 			_lang.num_genders++;
@@ -199,7 +194,7 @@ void FileStringReader::HandlePragma(char *str)
 		for (;;) {
 			const char *s = ParseWord(&buf);
 
-			if (s == NULL) break;
+			if (s == nullptr) break;
 			if (_lang.num_cases >= MAX_NUM_CASES) error("Too many cases, max %d", MAX_NUM_CASES);
 			strecpy(_lang.cases[_lang.num_cases], s, lastof(_lang.cases[_lang.num_cases]));
 			_lang.num_cases++;
@@ -212,10 +207,10 @@ void FileStringReader::HandlePragma(char *str)
 bool CompareFiles(const char *n1, const char *n2)
 {
 	FILE *f2 = fopen(n2, "rb");
-	if (f2 == NULL) return false;
+	if (f2 == nullptr) return false;
 
 	FILE *f1 = fopen(n1, "rb");
-	if (f1 == NULL) {
+	if (f1 == nullptr) {
 		fclose(f2);
 		error("can't open %s", n1);
 	}
@@ -253,7 +248,7 @@ struct FileWriter {
 		this->filename = stredup(filename);
 		this->fh = fopen(this->filename, "wb");
 
-		if (this->fh == NULL) {
+		if (this->fh == nullptr) {
 			error("Could not open %s", this->filename);
 		}
 	}
@@ -262,14 +257,14 @@ struct FileWriter {
 	void Finalise()
 	{
 		fclose(this->fh);
-		this->fh = NULL;
+		this->fh = nullptr;
 	}
 
 	/** Make sure the file is closed. */
 	virtual ~FileWriter()
 	{
 		/* If we weren't closed an exception was thrown, so remove the temporary file. */
-		if (fh != NULL) {
+		if (fh != nullptr) {
 			fclose(this->fh);
 			unlink(this->filename);
 		}
@@ -282,13 +277,14 @@ struct HeaderFileWriter : HeaderWriter, FileWriter {
 	const char *real_filename;
 	/** The previous string ID that was printed. */
 	int prev;
+	uint total_strings;
 
 	/**
 	 * Open a file to write to.
 	 * @param filename The file to open.
 	 */
 	HeaderFileWriter(const char *filename) : FileWriter("tmp.xxx"),
-		real_filename(stredup(filename)), prev(0)
+		real_filename(stredup(filename)), prev(0), total_strings(0)
 	{
 		fprintf(this->fh, "/* This file is automatically generated. Do not modify */\n\n");
 		fprintf(this->fh, "#ifndef TABLE_STRINGS_H\n");
@@ -306,6 +302,7 @@ struct HeaderFileWriter : HeaderWriter, FileWriter {
 		if (prev + 1 != stringid) fprintf(this->fh, "\n");
 		fprintf(this->fh, "static const StringID %s = 0x%X;\n", name, stringid);
 		prev = stringid;
+		total_strings++;
 	}
 
 	void Finalise(const StringData &data)
@@ -313,15 +310,17 @@ struct HeaderFileWriter : HeaderWriter, FileWriter {
 		/* Find the plural form with the most amount of cases. */
 		int max_plural_forms = 0;
 		for (uint i = 0; i < lengthof(_plural_forms); i++) {
-			max_plural_forms = max(max_plural_forms, _plural_forms[i].plural_count);
+			max_plural_forms = std::max(max_plural_forms, _plural_forms[i].plural_count);
 		}
 
 		fprintf(this->fh,
 			"\n"
 			"static const uint LANGUAGE_PACK_VERSION     = 0x%X;\n"
-			"static const uint LANGUAGE_MAX_PLURAL       = %d;\n"
-			"static const uint LANGUAGE_MAX_PLURAL_FORMS = %d;\n\n",
-			(uint)data.Version(), (uint)lengthof(_plural_forms), max_plural_forms
+			"static const uint LANGUAGE_MAX_PLURAL       = %u;\n"
+			"static const uint LANGUAGE_MAX_PLURAL_FORMS = %d;\n"
+			"static const uint LANGUAGE_TOTAL_STRINGS    = %u;\n"
+			"\n",
+			(uint)data.Version(), (uint)lengthof(_plural_forms), max_plural_forms, total_strings
 		);
 
 		fprintf(this->fh, "#endif /* TABLE_STRINGS_H */\n");
@@ -399,11 +398,13 @@ static inline char *mkpath(char *buf, const char *last, const char *path, const 
 	return buf;
 }
 
-#if defined(__MINGW32__)
+#if defined(_WIN32)
 /**
  * On MingW, it is common that both / as \ are accepted in the
  * params. To go with those flow, we rewrite all incoming /
- * simply to \, so internally we can safely assume \.
+ * simply to \, so internally we can safely assume \, and do
+ * this for all Windows machines to keep identical behaviour,
+ * no matter what your compiler was.
  */
 static inline char *replace_pathsep(char *s)
 {
@@ -423,7 +424,7 @@ static const OptionData _opts[] = {
 	  GETOPT_NOVAL(     't',  "--todo"),
 	  GETOPT_NOVAL(     'w',  "--warning"),
 	  GETOPT_NOVAL(     'h',  "--help"),
-	GETOPT_GENERAL('h', '?',  NULL,               ODF_NO_VALUE),
+	GETOPT_GENERAL('h', '?',  nullptr,            ODF_NO_VALUE),
 	  GETOPT_VALUE(     's',  "--source_dir"),
 	  GETOPT_VALUE(     'd',  "--dest_dir"),
 	GETOPT_END(),
@@ -433,7 +434,7 @@ int CDECL main(int argc, char *argv[])
 {
 	char pathbuf[MAX_PATH];
 	const char *src_dir = ".";
-	const char *dest_dir = NULL;
+	const char *dest_dir = nullptr;
 
 	GetOptData mgo(argc - 1, argv + 1, _opts);
 	for (;;) {
@@ -517,7 +518,7 @@ int CDECL main(int argc, char *argv[])
 		}
 	}
 
-	if (dest_dir == NULL) dest_dir = src_dir; // if dest_dir is not specified, it equals src_dir
+	if (dest_dir == nullptr) dest_dir = src_dir; // if dest_dir is not specified, it equals src_dir
 
 	try {
 		/* strgen has two modes of operation. If no (free) arguments are passed
@@ -556,17 +557,17 @@ int CDECL main(int argc, char *argv[])
 
 				const char *translation = replace_pathsep(mgo.argv[i]);
 				const char *file = strrchr(translation, PATHSEPCHAR);
-				FileStringReader translation_reader(data, translation, false, file == NULL || strcmp(file + 1, "english.txt") != 0);
+				FileStringReader translation_reader(data, translation, false, file == nullptr || strcmp(file + 1, "english.txt") != 0);
 				translation_reader.ParseFile(); // target file
 				if (_errors != 0) return 1;
 
 				/* get the targetfile, strip any directories and append to destination path */
 				r = strrchr(mgo.argv[i], PATHSEPCHAR);
-				mkpath(pathbuf, lastof(pathbuf), dest_dir, (r != NULL) ? &r[1] : mgo.argv[i]);
+				mkpath(pathbuf, lastof(pathbuf), dest_dir, (r != nullptr) ? &r[1] : mgo.argv[i]);
 
 				/* rename the .txt (input-extension) to .lng */
 				r = strrchr(pathbuf, '.');
-				if (r == NULL || strcmp(r, ".txt") != 0) r = strchr(pathbuf, '\0');
+				if (r == nullptr || strcmp(r, ".txt") != 0) r = strchr(pathbuf, '\0');
 				strecpy(r, ".lng", lastof(pathbuf));
 
 				LanguageFileWriter writer(pathbuf);

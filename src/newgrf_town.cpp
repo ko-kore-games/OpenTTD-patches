@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,7 +14,7 @@
 
 #include "safeguards.h"
 
-/* virtual */ uint32 TownScopeResolver::GetVariable(byte variable, uint32 parameter, bool *available) const
+/* virtual */ uint32 TownScopeResolver::GetVariable(byte variable, uint32 parameter, GetVariableExtra *extra) const
 {
 	switch (variable) {
 		/* Larger towns */
@@ -33,7 +31,7 @@
 			/* Check the persistent storage for the GrfID stored in register 100h. */
 			uint32 grfid = GetRegister(0x100);
 			if (grfid == 0xFFFFFFFF) {
-				if (this->ro.grffile == NULL) return 0;
+				if (this->ro.grffile == nullptr) return 0;
 				grfid = this->ro.grffile->grfid;
 			}
 
@@ -115,7 +113,7 @@
 
 	DEBUG(grf, 1, "Unhandled town variable 0x%X", variable);
 
-	*available = false;
+	extra->available = false;
 	return UINT_MAX;
 }
 
@@ -123,9 +121,9 @@
 {
 	if (this->readonly) return;
 
-	assert(this->t != NULL);
+	assert(this->t != nullptr);
 	/* We can't store anything if the caller has no #GRFFile. */
-	if (this->ro.grffile == NULL) return;
+	if (this->ro.grffile == nullptr) return;
 
 	/* Check the persistent storage for the GrfID stored in register 100h. */
 	uint32 grfid = GetRegister(0x100);
@@ -148,6 +146,30 @@
 	PersistentStorage *psa = new PersistentStorage(grfid, GSF_FAKE_TOWNS, this->t->xy);
 	psa->StoreValue(pos, value);
 	t->psa_list.push_back(psa);
+}
+
+/* virtual */ uint32 FakeTownScopeResolver::GetVariable(byte variable, uint32 parameter, GetVariableExtra *extra) const
+{
+	switch (variable) {
+		/* Town index */
+		case 0x41: return 0xFFFF;
+
+		case 0x40: case 0x7C: case 0x80: case 0x81: case 0x82: case 0x83: case 0x8A: case 0x92:
+		case 0x93: case 0x94: case 0x95: case 0x96: case 0x97: case 0x98: case 0x99: case 0x9A:
+		case 0x9B: case 0x9C: case 0x9D: case 0x9E: case 0x9F: case 0xA0: case 0xA1: case 0xA2:
+		case 0xA3: case 0xA4: case 0xA5: case 0xA6: case 0xA7: case 0xA8: case 0xA9: case 0xAA:
+		case 0xAB: case 0xAC: case 0xAD: case 0xAE: case 0xB2: case 0xB6: case 0xB9: case 0xBA:
+		case 0xBB: case 0xBC: case 0xBD: case 0xBE: case 0xBF: case 0xC0: case 0xC1: case 0xC2:
+		case 0xC3: case 0xC4: case 0xC5: case 0xC6: case 0xC7: case 0xC8: case 0xC9: case 0xCA:
+		case 0xCB: case 0xCC: case 0xCD: case 0xCE: case 0xCF: case 0xD0: case 0xD1: case 0xD2:
+		case 0xD3: case 0xD4: case 0xD5:
+			return 0;
+	}
+
+	DEBUG(grf, 1, "Unhandled town variable 0x%X", variable);
+
+	extra->available = false;
+	return UINT_MAX;
 }
 
 /**

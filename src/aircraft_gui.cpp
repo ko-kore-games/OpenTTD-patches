@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -36,7 +34,7 @@ void DrawAircraftDetails(const Aircraft *v, int left, int right, int y)
 	int y_offset = (v->Next()->cargo_cap != 0) ? -(FONT_HEIGHT_NORMAL + 1): 0;
 	Money feeder_share = 0;
 
-	for (const Aircraft *u = v; u != NULL; u = u->Next()) {
+	for (const Aircraft *u = v; u != nullptr; u = u->Next()) {
 		if (u->IsNormalAircraft()) {
 			SetDParam(0, u->engine_type);
 			SetDParam(1, u->build_year);
@@ -86,8 +84,7 @@ void DrawAircraftImage(const Vehicle *v, int left, int right, int y, VehicleID s
 	VehicleSpriteSeq seq;
 	v->GetImage(rtl ? DIR_E : DIR_W, image_type, &seq);
 
-	Rect rect;
-	seq.GetBounds(&rect);
+	Rect16 rect = seq.GetBounds();
 
 	int width = UnScaleGUI(rect.right - rect.left + 1);
 	int x_offs = UnScaleGUI(rect.left);
@@ -102,7 +99,7 @@ void DrawAircraftImage(const Vehicle *v, int left, int right, int y, VehicleID s
 	if (helicopter) {
 		const Aircraft *a = Aircraft::From(v);
 		VehicleSpriteSeq rotor_seq;
-		GetCustomRotorSprite(a, true, image_type, &rotor_seq);
+		GetCustomRotorSprite(a, image_type, &rotor_seq);
 		if (!rotor_seq.IsValid()) rotor_seq.Set(SPR_ROTOR_STOPPED);
 		heli_offs = ScaleGUITrad(5);
 		rotor_seq.Draw(x, y + y_offs - heli_offs, PAL_NONE, false);

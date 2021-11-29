@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -29,15 +27,15 @@ static inline bool HasRailCatenary(RailType rt)
  * Test if we should draw rail catenary
  * @param rt Rail type to test
  */
-static inline bool HasRailCatenaryDrawn(RailType rt)
+static inline bool HasRailCatenaryDrawn(RailType rt, RailType secondary = INVALID_RAILTYPE)
 {
-	return HasRailCatenary(rt) && !IsInvisibilitySet(TO_CATENARY) && !_settings_game.vehicle.disable_elrails;
+	return !IsInvisibilitySet(TO_CATENARY) && !_settings_game.vehicle.disable_elrails && (HasRailCatenary(rt) || (secondary != INVALID_RAILTYPE && HasRailCatenary(secondary)));
 }
 
 void DrawRailCatenary(const TileInfo *ti);
 void DrawRailCatenaryOnTunnel(const TileInfo *ti);
 void DrawRailCatenaryOnBridge(const TileInfo *ti);
 
-bool SettingsDisableElrail(int32 p1); ///< _settings_game.disable_elrail callback
+void SettingsDisableElrail(int32 new_value); ///< _settings_game.disable_elrail callback
 
 #endif /* ELRAIL_FUNC_H */

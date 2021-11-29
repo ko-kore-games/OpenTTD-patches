@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -22,17 +20,16 @@
 
 #include "../safeguards.h"
 
-static char _game_saveload_name[64];
-static int  _game_saveload_version;
-static char _game_saveload_settings[1024];
-static bool _game_saveload_is_random;
+static std::string _game_saveload_name;
+static int         _game_saveload_version;
+static std::string _game_saveload_settings;
+static bool        _game_saveload_is_random;
 
 static const SaveLoad _game_script[] = {
-	    SLEG_STR(_game_saveload_name,        SLE_STRB),
-	    SLEG_STR(_game_saveload_settings,    SLE_STRB),
+	   SLEG_SSTR(_game_saveload_name,         SLE_STR),
+	   SLEG_SSTR(_game_saveload_settings,     SLE_STR),
 	    SLEG_VAR(_game_saveload_version,   SLE_UINT32),
 	    SLEG_VAR(_game_saveload_is_random,   SLE_BOOL),
-	     SLE_END()
 };
 
 static void SaveReal_GSDT(int *index_ptr)
@@ -40,31 +37,30 @@ static void SaveReal_GSDT(int *index_ptr)
 	GameConfig *config = GameConfig::GetConfig();
 
 	if (config->HasScript()) {
-		strecpy(_game_saveload_name, config->GetName(), lastof(_game_saveload_name));
+		_game_saveload_name = config->GetName();
 		_game_saveload_version = config->GetVersion();
 	} else {
 		/* No GameScript is configured for this so store an empty string as name. */
-		_game_saveload_name[0] = '\0';
+		_game_saveload_name.clear();
 		_game_saveload_version = -1;
 	}
 
 	_game_saveload_is_random = config->IsRandom();
-	_game_saveload_settings[0] = '\0';
-	config->SettingsToString(_game_saveload_settings, lastof(_game_saveload_settings));
+	_game_saveload_settings = config->SettingsToString();
 
-	SlObject(NULL, _game_script);
+	SlObject(nullptr, _game_script);
 	Game::Save();
 }
 
 static void Load_GSDT()
 {
 	/* Free all current data */
-	GameConfig::GetConfig(GameConfig::SSS_FORCE_GAME)->Change(NULL);
+	GameConfig::GetConfig(GameConfig::SSS_FORCE_GAME)->Change(nullptr);
 
 	if ((CompanyID)SlIterateArray() == (CompanyID)-1) return;
 
 	_game_saveload_version = -1;
-	SlObject(NULL, _game_script);
+	SlObject(nullptr, _game_script);
 
 	if (_networking && !_network_server) {
 		GameInstance::LoadEmpty();
@@ -73,26 +69,25 @@ static void Load_GSDT()
 	}
 
 	GameConfig *config = GameConfig::GetConfig(GameConfig::SSS_FORCE_GAME);
-	if (StrEmpty(_game_saveload_name)) {
-	} else {
-		config->Change(_game_saveload_name, _game_saveload_version, false, _game_saveload_is_random);
+	if (!_game_saveload_name.empty()) {
+		config->Change(_game_saveload_name.c_str(), _game_saveload_version, false, _game_saveload_is_random);
 		if (!config->HasScript()) {
 			/* No version of the GameScript available that can load the data. Try to load the
 			 * latest version of the GameScript instead. */
-			config->Change(_game_saveload_name, -1, false, _game_saveload_is_random);
+			config->Change(_game_saveload_name.c_str(), -1, false, _game_saveload_is_random);
 			if (!config->HasScript()) {
-				if (strcmp(_game_saveload_name, "%_dummy") != 0) {
-					DEBUG(script, 0, "The savegame has an GameScript by the name '%s', version %d which is no longer available.", _game_saveload_name, _game_saveload_version);
+				if (_game_saveload_name.compare("%_dummy") != 0) {
+					DEBUG(script, 0, "The savegame has an GameScript by the name '%s', version %d which is no longer available.", _game_saveload_name.c_str(), _game_saveload_version);
 					DEBUG(script, 0, "This game will continue to run without GameScript.");
 				} else {
 					DEBUG(script, 0, "The savegame had no GameScript available at the time of saving.");
 					DEBUG(script, 0, "This game will continue to run without GameScript.");
 				}
 			} else {
-				DEBUG(script, 0, "The savegame has an GameScript by the name '%s', version %d which is no longer available.", _game_saveload_name, _game_saveload_version);
+				DEBUG(script, 0, "The savegame has an GameScript by the name '%s', version %d which is no longer available.", _game_saveload_name.c_str(), _game_saveload_version);
 				DEBUG(script, 0, "The latest version of that GameScript has been loaded instead, but it'll not get the savegame data as it's incompatible.");
 			}
-			/* Make sure the GameScript doesn't get the saveload data, as he was not the
+			/* Make sure the GameScript doesn't get the saveload data, as it was not the
 			 *  writer of the saveload data in the first place */
 			_game_saveload_version = -1;
 		}
@@ -110,34 +105,32 @@ static void Load_GSDT()
 static void Save_GSDT()
 {
 	SlSetArrayIndex(0);
-	SlAutolength((AutolengthProc *)SaveReal_GSDT, NULL);
+	SlAutolength((AutolengthProc *)SaveReal_GSDT, nullptr);
 }
 
 extern GameStrings *_current_data;
 
-static const char *_game_saveload_string;
+static std::string _game_saveload_string;
 static uint _game_saveload_strings;
 
 static const SaveLoad _game_language_header[] = {
-	SLEG_STR(_game_saveload_string, SLE_STR),
-	SLEG_VAR(_game_saveload_strings, SLE_UINT32),
-	 SLE_END()
+	SLEG_SSTR(_game_saveload_string, SLE_STR),
+	 SLEG_VAR(_game_saveload_strings, SLE_UINT32),
 };
 
 static const SaveLoad _game_language_string[] = {
-	SLEG_STR(_game_saveload_string, SLE_STR | SLF_ALLOW_CONTROL),
-	 SLE_END()
+	SLEG_SSTR(_game_saveload_string, SLE_STR | SLF_ALLOW_CONTROL),
 };
 
-static void SaveReal_GSTR(LanguageStrings *ls)
+static void SaveReal_GSTR(const LanguageStrings *ls)
 {
-	_game_saveload_string  = ls->language;
-	_game_saveload_strings = ls->lines.Length();
+	_game_saveload_string  = ls->language.c_str();
+	_game_saveload_strings = (uint)ls->lines.size();
 
-	SlObject(NULL, _game_language_header);
-	for (uint i = 0; i < _game_saveload_strings; i++) {
-		_game_saveload_string = ls->lines[i];
-		SlObject(NULL, _game_language_string);
+	SlObject(nullptr, _game_language_header);
+	for (const auto &i : ls->lines) {
+		_game_saveload_string = i.c_str();
+		SlObject(nullptr, _game_language_string);
 	}
 }
 
@@ -147,22 +140,22 @@ static void Load_GSTR()
 	_current_data = new GameStrings();
 
 	while (SlIterateArray() != -1) {
-		_game_saveload_string = NULL;
-		SlObject(NULL, _game_language_header);
+		_game_saveload_string.clear();
+		SlObject(nullptr, _game_language_header);
 
-		LanguageStrings *ls = new LanguageStrings(_game_saveload_string != NULL ? _game_saveload_string : "");
+		LanguageStrings ls(_game_saveload_string);
 		for (uint i = 0; i < _game_saveload_strings; i++) {
-			SlObject(NULL, _game_language_string);
-			*ls->lines.Append() = stredup(_game_saveload_string != NULL ? _game_saveload_string : "");
+			SlObject(nullptr, _game_language_string);
+			ls.lines.emplace_back(_game_saveload_string);
 		}
 
-		*_current_data->raw_strings.Append() = ls;
+		_current_data->raw_strings.push_back(std::move(ls));
 	}
 
-	/* If there were no strings in the savegame, set GameStrings to NULL */
-	if (_current_data->raw_strings.Length() == 0) {
+	/* If there were no strings in the savegame, set GameStrings to nullptr */
+	if (_current_data->raw_strings.size() == 0) {
 		delete _current_data;
-		_current_data = NULL;
+		_current_data = nullptr;
 		return;
 	}
 
@@ -172,15 +165,17 @@ static void Load_GSTR()
 
 static void Save_GSTR()
 {
-	if (_current_data == NULL) return;
+	if (_current_data == nullptr) return;
 
-	for (uint i = 0; i < _current_data->raw_strings.Length(); i++) {
+	for (uint i = 0; i < _current_data->raw_strings.size(); i++) {
 		SlSetArrayIndex(i);
-		SlAutolength((AutolengthProc *)SaveReal_GSTR, _current_data->raw_strings[i]);
+		SlAutolength((AutolengthProc *)SaveReal_GSTR, &_current_data->raw_strings[i]);
 	}
 }
 
-extern const ChunkHandler _game_chunk_handlers[] = {
-	{ 'GSTR', Save_GSTR, Load_GSTR, NULL, NULL, CH_ARRAY },
-	{ 'GSDT', Save_GSDT, Load_GSDT, NULL, NULL, CH_ARRAY | CH_LAST},
+static const ChunkHandler game_chunk_handlers[] = {
+	{ 'GSTR', Save_GSTR, Load_GSTR, nullptr, nullptr, CH_ARRAY },
+	{ 'GSDT', Save_GSDT, Load_GSDT, nullptr, nullptr, CH_ARRAY },
 };
+
+extern const ChunkHandlerTable _game_chunk_handlers(game_chunk_handlers);

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -34,17 +32,33 @@ static const CommandCost CMD_ERROR = CommandCost(INVALID_STRING_ID);
  */
 #define return_cmd_error(errcode) return CommandCost(errcode);
 
-CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags, uint32 cmd, const char *text = NULL);
-CommandCost DoCommand(const CommandContainer *container, DoCommandFlag flags);
+CommandCost DoCommandEx(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, DoCommandFlag flags, uint32 cmd, const char *text = nullptr, uint32 binary_length = 0);
 
-bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback = NULL, const char *text = NULL, bool my_cmd = true);
-bool DoCommandP(const CommandContainer *container, bool my_cmd = true);
+inline CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags, uint32 cmd, const char *text = nullptr)
+{
+	return DoCommandEx(tile, p1, p2, 0, flags, cmd, text, 0);
+}
+inline CommandCost DoCommand(const CommandContainer *container, DoCommandFlag flags)
+{
+	return DoCommandEx(container->tile, container->p1, container->p2, container->p3, flags, container->cmd & CMD_ID_MASK, container->text.c_str(), container->binary_length);
+}
 
-CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd, bool estimate_only);
+bool DoCommandPEx(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandCallback *callback, const char *text, uint32 binary_length, bool my_cmd = true);
 
-#ifdef ENABLE_NETWORK
-void NetworkSendCommand(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const char *text, CompanyID company);
-#endif /* ENABLE_NETWORK */
+inline bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback = nullptr, const char *text = nullptr, bool my_cmd = true)
+{
+	return DoCommandPEx(tile, p1, p2, 0, cmd, callback, text, 0, my_cmd);
+}
+
+inline bool DoCommandP(const CommandContainer *container, bool my_cmd = true)
+{
+	return DoCommandPEx(container->tile, container->p1, container->p2, container->p3, container->cmd, container->callback, container->text.c_str(), container->binary_length, my_cmd);
+}
+
+CommandCost DoCommandPScript(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd, bool estimate_only, uint32 binary_length);
+CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd, bool estimate_only, uint32 binary_length);
+
+void NetworkSendCommand(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandCallback *callback, const char *text, CompanyID company, uint32 binary_length);
 
 extern Money _additional_cash_required;
 
@@ -68,6 +82,9 @@ static inline DoCommandFlag CommandFlagsToDCFlags(CommandFlags cmd_flags)
 	return flags;
 }
 
+void ClearCommandLog();
+char *DumpCommandLog(char *buffer, const char *last);
+
 /*** All command callbacks that exist ***/
 
 /* ai/ai_instance.cpp */
@@ -81,7 +98,7 @@ CommandCallback CcBuildBridge;
 
 /* dock_gui.cpp */
 CommandCallback CcBuildDocks;
-CommandCallback CcPlaySound_SPLAT_WATER;
+CommandCallback CcPlaySound_CONSTRUCTION_WATER;
 
 /* depot_gui.cpp */
 CommandCallback CcCloneVehicle;
@@ -102,14 +119,17 @@ CommandCallback CcPlaceSign;
 CommandCallback CcTerraform;
 CommandCallback CcGiveMoney;
 
+/* plans_gui.cpp */
+CommandCallback CcAddPlan;
+
 /* rail_gui.cpp */
-CommandCallback CcPlaySound_SPLAT_RAIL;
+CommandCallback CcPlaySound_CONSTRUCTION_RAIL;
 CommandCallback CcRailDepot;
 CommandCallback CcStation;
 CommandCallback CcBuildRailTunnel;
 
 /* road_gui.cpp */
-CommandCallback CcPlaySound_SPLAT_OTHER;
+CommandCallback CcPlaySound_CONSTRUCTION_OTHER;
 CommandCallback CcBuildRoadTunnel;
 CommandCallback CcRoadDepot;
 CommandCallback CcRoadStop;
@@ -124,5 +144,14 @@ CommandCallback CcFoundRandomTown;
 /* vehicle_gui.cpp */
 CommandCallback CcBuildPrimaryVehicle;
 CommandCallback CcStartStopVehicle;
+
+/* tbtr_template_gui_create.cpp */
+CommandCallback CcSetVirtualTrain;
+CommandCallback CcVirtualTrainWagonsMoved;
+CommandCallback CcDeleteVirtualTrain;
+
+/* build_vehicle_gui.cpp */
+CommandCallback CcAddVirtualEngine;
+CommandCallback CcMoveNewVirtualEngine;
 
 #endif /* COMMAND_FUNC_H */

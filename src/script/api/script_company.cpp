@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -29,11 +27,11 @@
 /* static */ ScriptCompany::CompanyID ScriptCompany::ResolveCompanyID(ScriptCompany::CompanyID company)
 {
 	if (company == COMPANY_SELF) {
-		if (!::Company::IsValidID((::CompanyID)_current_company)) return COMPANY_INVALID;
+		if (!::Company::IsValidID(_current_company)) return COMPANY_INVALID;
 		return (CompanyID)((byte)_current_company);
 	}
 
-	return ::Company::IsValidID((::CompanyID)company) ? company : COMPANY_INVALID;
+	return ::Company::IsValidID(company) ? company : COMPANY_INVALID;
 }
 
 /* static */ bool ScriptCompany::IsMine(ScriptCompany::CompanyID company)
@@ -45,7 +43,7 @@
 {
 	CCountedPtr<Text> counter(name);
 
-	EnforcePrecondition(false, name != NULL);
+	EnforcePrecondition(false, name != nullptr);
 	const char *text = name->GetDecodedText();
 	EnforcePreconditionEncodedText(false, text);
 	EnforcePreconditionCustomError(false, ::Utf8StringLength(text) < MAX_LENGTH_COMPANY_NAME_CHARS, ScriptError::ERR_PRECONDITION_STRING_TOO_LONG);
@@ -56,7 +54,7 @@
 /* static */ char *ScriptCompany::GetName(ScriptCompany::CompanyID company)
 {
 	company = ResolveCompanyID(company);
-	if (company == COMPANY_INVALID) return NULL;
+	if (company == COMPANY_INVALID) return nullptr;
 
 	::SetDParam(0, company);
 	return GetString(STR_COMPANY_NAME);
@@ -66,7 +64,7 @@
 {
 	CCountedPtr<Text> counter(name);
 
-	EnforcePrecondition(false, name != NULL);
+	EnforcePrecondition(false, name != nullptr);
 	const char *text = name->GetDecodedText();
 	EnforcePreconditionEncodedText(false, text);
 	EnforcePreconditionCustomError(false, ::Utf8StringLength(text) < MAX_LENGTH_PRESIDENT_NAME_CHARS, ScriptError::ERR_PRECONDITION_STRING_TOO_LONG);
@@ -118,9 +116,9 @@
 	if (quarter > EARLIEST_QUARTER) return -1;
 
 	if (quarter == CURRENT_QUARTER) {
-		return ::Company::Get((::CompanyID)company)->cur_economy.income;
+		return ::Company::Get(company)->cur_economy.income;
 	}
-	return ::Company::Get((::CompanyID)company)->old_economy[quarter - 1].income;
+	return ::Company::Get(company)->old_economy[quarter - 1].income;
 }
 
 /* static */ Money ScriptCompany::GetQuarterlyExpenses(ScriptCompany::CompanyID company, uint32 quarter)
@@ -130,9 +128,9 @@
 	if (quarter > EARLIEST_QUARTER) return -1;
 
 	if (quarter == CURRENT_QUARTER) {
-		return ::Company::Get((::CompanyID)company)->cur_economy.expenses;
+		return ::Company::Get(company)->cur_economy.expenses;
 	}
-	return ::Company::Get((::CompanyID)company)->old_economy[quarter - 1].expenses;
+	return ::Company::Get(company)->old_economy[quarter - 1].expenses;
 }
 
 /* static */ int32 ScriptCompany::GetQuarterlyCargoDelivered(ScriptCompany::CompanyID company, uint32 quarter)
@@ -142,9 +140,9 @@
 	if (quarter > EARLIEST_QUARTER) return -1;
 
 	if (quarter == CURRENT_QUARTER) {
-		return ::Company::Get((::CompanyID)company)->cur_economy.delivered_cargo.GetSum<OverflowSafeInt<int32, INT32_MAX, INT32_MIN> >();
+		return ::Company::Get(company)->cur_economy.delivered_cargo.GetSum<OverflowSafeInt32>();
 	}
-	return ::Company::Get((::CompanyID)company)->old_economy[quarter - 1].delivered_cargo.GetSum<OverflowSafeInt<int32, INT32_MAX, INT32_MIN> >();
+	return ::Company::Get(company)->old_economy[quarter - 1].delivered_cargo.GetSum<OverflowSafeInt32>();
 }
 
 /* static */ int32 ScriptCompany::GetQuarterlyPerformanceRating(ScriptCompany::CompanyID company, uint32 quarter)
@@ -154,7 +152,7 @@
 	if (quarter > EARLIEST_QUARTER) return -1;
 	if (quarter == CURRENT_QUARTER) return -1;
 
-	return ::Company::Get((::CompanyID)company)->old_economy[quarter - 1].performance_history;
+	return ::Company::Get(company)->old_economy[quarter - 1].performance_history;
 }
 
 /* static */ Money ScriptCompany::GetQuarterlyCompanyValue(ScriptCompany::CompanyID company, uint32 quarter)
@@ -164,9 +162,9 @@
 	if (quarter > EARLIEST_QUARTER) return -1;
 
 	if (quarter == CURRENT_QUARTER) {
-		return ::CalculateCompanyValue(::Company::Get((::CompanyID)company));
+		return ::CalculateCompanyValue(::Company::Get(company));
 	}
-	return ::Company::Get((::CompanyID)company)->old_economy[quarter - 1].company_value;
+	return ::Company::Get(company)->old_economy[quarter - 1].company_value;
 }
 
 
@@ -175,7 +173,7 @@
 	company = ResolveCompanyID(company);
 	if (company == COMPANY_INVALID) return -1;
 
-	return ::Company::Get((CompanyID)company)->money;
+	return ::Company::Get(company)->money;
 }
 
 /* static */ Money ScriptCompany::GetLoanAmount()
@@ -206,8 +204,10 @@
 
 	if (loan == GetLoanAmount()) return true;
 
+	Money amount = abs(loan - GetLoanAmount());
+
 	return ScriptObject::DoCommand(0,
-			abs(loan - GetLoanAmount()), 2,
+			amount >> 32, (amount & 0xFFFFFFFC) | 2,
 			(loan > GetLoanAmount()) ? CMD_INCREASE_LOAN : CMD_DECREASE_LOAN);
 }
 
@@ -226,17 +226,19 @@
 	return GetLoanAmount() == loan;
 }
 
-/* static */ bool ScriptCompany::ChangeBankBalance(CompanyID company, Money delta, ExpensesType expenses_type)
+/* static */ bool ScriptCompany::ChangeBankBalance(CompanyID company, Money delta, ExpensesType expenses_type, TileIndex tile)
 {
 	EnforcePrecondition(false, ScriptObject::GetCompany() == OWNER_DEITY);
 	EnforcePrecondition(false, expenses_type < (ExpensesType)::EXPENSES_END);
 	EnforcePrecondition(false, (int64)delta >= INT32_MIN);
 	EnforcePrecondition(false, (int64)delta <= INT32_MAX);
+	EnforcePrecondition(false, tile == INVALID_TILE || ::IsValidTile(tile));
 
 	company = ResolveCompanyID(company);
 	EnforcePrecondition(false, company != COMPANY_INVALID);
 
-	return ScriptObject::DoCommand(0, (uint32)(delta), company | expenses_type << 8 , CMD_CHANGE_BANK_BALANCE);
+	/* Network commands only allow 0 to indicate invalid tiles, not INVALID_TILE */
+	return ScriptObject::DoCommand(tile == INVALID_TILE ? 0 : tile , (uint32)(delta), company | expenses_type << 8 , CMD_CHANGE_BANK_BALANCE);
 }
 
 /* static */ bool ScriptCompany::BuildCompanyHQ(TileIndex tile)
@@ -252,13 +254,13 @@
 	company = ResolveCompanyID(company);
 	if (company == COMPANY_INVALID) return INVALID_TILE;
 
-	TileIndex loc = ::Company::Get((CompanyID)company)->location_of_HQ;
+	TileIndex loc = ::Company::Get(company)->location_of_HQ;
 	return (loc == 0) ? INVALID_TILE : loc;
 }
 
 /* static */ bool ScriptCompany::SetAutoRenewStatus(bool autorenew)
 {
-	return ScriptObject::DoCommand(0, ::GetCompanySettingIndex("company.engine_renew"), autorenew ? 1 : 0, CMD_CHANGE_COMPANY_SETTING);
+	return ScriptObject::DoCommand(0, 0, autorenew ? 1 : 0, CMD_CHANGE_COMPANY_SETTING, "company.engine_renew");
 }
 
 /* static */ bool ScriptCompany::GetAutoRenewStatus(CompanyID company)
@@ -266,12 +268,12 @@
 	company = ResolveCompanyID(company);
 	if (company == COMPANY_INVALID) return false;
 
-	return ::Company::Get((CompanyID)company)->settings.engine_renew;
+	return ::Company::Get(company)->settings.engine_renew;
 }
 
 /* static */ bool ScriptCompany::SetAutoRenewMonths(int16 months)
 {
-	return ScriptObject::DoCommand(0, ::GetCompanySettingIndex("company.engine_renew_months"), months, CMD_CHANGE_COMPANY_SETTING);
+	return ScriptObject::DoCommand(0, 0, months, CMD_CHANGE_COMPANY_SETTING, "company.engine_renew_months");
 }
 
 /* static */ int16 ScriptCompany::GetAutoRenewMonths(CompanyID company)
@@ -279,14 +281,14 @@
 	company = ResolveCompanyID(company);
 	if (company == COMPANY_INVALID) return 0;
 
-	return ::Company::Get((CompanyID)company)->settings.engine_renew_months;
+	return ::Company::Get(company)->settings.engine_renew_months;
 }
 
 /* static */ bool ScriptCompany::SetAutoRenewMoney(Money money)
 {
 	EnforcePrecondition(false, money >= 0);
 	EnforcePrecondition(false, (int64)money <= UINT32_MAX);
-	return ScriptObject::DoCommand(0, ::GetCompanySettingIndex("company.engine_renew_money"), money, CMD_CHANGE_COMPANY_SETTING);
+	return ScriptObject::DoCommand(0, 0, money, CMD_CHANGE_COMPANY_SETTING, "company.engine_renew_money");
 }
 
 /* static */ Money ScriptCompany::GetAutoRenewMoney(CompanyID company)
@@ -294,7 +296,7 @@
 	company = ResolveCompanyID(company);
 	if (company == COMPANY_INVALID) return 0;
 
-	return ::Company::Get((CompanyID)company)->settings.engine_renew_money;
+	return ::Company::Get(company)->settings.engine_renew_money;
 }
 
 /* static */ bool ScriptCompany::SetPrimaryLiveryColour(LiveryScheme scheme, Colours colour)
@@ -312,7 +314,7 @@
 	if ((::LiveryScheme)scheme < LS_BEGIN || (::LiveryScheme)scheme >= LS_END) return COLOUR_INVALID;
 
 	const Company *c = ::Company::GetIfValid(_current_company);
-	if (c == NULL) return COLOUR_INVALID;
+	if (c == nullptr) return COLOUR_INVALID;
 
 	return (ScriptCompany::Colours)c->livery[scheme].colour1;
 }
@@ -322,7 +324,7 @@
 	if ((::LiveryScheme)scheme < LS_BEGIN || (::LiveryScheme)scheme >= LS_END) return COLOUR_INVALID;
 
 	const Company *c = ::Company::GetIfValid(_current_company);
-	if (c == NULL) return COLOUR_INVALID;
+	if (c == nullptr) return COLOUR_INVALID;
 
 	return (ScriptCompany::Colours)c->livery[scheme].colour2;
 }

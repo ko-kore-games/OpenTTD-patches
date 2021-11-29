@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -19,8 +17,8 @@ typedef uint32 VehicleID;
 
 static const int GROUND_ACCELERATION = 9800; ///< Acceleration due to gravity, 9.8 m/s^2
 
-/** Available vehicle types. */
-enum VehicleType {
+/** Available vehicle types. It needs to be 8bits, because we save and load it as such */
+enum VehicleType : byte {
 	VEH_BEGIN,
 
 	VEH_TRAIN = VEH_BEGIN,        ///< %Train vehicle type.
@@ -39,8 +37,6 @@ enum VehicleType {
 DECLARE_POSTFIX_INCREMENT(VehicleType)
 /** Helper information for extract tool. */
 template <> struct EnumPropsT<VehicleType> : MakeEnumPropsT<VehicleType, byte, VEH_TRAIN, VEH_END, VEH_INVALID, 3> {};
-/** It needs to be 8bits, because we save and load it as such */
-typedef SimpleTinyEnumT<VehicleType, byte> VehicleTypeByte;
 
 struct Vehicle;
 struct Train;
@@ -53,36 +49,63 @@ struct DisasterVehicle;
 /** Base vehicle class. */
 struct BaseVehicle
 {
-	VehicleTypeByte type;    ///< Type of vehicle
+	VehicleType type; ///< Type of vehicle
 };
 
 static const VehicleID INVALID_VEHICLE = 0xFFFFF; ///< Constant representing a non-existing vehicle.
 
 /** Pathfinding option states */
 enum VehiclePathFinders {
-	VPF_OPF  = 0, ///< The Original PathFinder (only for ships)
+	// Original PathFinder (OPF) used to be 0
 	VPF_NPF  = 1, ///< New PathFinder
 	VPF_YAPF = 2, ///< Yet Another PathFinder
 };
 
 /** Flags to add to p1 for goto depot commands. */
 enum DepotCommand {
-	DEPOT_SERVICE       = (1U << 28), ///< The vehicle will leave the depot right after arrival (serivce only)
+	DEPOT_SELL          = (1U << 25), ///< Go to depot and sell order
+	DEPOT_CANCEL        = (1U << 26), ///< Cancel depot/service order
+	DEPOT_SPECIFIC      = (1U << 27), ///< Send vehicle to specific depot
+	DEPOT_SERVICE       = (1U << 28), ///< The vehicle will leave the depot right after arrival (service only)
 	DEPOT_MASS_SEND     = (1U << 29), ///< Tells that it's a mass send to depot command (type in VLW flag)
 	DEPOT_DONT_CANCEL   = (1U << 30), ///< Don't cancel current goto depot command if any
 	DEPOT_LOCATE_HANGAR = (1U << 31), ///< Find another airport if the target one lacks a hangar
-	DEPOT_COMMAND_MASK  = 0xFU << 28,
+	DEPOT_COMMAND_MASK  = 0x7FU << 25,
 };
 
-static const uint MAX_LENGTH_VEHICLE_NAME_CHARS = 32; ///< The maximum length of a vehicle name in characters including '\0'
+static const uint MAX_LENGTH_VEHICLE_NAME_CHARS = 128; ///< The maximum length of a vehicle name in characters including '\0'
 
 /** The length of a vehicle in tile units. */
 static const uint VEHICLE_LENGTH = 8;
+
+/**
+ * The different types of breakdowns
+ *
+ * Aircraft have totally different breakdowns, so we use aliases to make things clearer
+ */
+enum BreakdownType {
+	BREAKDOWN_CRITICAL  = 0, ///< Old style breakdown (black smoke)
+	BREAKDOWN_EM_STOP   = 1, ///< Emergency stop
+	BREAKDOWN_LOW_SPEED = 2, ///< Lower max speed
+	BREAKDOWN_LOW_POWER = 3, ///< Power reduction
+	BREAKDOWN_RV_CRASH  = 4, ///< Train hit road vehicle
+	BREAKDOWN_BRAKE_OVERHEAT = 5, ///< Train brakes overheated due to excessive slope or speed change
+
+	BREAKDOWN_AIRCRAFT_SPEED      = BREAKDOWN_CRITICAL,  ///< Lower speed until the next airport
+	BREAKDOWN_AIRCRAFT_DEPOT      = BREAKDOWN_EM_STOP,   ///< We have to visit a depot at the next airport
+	BREAKDOWN_AIRCRAFT_EM_LANDING = BREAKDOWN_LOW_SPEED, ///< Emergency landing at the closest airport (with hangar!) we can find
+};
 
 /** Vehicle acceleration models. */
 enum AccelerationModel {
 	AM_ORIGINAL,
 	AM_REALISTIC,
+};
+
+/** Train braking models. */
+enum TrainBrakingModel {
+	TBM_ORIGINAL,
+	TBM_REALISTIC,
 };
 
 /** Visualisation contexts of vehicles and engines. */

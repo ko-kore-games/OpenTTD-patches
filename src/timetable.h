@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,9 +12,23 @@
 
 #include "date_type.h"
 #include "vehicle_type.h"
+#include <vector>
+#include <tuple>
 
 void ShowTimetableWindow(const Vehicle *v);
 void UpdateVehicleTimetable(Vehicle *v, bool travelling);
-void SetTimetableParams(int param1, int param2, Ticks ticks);
+void SetTimetableParams(int first_param, Ticks ticks);
+
+struct TimetableProgress {
+	VehicleID id;
+	int order_count;
+	int order_ticks;
+	int cumulative_ticks;
+
+	bool IsValidForSeparation() const { return this->cumulative_ticks >= 0; }
+	bool operator<(const TimetableProgress& other) const { return std::tie(this->order_count, this->order_ticks, this->id) < std::tie(other.order_count, other.order_ticks, other.id); }
+};
+
+std::vector<TimetableProgress> PopulateSeparationState(const Vehicle *v_start);
 
 #endif /* TIMETABLE_H */

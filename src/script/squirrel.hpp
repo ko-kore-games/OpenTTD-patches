@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -20,16 +18,21 @@ enum ScriptType {
 	ST_GS, ///< The script is for Game scripts.
 };
 
+struct ScriptAllocator;
+
 class Squirrel {
+	friend class ScriptAllocatorScope;
+
 private:
 	typedef void (SQPrintFunc)(bool error_msg, const SQChar *message);
 
 	HSQUIRRELVM vm;          ///< The VirtualMachine instance for squirrel
 	void *global_pointer;    ///< Can be set by who ever initializes Squirrel
-	SQPrintFunc *print_func; ///< Points to either NULL, or a custom print handler
+	SQPrintFunc *print_func; ///< Points to either nullptr, or a custom print handler
 	bool crashed;            ///< True if the squirrel script made an error.
 	int overdrawn_ops;       ///< The amount of operations we have overdrawn.
 	const char *APIName;     ///< Name of the API used for this squirrel.
+	std::unique_ptr<ScriptAllocator> allocator; ///< Allocator object used by this script.
 
 	/**
 	 * The internal RunError handler. It looks up the real error and calls RunError with it.
@@ -60,12 +63,12 @@ protected:
 	/**
 	 * If a user runs 'print' inside a script, this function gets the params.
 	 */
-	static void PrintFunc(HSQUIRRELVM vm, const SQChar *s, ...);
+	static void PrintFunc(HSQUIRRELVM vm, const SQChar *s, ...) WARN_FORMAT(2, 3);
 
 	/**
 	 * If an error has to be print, this function is called.
 	 */
-	static void ErrorPrintFunc(HSQUIRRELVM vm, const SQChar *s, ...);
+	static void ErrorPrintFunc(HSQUIRRELVM vm, const SQChar *s, ...) WARN_FORMAT(2, 3);
 
 public:
 	Squirrel(const char *APIName);
@@ -93,7 +96,7 @@ public:
 	 * Adds a function to the stack. Depending on the current state this means
 	 *  either a method or a global function.
 	 */
-	void AddMethod(const char *method_name, SQFUNCTION proc, uint nparam = 0, const char *params = NULL, void *userdata = NULL, int size = 0);
+	void AddMethod(const char *method_name, SQFUNCTION proc, uint nparam = 0, const char *params = nullptr, void *userdata = nullptr, int size = 0);
 
 	/**
 	 * Adds a const to the stack. Depending on the current state this means
@@ -155,7 +158,7 @@ public:
 	 * @return False if the script crashed or returned a wrong type.
 	 */
 	bool CallMethod(HSQOBJECT instance, const char *method_name, HSQOBJECT *ret, int suspend);
-	bool CallMethod(HSQOBJECT instance, const char *method_name, int suspend) { return this->CallMethod(instance, method_name, NULL, suspend); }
+	bool CallMethod(HSQOBJECT instance, const char *method_name, int suspend) { return this->CallMethod(instance, method_name, nullptr, suspend); }
 	bool CallStringMethodStrdup(HSQOBJECT instance, const char *method_name, const char **res, int suspend);
 	bool CallIntegerMethod(HSQOBJECT instance, const char *method_name, int *res, int suspend);
 	bool CallBoolMethod(HSQOBJECT instance, const char *method_name, bool *res, int suspend);
@@ -187,7 +190,7 @@ public:
 	 * @note This will only work just after a function-call from within Squirrel
 	 *  to your C++ function.
 	 */
-	static bool GetRealInstance(HSQUIRRELVM vm, SQUserPointer *ptr) { return SQ_SUCCEEDED(sq_getinstanceup(vm, 1, ptr, 0)); }
+	static bool GetRealInstance(HSQUIRRELVM vm, SQUserPointer *ptr) { return SQ_SUCCEEDED(sq_getinstanceup(vm, 1, ptr, nullptr)); }
 
 	/**
 	 * Get the Squirrel-instance pointer.
@@ -272,6 +275,33 @@ public:
 	 * Completely reset the engine; start from scratch.
 	 */
 	void Reset();
+
+	/**
+	 * Get number of bytes allocated by this VM.
+	 */
+	size_t GetAllocatedMemory() const noexcept;
+
+	void SetMemoryAllocationLimit(size_t limit) noexcept;
+};
+
+
+extern ScriptAllocator *_squirrel_allocator;
+
+class ScriptAllocatorScope {
+	ScriptAllocator *old_allocator;
+
+public:
+	ScriptAllocatorScope(const Squirrel *engine)
+	{
+		this->old_allocator = _squirrel_allocator;
+		/* This may get called with a nullptr engine, in case of a crashed script */
+		_squirrel_allocator = engine != nullptr ? engine->allocator.get() : nullptr;
+	}
+
+	~ScriptAllocatorScope()
+	{
+		_squirrel_allocator = this->old_allocator;
+	}
 };
 
 #endif /* SQUIRREL_HPP */

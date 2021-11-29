@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -22,6 +20,7 @@ enum TerraformToolbarWidgets {
 	WID_TT_DEMOLISH,                          ///< Demolish aka dynamite button.
 	WID_TT_BUY_LAND,                          ///< Buy land button.
 	WID_TT_PLANT_TREES,                       ///< Plant trees button (note: opens separate window, no place-push-button).
+	WID_TT_MEASUREMENT_TOOL,                  ///< Ruler tool button
 	WID_TT_PLACE_SIGN,                        ///< Place sign button.
 	WID_TT_PLACE_OBJECT,                      ///< Place object button.
 };
@@ -29,6 +28,7 @@ enum TerraformToolbarWidgets {
 /** Widgets of the #ScenarioEditorLandscapeGenerationWindow class. */
 enum EditorTerraformToolbarWidgets {
 	WID_ETT_SHOW_PLACE_DESERT,                   ///< Should the place desert button be shown?
+	WID_ETT_SHOW_PUBLIC_ROADS,                   ///< Should the public roads button be shown?
 	WID_ETT_START,                               ///< Used for iterations.
 	WID_ETT_DOTS = WID_ETT_START,                ///< Invisible widget for rendering the terraform size on.
 	WID_ETT_BUTTONS_START,                       ///< Start of pushable buttons.
@@ -39,11 +39,13 @@ enum EditorTerraformToolbarWidgets {
 	WID_ETT_PLACE_ROCKS,                         ///< Place rocks button.
 	WID_ETT_PLACE_DESERT,                        ///< Place desert button (in tropical climate).
 	WID_ETT_PLACE_OBJECT,                        ///< Place transmitter button.
+	WID_ETT_PLACE_HOUSE,                         ///< Place house button.
 	WID_ETT_BUTTONS_END,                         ///< End of pushable buttons.
 	WID_ETT_INCREASE_SIZE = WID_ETT_BUTTONS_END, ///< Upwards arrow button to increase terraforming size.
 	WID_ETT_DECREASE_SIZE,                       ///< Downwards arrow button to decrease terraforming size.
 	WID_ETT_NEW_SCENARIO,                        ///< Button for generating a new scenario.
 	WID_ETT_RESET_LANDSCAPE,                     ///< Button for removing all company-owned property.
+	WID_ETT_PUBLIC_ROADS,                        ///< Button for creating public roads.
 };
 
 #endif /* WIDGETS_TERRAFORM_WIDGET_H */

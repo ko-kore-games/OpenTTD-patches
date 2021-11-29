@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -109,7 +107,7 @@ public:
 
 	void End()
 	{
-		this->bucket_list = NULL;
+		this->bucket_list = nullptr;
 		this->has_no_more_items = true;
 		this->item_next = 0;
 	}
@@ -119,7 +117,7 @@ public:
 	 */
 	void FindNext()
 	{
-		if (this->bucket_list == NULL) {
+		if (this->bucket_list == nullptr) {
 			this->has_no_more_items = true;
 			return;
 		}
@@ -128,7 +126,7 @@ public:
 		if (this->bucket_list_iter == this->bucket_list->end()) {
 			this->bucket_iter++;
 			if (this->bucket_iter == this->list->buckets.end()) {
-				this->bucket_list = NULL;
+				this->bucket_list = nullptr;
 				return;
 			}
 			this->bucket_list = &(*this->bucket_iter).second;
@@ -203,7 +201,7 @@ public:
 
 	void End()
 	{
-		this->bucket_list = NULL;
+		this->bucket_list = nullptr;
 		this->has_no_more_items = true;
 		this->item_next = 0;
 	}
@@ -213,14 +211,14 @@ public:
 	 */
 	void FindNext()
 	{
-		if (this->bucket_list == NULL) {
+		if (this->bucket_list == nullptr) {
 			this->has_no_more_items = true;
 			return;
 		}
 
 		if (this->bucket_list_iter == this->bucket_list->begin()) {
 			if (this->bucket_iter == this->list->buckets.begin()) {
-				this->bucket_list = NULL;
+				this->bucket_list = nullptr;
 				return;
 			}
 			this->bucket_iter--;
@@ -470,7 +468,7 @@ int64 ScriptList::Begin()
 
 int64 ScriptList::Next()
 {
-	if (this->initialized == false) {
+	if (!this->initialized) {
 		DEBUG(script, 0, "Next() is invalid as Begin() is never called");
 		return 0;
 	}
@@ -484,7 +482,7 @@ bool ScriptList::IsEmpty()
 
 bool ScriptList::IsEnd()
 {
-	if (this->initialized == false) {
+	if (!this->initialized) {
 		DEBUG(script, 0, "IsEnd() is invalid as Begin() is never called");
 		return true;
 	}
@@ -559,10 +557,17 @@ void ScriptList::AddList(ScriptList *list)
 {
 	if (list == this) return;
 
-	ScriptListMap *list_items = &list->items;
-	for (ScriptListMap::iterator iter = list_items->begin(); iter != list_items->end(); iter++) {
-		this->AddItem((*iter).first);
-		this->SetValue((*iter).first, (*iter).second);
+	if (this->IsEmpty()) {
+		/* If this is empty, we can just take the items of the other list as is. */
+		this->items = list->items;
+		this->buckets = list->buckets;
+		this->modifications++;
+	} else {
+		ScriptListMap *list_items = &list->items;
+		for (ScriptListMap::iterator iter = list_items->begin(); iter != list_items->end(); iter++) {
+			this->AddItem((*iter).first);
+			this->SetValue((*iter).first, (*iter).second);
+		}
 	}
 }
 
@@ -827,7 +832,7 @@ SQInteger ScriptList::_nexti(HSQUIRRELVM vm)
 	SQInteger idx;
 	sq_getinteger(vm, 2, &idx);
 
-	int val = this->Next();
+	SQInteger val = this->Next();
 	if (this->IsEnd()) {
 		sq_pushnull(vm);
 		return 1;
@@ -845,7 +850,7 @@ SQInteger ScriptList::Valuate(HSQUIRRELVM vm)
 	int nparam = sq_gettop(vm) - 1;
 
 	if (nparam < 1) {
-		return sq_throwerror(vm, "You need to give a least a Valuator as parameter to ScriptList::Valuate");
+		return sq_throwerror(vm, "You need to give at least a Valuator as parameter to ScriptList::Valuate");
 	}
 
 	/* Make sure the valuator function is really a function, and not any

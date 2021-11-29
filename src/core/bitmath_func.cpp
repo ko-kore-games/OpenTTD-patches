@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,6 +12,8 @@
 
 #include "../safeguards.h"
 
+#ifndef WITH_BITMATH_BUILTINS
+
 const uint8 _ffb_64[64] = {
 	0,  0,  1,  0,  2,  0,  1,  0,
 	3,  0,  1,  0,  2,  0,  1,  0,
@@ -25,18 +25,7 @@ const uint8 _ffb_64[64] = {
 	3,  0,  1,  0,  2,  0,  1,  0,
 };
 
-/**
- * Search the first set bit in a 32 bit variable.
- *
- * This algorithm is a static implementation of a log
- * congruence search algorithm. It checks the first half
- * if there is a bit set search there further. And this
- * way further. If no bit is set return 0.
- *
- * @param x The value to search
- * @return The position of the first bit set
- */
-uint8 FindFirstBit(uint32 x)
+uint8 FindFirstBit32(uint32 x)
 {
 	if (x == 0) return 0;
 	/* The macro FIND_FIRST_BIT is better to use when your x is
@@ -52,6 +41,15 @@ uint8 FindFirstBit(uint32 x)
 
 	return pos;
 }
+
+uint8 FindFirstBit64(uint64 x)
+{
+	if (x == 0) return 0;
+	if ((x & 0x00000000ffffffffULL) != 0) return FindFirstBit32(static_cast<uint32>(x));
+	return FindFirstBit32(static_cast<uint32>(x >> 32)) + 32;
+}
+
+#endif
 
 /**
  * Search the last set bit in a 64 bit variable.

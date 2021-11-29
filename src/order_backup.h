@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,6 +15,7 @@
 #include "tile_type.h"
 #include "vehicle_type.h"
 #include "base_consist.h"
+#include "saveload/saveload_common.h"
 
 /** Unique identifier for an order backup. */
 typedef uint8 OrderBackupID;
@@ -30,20 +29,34 @@ extern OrderBackupPool _order_backup_pool;
 /** Flag to pass to the vehicle construction command when an order should be preserved. */
 static const uint32 MAKE_ORDER_BACKUP_FLAG = 1U << 31;
 
+namespace upstream_sl {
+	SaveLoadTable GetOrderBackupDescription();
+	struct BKORChunkHandler;
+}
+
 /**
  * Data for backing up an order of a vehicle so it can be
  * restored after a vehicle is rebuilt in the same depot.
  */
 struct OrderBackup : OrderBackupPool::PoolItem<&_order_backup_pool>, BaseConsist {
 private:
-	friend const struct SaveLoad *GetOrderBackupDescription(); ///< Saving and loading of order backups.
+	friend SaveLoadTable GetOrderBackupDescription(); ///< Saving and loading of order backups.
+	friend upstream_sl::SaveLoadTable upstream_sl::GetOrderBackupDescription(); ///< Saving and loading of order backups.
 	friend void Load_BKOR();   ///< Creating empty orders upon savegame loading.
+	friend upstream_sl::BKORChunkHandler;
 	uint32 user;               ///< The user that requested the backup.
 	TileIndex tile;            ///< Tile of the depot where the order was changed.
 	GroupID group;             ///< The group the vehicle was part of.
 
 	const Vehicle *clone;      ///< Vehicle this vehicle was a clone of.
 	Order *orders;             ///< The actual orders if the vehicle was not a clone.
+
+	std::vector<uint32> scheduled_dispatch;    ///< Scheduled dispatch time
+	uint32 scheduled_dispatch_duration;        ///< Scheduled dispatch duration
+	Date scheduled_dispatch_start_date;        ///< Scheduled dispatch start date
+	uint16 scheduled_dispatch_start_full_date_fract;///< Scheduled dispatch start full date fraction;
+	                                           /// this count to (DAY_TICK * _settings_game.economy.day_length_factor)
+	int32 scheduled_dispatch_max_delay;        ///< Maximum allowed delay
 
 	/** Creation for savegame restoration. */
 	OrderBackup() {}
@@ -65,18 +78,5 @@ public:
 	static void ClearVehicle(const Vehicle *v);
 	static void RemoveOrder(OrderType type, DestinationID destination, bool hangar);
 };
-
-/**
- * Iterator over all order backups from a given ID.
- * @param var The variable to iterate with.
- * @param start The start of the iteration.
- */
-#define FOR_ALL_ORDER_BACKUPS_FROM(var, start) FOR_ALL_ITEMS_FROM(OrderBackup, order_backup_index, var, start)
-
-/**
- * Iterator over all order backups.
- * @param var The variable to iterate with.
- */
-#define FOR_ALL_ORDER_BACKUPS(var) FOR_ALL_ORDER_BACKUPS_FROM(var, 0)
 
 #endif /* ORDER_BACKUP_H */

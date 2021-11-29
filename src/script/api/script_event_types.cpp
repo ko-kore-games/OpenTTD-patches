@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -25,12 +23,12 @@
 bool ScriptEventEnginePreview::IsEngineValid() const
 {
 	const Engine *e = ::Engine::GetIfValid(this->engine);
-	return e != NULL && e->IsEnabled();
+	return e != nullptr && e->IsEnabled();
 }
 
 char *ScriptEventEnginePreview::GetName()
 {
-	if (!this->IsEngineValid()) return NULL;
+	if (!this->IsEngineValid()) return nullptr;
 
 	::SetDParam(0, this->engine);
 	return GetString(STR_ENGINE_NAME);
@@ -120,25 +118,20 @@ bool ScriptEventCompanyAskMerger::AcceptMerger()
 	return ScriptObject::DoCommand(0, this->owner, 0, CMD_BUY_COMPANY);
 }
 
-ScriptEventAdminPort::ScriptEventAdminPort(const char *json) :
+ScriptEventAdminPort::ScriptEventAdminPort(const std::string &json) :
 		ScriptEvent(ET_ADMIN_PORT),
-		json(stredup(json))
+		json(json)
 {
-}
-
-ScriptEventAdminPort::~ScriptEventAdminPort()
-{
-	free(this->json);
 }
 
 #define SKIP_EMPTY(p) while (*(p) == ' ' || *(p) == '\n' || *(p) == '\r') (p)++;
-#define RETURN_ERROR(stack) { ScriptLog::Error("Received invalid JSON data from AdminPort."); if (stack != 0) sq_pop(vm, stack); return NULL; }
+#define RETURN_ERROR(stack) { ScriptLog::Error("Received invalid JSON data from AdminPort."); if (stack != 0) sq_pop(vm, stack); return nullptr; }
 
 SQInteger ScriptEventAdminPort::GetObject(HSQUIRRELVM vm)
 {
-	char *p = this->json;
+	const char *p = this->json.c_str();
 
-	if (this->ReadTable(vm, p) == NULL) {
+	if (this->ReadTable(vm, p) == nullptr) {
 		sq_pushnull(vm);
 		return 1;
 	}
@@ -146,9 +139,9 @@ SQInteger ScriptEventAdminPort::GetObject(HSQUIRRELVM vm)
 	return 1;
 }
 
-char *ScriptEventAdminPort::ReadString(HSQUIRRELVM vm, char *p)
+const char *ScriptEventAdminPort::ReadString(HSQUIRRELVM vm, const char *p)
 {
-	char *value = p;
+	const char *value = p;
 
 	bool escape = false;
 	for (;;) {
@@ -170,14 +163,14 @@ char *ScriptEventAdminPort::ReadString(HSQUIRRELVM vm, char *p)
 		p++;
 	}
 
-	*p = '\0';
-	sq_pushstring(vm, value, -1);
-	*p++ = '"';
+	size_t len = p - value;
+	sq_pushstring(vm, value, len);
+	p++; // Step past the end-of-string marker (")
 
 	return p;
 }
 
-char *ScriptEventAdminPort::ReadTable(HSQUIRRELVM vm, char *p)
+const char *ScriptEventAdminPort::ReadTable(HSQUIRRELVM vm, const char *p)
 {
 	sq_newtable(vm);
 
@@ -189,18 +182,18 @@ char *ScriptEventAdminPort::ReadTable(HSQUIRRELVM vm, char *p)
 		if (*p++ != '"') RETURN_ERROR(1);
 
 		p = ReadString(vm, p);
-		if (p == NULL) {
+		if (p == nullptr) {
 			sq_pop(vm, 1);
-			return NULL;
+			return nullptr;
 		}
 
 		SKIP_EMPTY(p);
 		if (*p++ != ':') RETURN_ERROR(2);
 
 		p = this->ReadValue(vm, p);
-		if (p == NULL) {
+		if (p == nullptr) {
 			sq_pop(vm, 2);
-			return NULL;
+			return nullptr;
 		}
 
 		sq_rawset(vm, -3);
@@ -220,7 +213,7 @@ char *ScriptEventAdminPort::ReadTable(HSQUIRRELVM vm, char *p)
 	return p;
 }
 
-char *ScriptEventAdminPort::ReadValue(HSQUIRRELVM vm, char *p)
+const char *ScriptEventAdminPort::ReadValue(HSQUIRRELVM vm, const char *p)
 {
 	SKIP_EMPTY(p);
 
@@ -241,7 +234,7 @@ char *ScriptEventAdminPort::ReadValue(HSQUIRRELVM vm, char *p)
 		case '"': {
 			/* String */
 			p = ReadString(vm, ++p);
-			if (p == NULL) return NULL;
+			if (p == nullptr) return nullptr;
 
 			break;
 		}
@@ -249,7 +242,7 @@ char *ScriptEventAdminPort::ReadValue(HSQUIRRELVM vm, char *p)
 		case '{': {
 			/* Table */
 			p = this->ReadTable(vm, p);
-			if (p == NULL) return NULL;
+			if (p == nullptr) return nullptr;
 
 			break;
 		}
@@ -259,7 +252,7 @@ char *ScriptEventAdminPort::ReadValue(HSQUIRRELVM vm, char *p)
 			sq_newarray(vm, 0);
 
 			/* Empty array? */
-			char *p2 = p + 1;
+			const char *p2 = p + 1;
 			SKIP_EMPTY(p2);
 			if (*p2 == ']') {
 				p = p2 + 1;
@@ -268,9 +261,9 @@ char *ScriptEventAdminPort::ReadValue(HSQUIRRELVM vm, char *p)
 
 			while (*p++ != ']') {
 				p = this->ReadValue(vm, p);
-				if (p == NULL) {
+				if (p == nullptr) {
 					sq_pop(vm, 1);
-					return NULL;
+					return nullptr;
 				}
 				sq_arrayappend(vm, -2);
 

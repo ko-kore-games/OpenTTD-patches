@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,8 +14,6 @@
 struct CYapfRailSegmentKey
 {
 	uint32    m_value;
-
-	inline CYapfRailSegmentKey(const CYapfRailSegmentKey &src) : m_value(src.m_value) {}
 
 	inline CYapfRailSegmentKey(const CYapfNodeKeyTrackDir &node_key)
 	{
@@ -83,7 +79,7 @@ struct CYapfRailSegment
 		, m_last_signal_tile(INVALID_TILE)
 		, m_last_signal_td(INVALID_TRACKDIR)
 		, m_end_segment_reason(ESRB_NONE)
-		, m_hash_next(NULL)
+		, m_hash_next(nullptr)
 	{}
 
 	inline const Key& GetKey() const
@@ -111,7 +107,7 @@ struct CYapfRailSegment
 		dmp.WriteStructT("m_key", &m_key);
 		dmp.WriteTile("m_last_tile", m_last_tile);
 		dmp.WriteEnumT("m_last_td", m_last_td);
-		dmp.WriteLine("m_cost = %d", m_cost);
+		dmp.WriteValue("m_cost", m_cost);
 		dmp.WriteTile("m_last_signal_tile", m_last_signal_tile);
 		dmp.WriteEnumT("m_last_signal_td", m_last_signal_td);
 		dmp.WriteEnumT("m_end_segment_reason", m_end_segment_reason);
@@ -128,12 +124,17 @@ struct CYapfRailNodeT
 
 	CYapfRailSegment *m_segment;
 	uint16            m_num_signals_passed;
+	uint16            m_num_signals_res_through_passed;
+	TileIndex         m_last_non_reserve_through_signal_tile;
+	Trackdir          m_last_non_reserve_through_signal_td;
 	union {
 		uint32          m_inherited_flags;
 		struct {
 			bool          m_targed_seen : 1;
 			bool          m_choice_seen : 1;
 			bool          m_last_signal_was_red : 1;
+			bool          m_reverse_pending : 1;
+			bool          m_teleport : 1;
 		} flags_s;
 	} flags_u;
 	SignalType        m_last_red_signal_type;
@@ -142,9 +143,12 @@ struct CYapfRailNodeT
 	inline void Set(CYapfRailNodeT *parent, TileIndex tile, Trackdir td, bool is_choice)
 	{
 		base::Set(parent, tile, td, is_choice);
-		m_segment = NULL;
-		if (parent == NULL) {
+		m_segment = nullptr;
+		if (parent == nullptr) {
 			m_num_signals_passed      = 0;
+			m_num_signals_res_through_passed = 0;
+			m_last_non_reserve_through_signal_tile = INVALID_TILE;
+			m_last_non_reserve_through_signal_td = INVALID_TRACKDIR;
 			flags_u.m_inherited_flags = 0;
 			m_last_red_signal_type    = SIGTYPE_NORMAL;
 			/* We use PBS as initial signal type because if we are in
@@ -160,28 +164,32 @@ struct CYapfRailNodeT
 			m_last_signal_type        = SIGTYPE_PBS;
 		} else {
 			m_num_signals_passed      = parent->m_num_signals_passed;
+			m_num_signals_res_through_passed = parent->m_num_signals_res_through_passed;
+			m_last_non_reserve_through_signal_tile = parent->m_last_non_reserve_through_signal_tile;
+			m_last_non_reserve_through_signal_td = parent->m_last_non_reserve_through_signal_td;
 			flags_u.m_inherited_flags = parent->flags_u.m_inherited_flags;
 			m_last_red_signal_type    = parent->m_last_red_signal_type;
 			m_last_signal_type        = parent->m_last_signal_type;
 		}
 		flags_u.flags_s.m_choice_seen |= is_choice;
+		flags_u.flags_s.m_teleport = false;
 	}
 
 	inline TileIndex GetLastTile() const
 	{
-		assert(m_segment != NULL);
+		assert(m_segment != nullptr);
 		return m_segment->m_last_tile;
 	}
 
 	inline Trackdir GetLastTrackdir() const
 	{
-		assert(m_segment != NULL);
+		assert(m_segment != nullptr);
 		return m_segment->m_last_td;
 	}
 
 	inline void SetLastTileTrackdir(TileIndex tile, Trackdir td)
 	{
-		assert(m_segment != NULL);
+		assert(m_segment != nullptr);
 		m_segment->m_last_tile = tile;
 		m_segment->m_last_td = td;
 	}
@@ -205,14 +213,46 @@ struct CYapfRailNodeT
 		return (obj.*func)(cur, cur_td);
 	}
 
+	template <class Tbase, class Tpf>
+	uint GetNodeLength(const Train *v, Tpf &yapf, Tbase &obj) const
+	{
+		typename Tbase::TrackFollower ft(v, yapf.GetCompatibleRailTypes());
+		TileIndex cur = base::GetTile();
+		Trackdir  cur_td = base::GetTrackdir();
+
+		uint length = 0;
+
+		while (cur != GetLastTile() || cur_td != GetLastTrackdir()) {
+			length += IsDiagonalTrackdir(cur_td) ? TILE_SIZE : (TILE_SIZE / 2);
+			if (!ft.Follow(cur, cur_td)) break;
+			length += TILE_SIZE * ft.m_tiles_skipped;
+			cur = ft.m_new_tile;
+			assert(KillFirstBit(ft.m_new_td_bits) == TRACKDIR_BIT_NONE);
+			cur_td = FindFirstTrackdir(ft.m_new_td_bits);
+		}
+
+		EndSegmentReasonBits esrb = this->m_segment->m_end_segment_reason;
+		if (!(esrb & ESRB_DEAD_END) || (esrb & ESRB_DEAD_END_EOL)) {
+			length += IsDiagonalTrackdir(cur_td) ? TILE_SIZE : (TILE_SIZE / 2);
+			if (IsTileType(cur, MP_TUNNELBRIDGE) && IsTunnelBridgeSignalSimulationEntrance(cur) && TrackdirEntersTunnelBridge(cur, cur_td)) {
+				length += TILE_SIZE * GetTunnelBridgeLength(cur, GetOtherTunnelBridgeEnd(cur));
+			}
+		}
+
+		return length;
+	}
+
 	void Dump(DumpTarget &dmp) const
 	{
 		base::Dump(dmp);
 		dmp.WriteStructT("m_segment", m_segment);
-		dmp.WriteLine("m_num_signals_passed = %d", m_num_signals_passed);
-		dmp.WriteLine("m_targed_seen = %s", flags_u.flags_s.m_targed_seen ? "Yes" : "No");
-		dmp.WriteLine("m_choice_seen = %s", flags_u.flags_s.m_choice_seen ? "Yes" : "No");
-		dmp.WriteLine("m_last_signal_was_red = %s", flags_u.flags_s.m_last_signal_was_red ? "Yes" : "No");
+		dmp.WriteValue("m_num_signals_passed", m_num_signals_passed);
+		dmp.WriteValue("m_num_signals_res_through_passed", m_num_signals_res_through_passed);
+		dmp.WriteValue("m_targed_seen", flags_u.flags_s.m_targed_seen ? "Yes" : "No");
+		dmp.WriteValue("m_choice_seen", flags_u.flags_s.m_choice_seen ? "Yes" : "No");
+		dmp.WriteValue("m_last_signal_was_red", flags_u.flags_s.m_last_signal_was_red ? "Yes" : "No");
+		dmp.WriteValue("m_reverse_pending", flags_u.flags_s.m_reverse_pending ? "Yes" : "No");
+		dmp.WriteValue("m_teleport", flags_u.flags_s.m_teleport ? "Yes" : "No");
 		dmp.WriteEnumT("m_last_red_signal_type", m_last_red_signal_type);
 	}
 };

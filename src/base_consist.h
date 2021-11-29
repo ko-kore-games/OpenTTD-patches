@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,25 +12,28 @@
 
 #include "order_type.h"
 #include "date_type.h"
+#include "timetable.h"
+#include "core/tinystring_type.hpp"
 
 /** Various front vehicle properties that are preserved when autoreplacing, using order-backup or switching front engines within a consist. */
 struct BaseConsist {
-	char *name;                         ///< Name of vehicle
+	TinyString name;                   ///< Name of vehicle
 
 	/* Used for timetabling. */
 	uint32 current_order_time;          ///< How many ticks have passed since this order started.
 	int32 lateness_counter;             ///< How many ticks late (or early if negative) this vehicle is.
-	Date timetable_start;               ///< When the vehicle is supposed to start the timetable.
+	DateTicks timetable_start;          ///< When the vehicle is supposed to start the timetable.
+	uint16 timetable_start_subticks;    ///< When the vehicle is supposed to start the timetable: sub-ticks.
 
 	uint16 service_interval;            ///< The interval for (automatic) servicing; either in days or %.
 
 	VehicleOrderID cur_real_order_index;///< The index to the current real (non-implicit) order
 	VehicleOrderID cur_implicit_order_index;///< The index to the current implicit order
+	VehicleOrderID cur_timetable_order_index;///< The index to the current real (non-implicit) order used for timetable updates
 
 	uint16 vehicle_flags;               ///< Used for gradual loading and other miscellaneous things (@see VehicleFlags enum)
 
-	BaseConsist() : name(NULL) {}
-	virtual ~BaseConsist();
+	virtual ~BaseConsist() {}
 
 	void CopyConsistPropertiesFrom(const BaseConsist *src);
 };

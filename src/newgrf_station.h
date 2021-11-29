@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -29,6 +27,7 @@ struct StationScopeResolver : public ScopeResolver {
 	const struct StationSpec *statspec; ///< Station (type) specification.
 	CargoID cargo_type;                 ///< Type of cargo of the station.
 	Axis axis;                          ///< Station axis, used only for the slope check callback.
+	RailType rt;                        ///< %RailType of the station (unbuilt stations only).
 
 	/**
 	 * Constructor for station scopes.
@@ -36,16 +35,17 @@ struct StationScopeResolver : public ScopeResolver {
 	 * @param statspec Station (type) specification.
 	 * @param st Instance of the station.
 	 * @param tile %Tile of the station.
+	 * @param rt %RailType of the station (unbuilt stations only).
 	 */
-	StationScopeResolver(ResolverObject &ro, const StationSpec *statspec, BaseStation *st, TileIndex tile)
-		: ScopeResolver(ro), tile(tile), st(st), statspec(statspec), cargo_type(CT_INVALID), axis(INVALID_AXIS)
+	StationScopeResolver(ResolverObject &ro, const StationSpec *statspec, BaseStation *st, TileIndex tile, RailType rt)
+		: ScopeResolver(ro), tile(tile), st(st), statspec(statspec), cargo_type(CT_INVALID), axis(INVALID_AXIS), rt(rt)
 	{
 	}
 
-	/* virtual */ uint32 GetRandomBits() const;
-	/* virtual */ uint32 GetTriggers() const;
+	uint32 GetRandomBits() const override;
+	uint32 GetTriggers() const override;
 
-	/* virtual */ uint32 GetVariable(byte variable, uint32 parameter, bool *available) const;
+	uint32 GetVariable(byte variable, uint32 parameter, GetVariableExtra *extra) const override;
 };
 
 /** Station resolver. */
@@ -53,13 +53,13 @@ struct StationResolverObject : public ResolverObject {
 	StationScopeResolver station_scope; ///< The station scope resolver.
 	TownScopeResolver *town_scope;      ///< The town scope resolver (created on the first call).
 
-	StationResolverObject(const StationSpec *statspec, BaseStation *st, TileIndex tile,
+	StationResolverObject(const StationSpec *statspec, BaseStation *st, TileIndex tile, RailType rt,
 			CallbackID callback = CBID_NO_CALLBACK, uint32 callback_param1 = 0, uint32 callback_param2 = 0);
 	~StationResolverObject();
 
 	TownScopeResolver *GetTown();
 
-	/* virtual */ ScopeResolver *GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, byte relative = 0)
+	ScopeResolver *GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, byte relative = 0) override
 	{
 		switch (scope) {
 			case VSG_SCOPE_SELF:
@@ -67,7 +67,7 @@ struct StationResolverObject : public ResolverObject {
 
 			case VSG_SCOPE_PARENT: {
 				TownScopeResolver *tsr = this->GetTown();
-				if (tsr != NULL) return tsr;
+				if (tsr != nullptr) return tsr;
 				FALLTHROUGH;
 			}
 
@@ -76,16 +76,18 @@ struct StationResolverObject : public ResolverObject {
 		}
 	}
 
-	/* virtual */ const SpriteGroup *ResolveReal(const RealSpriteGroup *group) const;
+	const SpriteGroup *ResolveReal(const RealSpriteGroup *group) const override;
+
+	GrfSpecFeature GetFeature() const override;
+	uint32 GetDebugID() const override;
 };
 
-enum StationClassID {
+enum StationClassID : byte {
 	STAT_CLASS_BEGIN = 0,    ///< the lowest valid value
 	STAT_CLASS_DFLT = 0,     ///< Default station class.
 	STAT_CLASS_WAYP,         ///< Waypoint class.
-	STAT_CLASS_MAX = 256,    ///< Maximum number of classes.
+	STAT_CLASS_MAX = 255,    ///< Maximum number of classes.
 };
-typedef SimpleTinyEnumT<StationClassID, byte> StationClassIDByte;
 template <> struct EnumPropsT<StationClassID> : MakeEnumPropsT<StationClassID, byte, STAT_CLASS_BEGIN, STAT_CLASS_MAX, STAT_CLASS_MAX, 8> {};
 
 /** Allow incrementing of StationClassID variables */
@@ -109,12 +111,18 @@ enum StationRandomTrigger {
 	SRT_PATH_RESERVATION, ///< Trigger platform when train reserves path.
 };
 
-/* Station layout for given dimensions - it is a two-dimensional array
- * where index is computed as (x * platforms) + platform. */
-typedef byte *StationLayout;
+enum StationSpecIntlFlags {
+	SSIF_BRIDGE_HEIGHTS_SET,            ///< byte bridge_height[8] is set.
+	SSIF_BRIDGE_DISALLOWED_PILLARS_SET, ///< byte bridge_disallowed_pillars[8] is set.
+};
 
 /** Station specification. */
 struct StationSpec {
+	StationSpec() : cls_id(STAT_CLASS_DFLT), name(0),
+		disallowed_platforms(0), disallowed_lengths(0),
+		cargo_threshold(0), cargo_triggers(0),
+		callback_mask(0), flags(0), pylons(0), wires(0), blocked(0),
+		animation({0, 0, 0, 0}), internal_flags(0) {}
 	/**
 	 * Properties related the the grf file.
 	 * NUM_CARGO real cargo plus three pseudo cargo sprite groups.
@@ -144,8 +152,7 @@ struct StationSpec {
 	 * 4-5 = platform with roof, left side
 	 * 6-7 = platform with roof, right side
 	 */
-	uint tiles;
-	NewGRFSpriteLayout *renderdata; ///< Array of tile layouts.
+	std::vector<NewGRFSpriteLayout> renderdata; ///< Array of tile layouts.
 
 	/**
 	 * Cargo threshold for choosing between little and lots of cargo
@@ -162,13 +169,22 @@ struct StationSpec {
 	byte pylons;  ///< Bitmask of base tiles (0 - 7) which should contain elrail pylons
 	byte wires;   ///< Bitmask of base tiles (0 - 7) which should contain elrail wires
 	byte blocked; ///< Bitmask of base tiles (0 - 7) which are blocked to trains
+	byte bridge_height[8]; ///< Minimum height for a bridge above, 0 for none
+	byte bridge_disallowed_pillars[8]; ///< Disallowed pillar flags for a bridge above
 
 	AnimationInfo animation;
 
-	byte lengths;
-	byte *platforms;
-	StationLayout **layouts;
-	bool copied_layouts;
+	byte internal_flags; ///< Bitmask of internal spec flags (StationSpecIntlFlags)
+
+	/**
+	 * Custom platform layouts.
+	 * This is a 2D array containing an array of tiles.
+	 * 1st layer is platform lengths.
+	 * 2nd layer is tracks (width).
+	 * These can be sparsely populated, and the upper limit is not defined but
+	 * limited to 255.
+	 */
+	std::vector<std::vector<std::vector<byte>>> layouts;
 };
 
 /** Struct containing information relating to station classes. */
@@ -179,10 +195,10 @@ const StationSpec *GetStationSpec(TileIndex t);
 /* Evaluate a tile's position within a station, and return the result a bitstuffed format. */
 uint32 GetPlatformInfo(Axis axis, byte tile, int platforms, int length, int x, int y, bool centred);
 
-SpriteID GetCustomStationRelocation(const StationSpec *statspec, BaseStation *st, TileIndex tile, uint32 var10 = 0);
+SpriteID GetCustomStationRelocation(const StationSpec *statspec, BaseStation *st, TileIndex tile, RailType rt, uint32 var10 = 0);
 SpriteID GetCustomStationFoundationRelocation(const StationSpec *statspec, BaseStation *st, TileIndex tile, uint layout, uint edge_info);
-uint16 GetStationCallback(CallbackID callback, uint32 param1, uint32 param2, const StationSpec *statspec, BaseStation *st, TileIndex tile);
-CommandCost PerformStationTileSlopeCheck(TileIndex north_tile, TileIndex cur_tile, const StationSpec *statspec, Axis axis, byte plat_len, byte numtracks);
+uint16 GetStationCallback(CallbackID callback, uint32 param1, uint32 param2, const StationSpec *statspec, BaseStation *st, TileIndex tile, RailType rt);
+CommandCost PerformStationTileSlopeCheck(TileIndex north_tile, TileIndex cur_tile, RailType rt, const StationSpec *statspec, Axis axis, byte plat_len, byte numtracks);
 
 /* Allocate a StationSpec to a Station. This is called once per build operation. */
 int AllocateSpecToStation(const StationSpec *statspec, BaseStation *st, bool exec);
@@ -194,6 +210,7 @@ void DeallocateSpecFromStation(BaseStation *st, byte specindex);
 bool DrawStationTile(int x, int y, RailType railtype, Axis axis, StationClassID sclass, uint station);
 
 void AnimateStationTile(TileIndex tile);
+uint8 GetStationTileAnimationSpeed(TileIndex tile);
 void TriggerStationAnimation(BaseStation *st, TileIndex tile, StationAnimationTrigger trigger, CargoID cargo_type = CT_INVALID);
 void TriggerStationRandomisation(Station *st, TileIndex tile, StationRandomTrigger trigger, CargoID cargo_type = CT_INVALID);
 void StationUpdateCachedTriggers(BaseStation *st);

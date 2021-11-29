@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -20,6 +18,7 @@
 #include "sound_func.h"
 #include "fios.h"
 #include "string_func.h"
+#include "gui.h"
 #include "widgets/dropdown_type.h"
 #include "widgets/dropdown_func.h"
 #include "querystring_gui.h"
@@ -29,6 +28,9 @@
 #include "saveload/saveload.h"
 #include "progress.h"
 #include "error.h"
+#include "newgrf_townname.h"
+#include "townname_type.h"
+#include "video/video_driver.hpp"
 
 #include "widgets/genworld_widget.h"
 
@@ -43,6 +45,15 @@ enum GenerateLandscapeWindowMode {
 	GLWM_HEIGHTMAP, ///< Load from heightmap.
 	GLWM_SCENARIO,  ///< Generate flat land.
 };
+
+/**
+ * Get the map height limit, or if set to "auto", the absolute limit.
+ */
+static uint GetMapHeightLimit()
+{
+	if (_settings_newgame.construction.map_height_limit == 0) return MAX_MAP_HEIGHT_LIMIT;
+	return _settings_newgame.construction.map_height_limit;
+}
 
 /**
  * Changes landscape type and sets genworld window dirty
@@ -82,11 +93,11 @@ static const NWidgetPart _nested_generate_landscape_widgets[] = {
 				NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(0, 4, 0),
 					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_MAPSIZE, STR_MAPGEN_MAPSIZE_TOOLTIP), SetFill(1, 1),
 					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_LAND_GENERATOR, STR_NULL), SetFill(1, 1),
-					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_NUMBER_OF_TOWNS, STR_NULL), SetFill(1, 1),
 					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_TERRAIN_TYPE, STR_NULL), SetFill(1, 1),
 					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_VARIETY, STR_NULL), SetFill(1, 1),
 					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_QUANTITY_OF_SEA_LAKES, STR_NULL), SetFill(1, 1),
-					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_TREE_PLACER, STR_NULL), SetFill(1, 1),
+					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_NUMBER_OF_TOWNS, STR_NULL), SetFill(1, 1),
+					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_NUMBER_OF_INDUSTRIES, STR_NULL), SetFill(1, 1),
 					NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_BORDER_TYPE, STR_NULL), SetFill(1, 1),
 				EndContainer(),
 				/* Widgets at the right of the labels. */
@@ -98,36 +109,54 @@ static const NWidgetPart _nested_generate_landscape_widgets[] = {
 						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_MAPSIZE_Y_PULLDOWN), SetDataTip(STR_JUST_INT, STR_MAPGEN_MAPSIZE_TOOLTIP), SetFill(1, 0),
 					EndContainer(),
 					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_LANDSCAPE_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
-					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TOWN_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TERRAIN_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_VARIETY_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_WATER_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
-					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TREE_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
+					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TOWN_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
+					NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_INDUSTRY_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 					NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_BORDERS_RANDOM), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 				EndContainer(),
 			EndContainer(),
 			NWidget(NWID_VERTICAL), SetPIP(0, 4, 0),
 				NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
 					NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(0, 4, 0),
-						NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_MAX_HEIGHTLEVEL, STR_NULL), SetFill(1, 1),
-						NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_SNOW_LINE_HEIGHT, STR_NULL), SetFill(1, 1),
+						NWidget(NWID_SELECTION, INVALID_COLOUR, WID_GL_CLIMATE_SEL_LABEL),
+							NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_SNOW_COVERAGE, STR_NULL), SetFill(1, 1),
+							NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_DESERT_COVERAGE, STR_NULL), SetFill(1, 1),
+							NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_SNOW_LINE_HEIGHT, STR_NULL), SetFill(1, 1),
+							NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_RAINFOREST_LINE_HEIGHT, STR_NULL), SetFill(1, 1),
+						EndContainer(),
 						NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_DATE, STR_NULL), SetFill(1, 1),
-						NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_NUMBER_OF_INDUSTRIES, STR_NULL), SetFill(1, 1),
 						NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_SMOOTHNESS, STR_NULL), SetFill(1, 1),
 						NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_QUANTITY_OF_RIVERS, STR_NULL), SetFill(1, 1),
+						NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_GAME_OPTIONS_TOWN_NAMES_FRAME, STR_NULL), SetFill(1, 1),
 					EndContainer(),
 					NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(0, 4, 0),
-						/* Max. heightlevel. */
-						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_MAX_HEIGHTLEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_MAX_HEIGHTLEVEL_DOWN), SetFill(0, 1),
-							NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_MAX_HEIGHTLEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
-							NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_MAX_HEIGHTLEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_MAX_HEIGHTLEVEL_UP), SetFill(0, 1),
-						EndContainer(),
-						/* Snow line. */
-						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_SNOW_LINE_DOWN), SetFill(0, 1),
-							NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
-							NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_SNOW_LINE_UP), SetFill(0, 1),
+						NWidget(NWID_SELECTION, INVALID_COLOUR, WID_GL_CLIMATE_SEL_SELECTOR),
+							/* Snow coverage. */
+							NWidget(NWID_HORIZONTAL),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_COVERAGE_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_SNOW_COVERAGE_DOWN), SetFill(0, 1),
+								NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_SNOW_COVERAGE_TEXT), SetDataTip(STR_MAPGEN_SNOW_COVERAGE_TEXT, STR_NULL), SetFill(1, 0),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_COVERAGE_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_SNOW_COVERAGE_UP), SetFill(0, 1),
+							EndContainer(),
+							/* Desert coverage. */
+							NWidget(NWID_HORIZONTAL),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_DESERT_COVERAGE_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_DESERT_COVERAGE_DOWN), SetFill(0, 1),
+								NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_DESERT_COVERAGE_TEXT), SetDataTip(STR_MAPGEN_DESERT_COVERAGE_TEXT, STR_NULL), SetFill(1, 0),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_DESERT_COVERAGE_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_DESERT_COVERAGE_UP), SetFill(0, 1),
+							EndContainer(),
+							/* Snow line. */
+							NWidget(NWID_HORIZONTAL),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_SNOW_LINE_DOWN), SetFill(0, 1),
+								NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_SNOW_LINE_UP), SetFill(0, 1),
+							EndContainer(),
+							/* Rainforest line. */
+							NWidget(NWID_HORIZONTAL),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_RAINFOREST_LEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_RAINFOREST_LINE_DOWN), SetFill(0, 1),
+								NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_RAINFOREST_LEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
+								NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_RAINFOREST_LEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_RAINFOREST_LINE_UP), SetFill(0, 1),
+							EndContainer(),
 						EndContainer(),
 						/* Starting date. */
 						NWidget(NWID_HORIZONTAL),
@@ -135,9 +164,9 @@ static const NWidgetPart _nested_generate_landscape_widgets[] = {
 							NWidget(WWT_PUSHTXTBTN, COLOUR_ORANGE, WID_GL_START_DATE_TEXT), SetDataTip(STR_BLACK_DATE_LONG, STR_NULL), SetFill(1, 0),
 							NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_START_DATE_UP), SetDataTip(SPR_ARROW_UP, STR_SCENEDIT_TOOLBAR_TOOLTIP_MOVE_THE_STARTING_DATE_FORWARD), SetFill(0, 1),
 						EndContainer(),
-						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_INDUSTRY_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_SMOOTHNESS_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_RIVER_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
+						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TOWNNAME_DROPDOWN), SetDataTip(STR_BLACK_STRING, STR_GAME_OPTIONS_TOWN_NAMES_DROPDOWN_TOOLTIP), SetFill(1, 0),
 					EndContainer(),
 				EndContainer(),
 				NWidget(WWT_PUSHTXTBTN, COLOUR_GREEN, WID_GL_GENERATE_BUTTON), SetMinimalSize(84, 0), SetDataTip(STR_MAPGEN_GENERATE, STR_NULL), SetFill(1, 1),
@@ -199,18 +228,19 @@ static const NWidgetPart _nested_heightmap_load_widgets[] = {
 			/* Labels at the left side. */
 			NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(0, 4, 0),
 				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_HEIGHTMAP_NAME, STR_NULL), SetFill(1, 1),
+				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_HEIGHTMAP_SIZE_LABEL, STR_NULL), SetFill(1, 1),
 				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_MAPSIZE, STR_NULL), SetFill(1, 1),
 				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_HEIGHTMAP_ROTATION, STR_NULL), SetFill(1, 1),
 				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_NUMBER_OF_TOWNS, STR_NULL), SetFill(1, 1),
 				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_NUMBER_OF_INDUSTRIES, STR_NULL), SetFill(1, 1),
 				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_QUANTITY_OF_RIVERS, STR_NULL), SetFill(1, 1),
-				NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_TREE_PLACER, STR_NULL), SetFill(1, 1),
 			EndContainer(),
 			/* Widgets at the right of the labels. */
 			NWidget(NWID_VERTICAL), SetPIP(0, 4, 0),
 				NWidget(WWT_EMPTY, COLOUR_ORANGE, WID_GL_HEIGHTMAP_NAME_TEXT), SetFill(1, 0),
 				NWidget(NWID_HORIZONTAL), SetPIP(0, 5, 0),
 					NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(0, 4, 0),
+						NWidget(WWT_TEXT, COLOUR_ORANGE, WID_GL_HEIGHTMAP_SIZE_TEXT), SetDataTip(STR_MAPGEN_HEIGHTMAP_SIZE, STR_NULL), SetFill(1, 0),
 						/* Mapsize X * Y. */
 						NWidget(NWID_HORIZONTAL), SetPIP(0, 4, 0),
 							NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_MAPSIZE_X_PULLDOWN), SetDataTip(STR_JUST_INT, STR_NULL), SetFill(1, 0),
@@ -221,33 +251,56 @@ static const NWidgetPart _nested_heightmap_load_widgets[] = {
 						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TOWN_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_INDUSTRY_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_RIVER_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
-						NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TREE_PULLDOWN), SetDataTip(STR_JUST_STRING, STR_NULL), SetFill(1, 0),
 					EndContainer(),
 					NWidget(NWID_VERTICAL), SetPIP(0, 4, 0),
 						NWidget(NWID_HORIZONTAL), SetPIP(0, 3, 0),
 							NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(0, 4, 0),
-								NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_HEIGHTMAP_SIZE_LABEL, STR_NULL), SetFill(1, 1),
-								NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_SNOW_LINE_HEIGHT, STR_NULL), SetFill(1, 1),
-								NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_MAX_HEIGHTLEVEL, STR_NULL), SetFill(1, 1),
+								NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_HEIGHTMAP_HEIGHT, STR_NULL), SetFill(1, 1),
+								NWidget(NWID_SELECTION, INVALID_COLOUR, WID_GL_CLIMATE_SEL_LABEL),
+									NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_SNOW_COVERAGE, STR_NULL), SetFill(1, 1),
+									NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_DESERT_COVERAGE, STR_NULL), SetFill(1, 1),
+									NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_SNOW_LINE_HEIGHT, STR_NULL), SetFill(1, 1),
+									NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_RAINFOREST_LINE_HEIGHT, STR_NULL), SetFill(1, 1),
+								EndContainer(),
 								NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_MAPGEN_DATE, STR_NULL), SetFill(1, 1),
+								NWidget(WWT_TEXT, COLOUR_ORANGE), SetDataTip(STR_GAME_OPTIONS_TOWN_NAMES_FRAME, STR_NULL), SetFill(1, 1),
 							EndContainer(),
 							NWidget(NWID_VERTICAL, NC_EQUALSIZE), SetPIP(0, 4, 0),
-								NWidget(WWT_TEXT, COLOUR_ORANGE, WID_GL_HEIGHTMAP_SIZE_TEXT), SetDataTip(STR_MAPGEN_HEIGHTMAP_SIZE, STR_NULL), SetFill(1, 0),
 								NWidget(NWID_HORIZONTAL),
-									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_SNOW_LINE_DOWN), SetFill(0, 1),
-									NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
-									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_SNOW_LINE_UP), SetFill(0, 1),
+									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_HEIGHTMAP_HEIGHT_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_HEIGHTMAP_HEIGHT_DOWN), SetFill(0, 1),
+									NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_HEIGHTMAP_HEIGHT_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
+									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_HEIGHTMAP_HEIGHT_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_HEIGHTMAP_HEIGHT_UP), SetFill(0, 1),
 								EndContainer(),
-								NWidget(NWID_HORIZONTAL),
-									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_MAX_HEIGHTLEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_MAX_HEIGHTLEVEL_DOWN), SetFill(0, 1),
-									NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_MAX_HEIGHTLEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
-									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_MAX_HEIGHTLEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_MAX_HEIGHTLEVEL_UP), SetFill(0, 1),
+								NWidget(NWID_SELECTION, INVALID_COLOUR, WID_GL_CLIMATE_SEL_SELECTOR),
+									NWidget(NWID_HORIZONTAL),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_COVERAGE_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_SNOW_COVERAGE_DOWN), SetFill(0, 1),
+										NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_SNOW_COVERAGE_TEXT), SetDataTip(STR_MAPGEN_SNOW_COVERAGE_TEXT, STR_NULL), SetFill(1, 0),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_COVERAGE_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_SNOW_COVERAGE_UP), SetFill(0, 1),
+									EndContainer(),
+									NWidget(NWID_HORIZONTAL),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_DESERT_COVERAGE_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_DESERT_COVERAGE_DOWN), SetFill(0, 1),
+										NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_DESERT_COVERAGE_TEXT), SetDataTip(STR_MAPGEN_DESERT_COVERAGE_TEXT, STR_NULL), SetFill(1, 0),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_DESERT_COVERAGE_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_DESERT_COVERAGE_UP), SetFill(0, 1),
+									EndContainer(),
+									/* Snow line. */
+									NWidget(NWID_HORIZONTAL),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_SNOW_LINE_DOWN), SetFill(0, 1),
+										NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_SNOW_LEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_SNOW_LINE_UP), SetFill(0, 1),
+									EndContainer(),
+									/* Rainforest line. */
+									NWidget(NWID_HORIZONTAL),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_RAINFOREST_LEVEL_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_MAPGEN_RAINFOREST_LINE_DOWN), SetFill(0, 1),
+										NWidget(WWT_TEXTBTN, COLOUR_ORANGE, WID_GL_RAINFOREST_LEVEL_TEXT), SetDataTip(STR_BLACK_INT, STR_NULL), SetFill(1, 0),
+										NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_RAINFOREST_LEVEL_UP), SetDataTip(SPR_ARROW_UP, STR_MAPGEN_RAINFOREST_LINE_UP), SetFill(0, 1),
+									EndContainer(),
 								EndContainer(),
 								NWidget(NWID_HORIZONTAL),
 									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_START_DATE_DOWN), SetDataTip(SPR_ARROW_DOWN, STR_SCENEDIT_TOOLBAR_TOOLTIP_MOVE_THE_STARTING_DATE_BACKWARD), SetFill(0, 1),
 									NWidget(WWT_PUSHTXTBTN, COLOUR_ORANGE, WID_GL_START_DATE_TEXT), SetDataTip(STR_BLACK_DATE_LONG, STR_NULL), SetFill(1, 0),
 									NWidget(WWT_IMGBTN, COLOUR_ORANGE, WID_GL_START_DATE_UP), SetDataTip(SPR_ARROW_UP, STR_SCENEDIT_TOOLBAR_TOOLTIP_MOVE_THE_STARTING_DATE_FORWARD), SetFill(0, 1),
 								EndContainer(),
+								NWidget(WWT_DROPDOWN, COLOUR_ORANGE, WID_GL_TOWNNAME_DROPDOWN), SetDataTip(STR_BLACK_STRING, STR_GAME_OPTIONS_TOWN_NAMES_DROPDOWN_TOOLTIP), SetFill(1, 0),
 							EndContainer(),
 						EndContainer(),
 						NWidget(WWT_PUSHTXTBTN, COLOUR_GREEN, WID_GL_GENERATE_BUTTON), SetMinimalSize(84, 0), SetDataTip(STR_MAPGEN_GENERATE, STR_NULL), SetFill(1, 1),
@@ -282,31 +335,83 @@ static void LandscapeGenerationCallback(Window *w, bool confirmed)
 	if (confirmed) StartGeneratingLandscape((GenerateLandscapeWindowMode)w->window_number);
 }
 
-static DropDownList *BuildMapsizeDropDown()
+/**
+ * Check if map size set lies in allowed boundaries.
+ * @param print_warning If set to true, messagebox with warning is printed out if size is outside limits.
+ * @return true if size is ok, false otherwise.
+ */
+static bool CheckMapSize(bool print_warning = true)
 {
-	DropDownList *list = new DropDownList();
+	uint64 tiles = 1ULL << (_settings_newgame.game_creation.map_x + _settings_newgame.game_creation.map_y);
+
+	if (_settings_newgame.game_creation.map_x + _settings_newgame.game_creation.map_y > MAX_MAP_TILES_BITS) {
+		if (print_warning) {
+			SetDParam(0, MAX_MAP_TILES);
+			SetDParam(1, tiles);
+			ShowErrorMessage(STR_MAPGEN_TOO_MANY_TILES_MESSAGE, INVALID_STRING_ID, WL_ERROR, 0, 0);
+		}
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Build dropdown list with map sizes
+ * Dimension selected in the other dropdown is used to suggest which choices are 'valid'
+ * @param other_dimension Dimension specified by the second dropdown.
+ */
+static DropDownList BuildMapsizeDropDown(int other_dimension)
+{
+	DropDownList list;
 
 	for (uint i = MIN_MAP_SIZE_BITS; i <= MAX_MAP_SIZE_BITS; i++) {
-		DropDownListParamStringItem *item = new DropDownListParamStringItem(STR_JUST_INT, i, false);
+		DropDownListParamStringItem *item = new DropDownListParamStringItem((i + other_dimension > MAX_MAP_TILES_BITS) ? STR_RED_INT : STR_JUST_INT, i, false);
 		item->SetParam(0, 1LL << i);
-		*list->Append() = item;
+		list.emplace_back(item);
 	}
 
 	return list;
 }
 
-static const StringID _elevations[]  = {STR_TERRAIN_TYPE_VERY_FLAT, STR_TERRAIN_TYPE_FLAT, STR_TERRAIN_TYPE_HILLY, STR_TERRAIN_TYPE_MOUNTAINOUS, STR_TERRAIN_TYPE_ALPINIST, INVALID_STRING_ID};
+static DropDownList BuildTownNameDropDown()
+{
+	DropDownList list;
+
+	/* Add and sort newgrf townnames generators */
+	const auto &grf_names = GetGRFTownNameList();
+	for (uint i = 0; i < grf_names.size(); i++) {
+		list.emplace_back(new DropDownListStringItem(grf_names[i], BUILTIN_TOWNNAME_GENERATOR_COUNT + i, false));
+	}
+	std::sort(list.begin(), list.end(), DropDownListStringItem::NatSortFunc);
+
+	size_t newgrf_size = list.size();
+	/* Insert newgrf_names at the top of the list */
+	if (newgrf_size > 0) {
+		list.emplace_back(new DropDownListItem(-1, false)); // separator line
+		newgrf_size++;
+	}
+
+	/* Add and sort original townnames generators */
+	for (uint i = 0; i < BUILTIN_TOWNNAME_GENERATOR_COUNT; i++) {
+		list.emplace_back(new DropDownListStringItem(STR_GAME_OPTIONS_TOWN_NAME_ORIGINAL_ENGLISH + i, i, false));
+	}
+	std::sort(list.begin() + newgrf_size, list.end(), DropDownListStringItem::NatSortFunc);
+
+	return list;
+}
+
+
+static const StringID _elevations[]  = {STR_TERRAIN_TYPE_VERY_FLAT, STR_TERRAIN_TYPE_FLAT, STR_TERRAIN_TYPE_HILLY, STR_TERRAIN_TYPE_MOUNTAINOUS, STR_TERRAIN_TYPE_ALPINIST, STR_TERRAIN_TYPE_CUSTOM, INVALID_STRING_ID};
 static const StringID _sea_lakes[]   = {STR_SEA_LEVEL_VERY_LOW, STR_SEA_LEVEL_LOW, STR_SEA_LEVEL_MEDIUM, STR_SEA_LEVEL_HIGH, STR_SEA_LEVEL_CUSTOM, INVALID_STRING_ID};
-static const StringID _rivers[]      = {STR_RIVERS_NONE, STR_RIVERS_FEW, STR_RIVERS_MODERATE, STR_RIVERS_LOT, INVALID_STRING_ID};
+static const StringID _rivers[]      = {STR_RIVERS_NONE, STR_RIVERS_FEW, STR_RIVERS_MODERATE, STR_RIVERS_LOT, STR_RIVERS_VERY_MANY, STR_RIVERS_EXTREMELY_MANY, INVALID_STRING_ID};
 static const StringID _smoothness[]  = {STR_CONFIG_SETTING_ROUGHNESS_OF_TERRAIN_VERY_SMOOTH, STR_CONFIG_SETTING_ROUGHNESS_OF_TERRAIN_SMOOTH, STR_CONFIG_SETTING_ROUGHNESS_OF_TERRAIN_ROUGH, STR_CONFIG_SETTING_ROUGHNESS_OF_TERRAIN_VERY_ROUGH, INVALID_STRING_ID};
-static const StringID _tree_placer[] = {STR_CONFIG_SETTING_TREE_PLACER_NONE, STR_CONFIG_SETTING_TREE_PLACER_ORIGINAL, STR_CONFIG_SETTING_TREE_PLACER_IMPROVED, INVALID_STRING_ID};
 static const StringID _rotation[]    = {STR_CONFIG_SETTING_HEIGHTMAP_ROTATION_COUNTER_CLOCKWISE, STR_CONFIG_SETTING_HEIGHTMAP_ROTATION_CLOCKWISE, INVALID_STRING_ID};
 static const StringID _landscape[]   = {STR_CONFIG_SETTING_LAND_GENERATOR_ORIGINAL, STR_CONFIG_SETTING_LAND_GENERATOR_TERRA_GENESIS, INVALID_STRING_ID};
 static const StringID _num_towns[]   = {STR_NUM_VERY_LOW, STR_NUM_LOW, STR_NUM_NORMAL, STR_NUM_HIGH, STR_NUM_CUSTOM, INVALID_STRING_ID};
 static const StringID _num_inds[]    = {STR_FUNDING_ONLY, STR_MINIMAL, STR_NUM_VERY_LOW, STR_NUM_LOW, STR_NUM_NORMAL, STR_NUM_HIGH, INVALID_STRING_ID};
 static const StringID _variety[]     = {STR_VARIETY_NONE, STR_VARIETY_VERY_LOW, STR_VARIETY_LOW, STR_VARIETY_MEDIUM, STR_VARIETY_HIGH, STR_VARIETY_VERY_HIGH, INVALID_STRING_ID};
 
-assert_compile(lengthof(_num_inds) == ID_END + 1);
+static_assert(lengthof(_num_inds) == ID_END + 1);
 
 struct GenerateLandscapeWindow : public Window {
 	uint widget_id;
@@ -314,6 +419,14 @@ struct GenerateLandscapeWindow : public Window {
 	uint y;
 	char name[64];
 	GenerateLandscapeWindowMode mode;
+
+	void SetDropDownColor()
+	{
+		/* Draw sizes in mapsize selection dropdowns in red if too large size is selected */
+		bool mapsize_valid = CheckMapSize(false);
+		this->GetWidget<NWidgetCore>(WID_GL_MAPSIZE_X_PULLDOWN)->widget_data = mapsize_valid ? STR_JUST_INT : STR_RED_INT;
+		this->GetWidget<NWidgetCore>(WID_GL_MAPSIZE_Y_PULLDOWN)->widget_data = mapsize_valid ? STR_JUST_INT : STR_RED_INT;
+	}
 
 	GenerateLandscapeWindow(WindowDesc *desc, WindowNumber number = 0) : Window(desc)
 	{
@@ -323,23 +436,31 @@ struct GenerateLandscapeWindow : public Window {
 
 		this->mode = (GenerateLandscapeWindowMode)this->window_number;
 
-		/* Disable town, industry and trees in SE */
+		SetDropDownColor();
+
+		/* Disable town and industry in SE */
 		this->SetWidgetDisabledState(WID_GL_TOWN_PULLDOWN,     _game_mode == GM_EDITOR);
 		this->SetWidgetDisabledState(WID_GL_INDUSTRY_PULLDOWN, _game_mode == GM_EDITOR);
-		this->SetWidgetDisabledState(WID_GL_TREE_PULLDOWN,     _game_mode == GM_EDITOR);
+
+		/* In case the map_height_limit is changed, clamp heightmap_height and custom_terrain_type. */
+		_settings_newgame.game_creation.heightmap_height = Clamp(_settings_newgame.game_creation.heightmap_height, MIN_HEIGHTMAP_HEIGHT, GetMapHeightLimit());
+		_settings_newgame.game_creation.custom_terrain_type = Clamp(_settings_newgame.game_creation.custom_terrain_type, MIN_CUSTOM_TERRAIN_TYPE, GetMapHeightLimit());
 
 		this->OnInvalidateData();
 	}
 
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_GL_START_DATE_TEXT:      SetDParam(0, ConvertYMDToDate(_settings_newgame.game_creation.starting_year, 0, 1)); break;
 			case WID_GL_MAPSIZE_X_PULLDOWN:   SetDParam(0, 1LL << _settings_newgame.game_creation.map_x); break;
 			case WID_GL_MAPSIZE_Y_PULLDOWN:   SetDParam(0, 1LL << _settings_newgame.game_creation.map_y); break;
-			case WID_GL_MAX_HEIGHTLEVEL_TEXT: SetDParam(0, _settings_newgame.construction.max_heightlevel); break;
+			case WID_GL_HEIGHTMAP_HEIGHT_TEXT: SetDParam(0, _settings_newgame.game_creation.heightmap_height); break;
+			case WID_GL_SNOW_COVERAGE_TEXT:   SetDParam(0, _settings_newgame.game_creation.snow_coverage); break;
+			case WID_GL_DESERT_COVERAGE_TEXT: SetDParam(0, _settings_newgame.game_creation.desert_coverage); break;
 			case WID_GL_SNOW_LEVEL_TEXT:      SetDParam(0, _settings_newgame.game_creation.snow_line_height); break;
+			case WID_GL_RAINFOREST_LEVEL_TEXT:SetDParam(0, _settings_newgame.game_creation.rainforest_line_height); break;
 
 			case WID_GL_TOWN_PULLDOWN:
 				if (_game_mode == GM_EDITOR) {
@@ -352,10 +473,25 @@ struct GenerateLandscapeWindow : public Window {
 				}
 				break;
 
+			case WID_GL_TOWNNAME_DROPDOWN: {
+				uint gen = _settings_newgame.game_creation.town_name;
+				StringID name = gen < BUILTIN_TOWNNAME_GENERATOR_COUNT ?
+						STR_GAME_OPTIONS_TOWN_NAME_ORIGINAL_ENGLISH + gen :
+						GetGRFTownNameName(gen - BUILTIN_TOWNNAME_GENERATOR_COUNT);
+				SetDParam(0, name);
+				break;
+			}
+
 			case WID_GL_INDUSTRY_PULLDOWN:   SetDParam(0, _game_mode == GM_EDITOR ? STR_CONFIG_SETTING_OFF : _num_inds[_settings_newgame.difficulty.industry_density]); break;
 			case WID_GL_LANDSCAPE_PULLDOWN:  SetDParam(0, _landscape[_settings_newgame.game_creation.land_generator]); break;
-			case WID_GL_TREE_PULLDOWN:       SetDParam(0, _tree_placer[_settings_newgame.game_creation.tree_placer]); break;
-			case WID_GL_TERRAIN_PULLDOWN:    SetDParam(0, _elevations[_settings_newgame.difficulty.terrain_type]); break;
+			case WID_GL_TERRAIN_PULLDOWN:
+				if (_settings_newgame.difficulty.terrain_type == CUSTOM_TERRAIN_TYPE_NUMBER_DIFFICULTY) {
+					SetDParam(0, STR_TERRAIN_TYPE_CUSTOM_VALUE);
+					SetDParam(1, _settings_newgame.game_creation.custom_terrain_type);
+				} else {
+					SetDParam(0, _elevations[_settings_newgame.difficulty.terrain_type]); break;
+				}
+				break;
 
 			case WID_GL_WATER_PULLDOWN:
 				if (_settings_newgame.difficulty.quantity_sea_lakes == CUSTOM_SEA_LEVEL_NUMBER_DIFFICULTY) {
@@ -393,7 +529,7 @@ struct GenerateLandscapeWindow : public Window {
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 		/* Update the climate buttons */
@@ -422,29 +558,57 @@ struct GenerateLandscapeWindow : public Window {
 		}
 
 		/* Disable snowline if not arctic */
-		this->SetWidgetDisabledState(WID_GL_SNOW_LEVEL_TEXT, _settings_newgame.game_creation.landscape != LT_ARCTIC);
+		this->SetWidgetDisabledState(WID_GL_SNOW_COVERAGE_TEXT, _settings_newgame.game_creation.landscape != LT_ARCTIC || _settings_newgame.game_creation.climate_threshold_mode != 0);
+		this->SetWidgetDisabledState(WID_GL_SNOW_LEVEL_TEXT, _settings_newgame.game_creation.landscape != LT_ARCTIC || _settings_newgame.game_creation.climate_threshold_mode == 0);
+		/* Disable desert if not tropic */
+		this->SetWidgetDisabledState(WID_GL_DESERT_COVERAGE_TEXT, _settings_newgame.game_creation.landscape != LT_TROPIC || _settings_newgame.game_creation.climate_threshold_mode != 0);
+		this->SetWidgetDisabledState(WID_GL_RAINFOREST_LEVEL_TEXT, _settings_newgame.game_creation.landscape != LT_TROPIC || _settings_newgame.game_creation.climate_threshold_mode == 0);
+
+		/* Set snow/rainforest selections */
+		int climate_plane = 0;
+		switch (_settings_newgame.game_creation.landscape) {
+			case LT_TEMPERATE: climate_plane = SZSP_VERTICAL; break;
+			case LT_ARCTIC:    climate_plane = _settings_newgame.game_creation.climate_threshold_mode ? 2 : 0; break;
+			case LT_TROPIC:    climate_plane = _settings_newgame.game_creation.climate_threshold_mode ? 3 : 1; break;
+			case LT_TOYLAND:   climate_plane = SZSP_VERTICAL; break;
+		}
+		this->GetWidget<NWidgetStacked>(WID_GL_CLIMATE_SEL_LABEL)->SetDisplayedPlane(climate_plane);
+		this->GetWidget<NWidgetStacked>(WID_GL_CLIMATE_SEL_SELECTOR)->SetDisplayedPlane(climate_plane);
 
 		/* Update availability of decreasing / increasing start date and snow level */
-		this->SetWidgetDisabledState(WID_GL_MAX_HEIGHTLEVEL_DOWN, _settings_newgame.construction.max_heightlevel <= MIN_MAX_HEIGHTLEVEL);
-		this->SetWidgetDisabledState(WID_GL_MAX_HEIGHTLEVEL_UP, _settings_newgame.construction.max_heightlevel >= MAX_MAX_HEIGHTLEVEL);
+		if (mode == GLWM_HEIGHTMAP) {
+			this->SetWidgetDisabledState(WID_GL_HEIGHTMAP_HEIGHT_DOWN, _settings_newgame.game_creation.heightmap_height <= MIN_HEIGHTMAP_HEIGHT);
+			this->SetWidgetDisabledState(WID_GL_HEIGHTMAP_HEIGHT_UP, _settings_newgame.game_creation.heightmap_height >= GetMapHeightLimit());
+		}
 		this->SetWidgetDisabledState(WID_GL_START_DATE_DOWN, _settings_newgame.game_creation.starting_year <= MIN_YEAR);
 		this->SetWidgetDisabledState(WID_GL_START_DATE_UP,   _settings_newgame.game_creation.starting_year >= MAX_YEAR);
+		this->SetWidgetDisabledState(WID_GL_SNOW_COVERAGE_DOWN, _settings_newgame.game_creation.snow_coverage <= 0 || _settings_newgame.game_creation.landscape != LT_ARCTIC);
+		this->SetWidgetDisabledState(WID_GL_SNOW_COVERAGE_UP,   _settings_newgame.game_creation.snow_coverage >= 100 || _settings_newgame.game_creation.landscape != LT_ARCTIC);
+		this->SetWidgetDisabledState(WID_GL_DESERT_COVERAGE_DOWN, _settings_newgame.game_creation.desert_coverage <= 0 || _settings_newgame.game_creation.landscape != LT_TROPIC);
+		this->SetWidgetDisabledState(WID_GL_DESERT_COVERAGE_UP,   _settings_newgame.game_creation.desert_coverage >= 100 || _settings_newgame.game_creation.landscape != LT_TROPIC);
 		this->SetWidgetDisabledState(WID_GL_SNOW_LEVEL_DOWN, _settings_newgame.game_creation.snow_line_height <= MIN_SNOWLINE_HEIGHT || _settings_newgame.game_creation.landscape != LT_ARCTIC);
 		this->SetWidgetDisabledState(WID_GL_SNOW_LEVEL_UP,   _settings_newgame.game_creation.snow_line_height >= MAX_SNOWLINE_HEIGHT || _settings_newgame.game_creation.landscape != LT_ARCTIC);
+		this->SetWidgetDisabledState(WID_GL_RAINFOREST_LEVEL_DOWN, _settings_newgame.game_creation.rainforest_line_height <= MIN_RAINFOREST_HEIGHT || _settings_newgame.game_creation.landscape != LT_TROPIC);
+		this->SetWidgetDisabledState(WID_GL_RAINFOREST_LEVEL_UP,   _settings_newgame.game_creation.rainforest_line_height >= MAX_RAINFOREST_HEIGHT || _settings_newgame.game_creation.landscape != LT_TROPIC);
 
-		/* Do not allow a custom sea level with the original land generator. */
-		if (_settings_newgame.game_creation.land_generator == LG_ORIGINAL &&
-				_settings_newgame.difficulty.quantity_sea_lakes == CUSTOM_SEA_LEVEL_NUMBER_DIFFICULTY) {
-			_settings_newgame.difficulty.quantity_sea_lakes = CUSTOM_SEA_LEVEL_MIN_PERCENTAGE;
+		/* Do not allow a custom sea level or terrain type with the original land generator. */
+		if (_settings_newgame.game_creation.land_generator == LG_ORIGINAL) {
+			if (_settings_newgame.difficulty.quantity_sea_lakes == CUSTOM_SEA_LEVEL_NUMBER_DIFFICULTY) {
+				_settings_newgame.difficulty.quantity_sea_lakes = CUSTOM_SEA_LEVEL_MIN_PERCENTAGE;
+			}
+			if (_settings_newgame.difficulty.terrain_type == CUSTOM_TERRAIN_TYPE_NUMBER_DIFFICULTY) {
+				_settings_newgame.difficulty.terrain_type = 1;
+			}
 		}
 
+		this->SetDirty();
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
-		const StringID *strs = NULL;
+		const StringID *strs = nullptr;
 		switch (widget) {
-			case WID_GL_MAX_HEIGHTLEVEL_TEXT:
+			case WID_GL_HEIGHTMAP_HEIGHT_TEXT:
 				SetDParam(0, MAX_TILE_HEIGHT);
 				*size = GetStringBoundingBox(STR_JUST_INT);
 				break;
@@ -460,8 +624,23 @@ struct GenerateLandscapeWindow : public Window {
 				*size = maxdim(*size, GetStringBoundingBox(STR_JUST_INT));
 				break;
 
+			case WID_GL_SNOW_COVERAGE_TEXT:
+				SetDParamMaxValue(0, MAX_TILE_HEIGHT);
+				*size = maxdim(*size, GetStringBoundingBox(STR_MAPGEN_SNOW_COVERAGE_TEXT));
+				break;
+
+			case WID_GL_DESERT_COVERAGE_TEXT:
+				SetDParamMaxValue(0, MAX_TILE_HEIGHT);
+				*size = maxdim(*size, GetStringBoundingBox(STR_MAPGEN_DESERT_COVERAGE_TEXT));
+				break;
+
 			case WID_GL_SNOW_LEVEL_TEXT:
 				SetDParamMaxValue(0, MAX_TILE_HEIGHT);
+				*size = maxdim(*size, GetStringBoundingBox(STR_JUST_INT));
+				break;
+
+			case WID_GL_RAINFOREST_LEVEL_TEXT:
+				SetDParamMaxValue(0, MAX_RAINFOREST_HEIGHT);
 				*size = maxdim(*size, GetStringBoundingBox(STR_JUST_INT));
 				break;
 
@@ -479,8 +658,13 @@ struct GenerateLandscapeWindow : public Window {
 
 			case WID_GL_INDUSTRY_PULLDOWN:   strs = _num_inds; break;
 			case WID_GL_LANDSCAPE_PULLDOWN:  strs = _landscape; break;
-			case WID_GL_TREE_PULLDOWN:       strs = _tree_placer; break;
-			case WID_GL_TERRAIN_PULLDOWN:    strs = _elevations; break;
+
+			case WID_GL_TERRAIN_PULLDOWN:
+				strs = _elevations;
+				SetDParamMaxValue(0, MAX_MAP_HEIGHT_LIMIT);
+				*size = maxdim(*size, GetStringBoundingBox(STR_TERRAIN_TYPE_CUSTOM_VALUE));
+				break;
+
 			case WID_GL_WATER_PULLDOWN:
 				strs = _sea_lakes;
 				SetDParamMaxValue(0, CUSTOM_SEA_LEVEL_MAX_PERCENTAGE);
@@ -509,16 +693,16 @@ struct GenerateLandscapeWindow : public Window {
 			default:
 				return;
 		}
-		if (strs != NULL) {
+		if (strs != nullptr) {
 			while (*strs != INVALID_STRING_ID) {
 				*size = maxdim(*size, GetStringBoundingBox(*strs++));
 			}
 		}
 		size->width += padding.width;
-		size->height = max(size->height, (uint)(FONT_HEIGHT_NORMAL + WD_DROPDOWNTEXT_TOP + WD_DROPDOWNTEXT_BOTTOM));
+		size->height = std::max(size->height, (uint)(FONT_HEIGHT_NORMAL + WD_DROPDOWNTEXT_TOP + WD_DROPDOWNTEXT_BOTTOM));
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
 			case WID_GL_HEIGHTMAP_NAME_TEXT: {
@@ -528,7 +712,7 @@ struct GenerateLandscapeWindow : public Window {
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_GL_TEMPERATE:
@@ -539,15 +723,19 @@ struct GenerateLandscapeWindow : public Window {
 				break;
 
 			case WID_GL_MAPSIZE_X_PULLDOWN: // Mapsize X
-				ShowDropDownList(this, BuildMapsizeDropDown(), _settings_newgame.game_creation.map_x, WID_GL_MAPSIZE_X_PULLDOWN);
+				ShowDropDownList(this, BuildMapsizeDropDown(_settings_newgame.game_creation.map_y), _settings_newgame.game_creation.map_x, WID_GL_MAPSIZE_X_PULLDOWN);
 				break;
 
 			case WID_GL_MAPSIZE_Y_PULLDOWN: // Mapsize Y
-				ShowDropDownList(this, BuildMapsizeDropDown(), _settings_newgame.game_creation.map_y, WID_GL_MAPSIZE_Y_PULLDOWN);
+				ShowDropDownList(this, BuildMapsizeDropDown(_settings_newgame.game_creation.map_x), _settings_newgame.game_creation.map_y, WID_GL_MAPSIZE_Y_PULLDOWN);
 				break;
 
 			case WID_GL_TOWN_PULLDOWN: // Number of towns
 				ShowDropDownMenu(this, _num_towns, _settings_newgame.difficulty.number_towns, WID_GL_TOWN_PULLDOWN, 0, 0);
+				break;
+
+			case WID_GL_TOWNNAME_DROPDOWN: // Townname generator
+				ShowDropDownList(this, BuildTownNameDropDown(), _settings_newgame.game_creation.town_name, WID_GL_TOWNNAME_DROPDOWN);
 				break;
 
 			case WID_GL_INDUSTRY_PULLDOWN: // Number of industries
@@ -555,6 +743,7 @@ struct GenerateLandscapeWindow : public Window {
 				break;
 
 			case WID_GL_GENERATE_BUTTON: { // Generate
+				if (!CheckMapSize()) break;
 				/* Get rotated map size. */
 				uint map_x;
 				uint map_y;
@@ -581,22 +770,22 @@ struct GenerateLandscapeWindow : public Window {
 				break;
 			}
 
-			case WID_GL_MAX_HEIGHTLEVEL_DOWN:
-			case WID_GL_MAX_HEIGHTLEVEL_UP: // Height level buttons
+			case WID_GL_HEIGHTMAP_HEIGHT_DOWN:
+			case WID_GL_HEIGHTMAP_HEIGHT_UP: // Height level buttons
 				/* Don't allow too fast scrolling */
 				if (!(this->flags & WF_TIMEOUT) || this->timeout_timer <= 1) {
 					this->HandleButtonClick(widget);
 
-					_settings_newgame.construction.max_heightlevel = Clamp(_settings_newgame.construction.max_heightlevel + widget - WID_GL_MAX_HEIGHTLEVEL_TEXT, MIN_MAX_HEIGHTLEVEL, MAX_MAX_HEIGHTLEVEL);
+					_settings_newgame.game_creation.heightmap_height = Clamp(_settings_newgame.game_creation.heightmap_height + widget - WID_GL_HEIGHTMAP_HEIGHT_TEXT, MIN_HEIGHTMAP_HEIGHT, GetMapHeightLimit());
 					this->InvalidateData();
 				}
 				_left_button_clicked = false;
 				break;
 
-			case WID_GL_MAX_HEIGHTLEVEL_TEXT: // Height level text
-				this->widget_id = WID_GL_MAX_HEIGHTLEVEL_TEXT;
-				SetDParam(0, _settings_newgame.construction.max_heightlevel);
-				ShowQueryString(STR_JUST_INT, STR_MAPGEN_MAX_HEIGHTLEVEL_QUERY_CAPT, 4, this, CS_NUMERAL, QSF_ENABLE_DEFAULT);
+			case WID_GL_HEIGHTMAP_HEIGHT_TEXT: // Height level text
+				this->widget_id = WID_GL_HEIGHTMAP_HEIGHT_TEXT;
+				SetDParam(0, _settings_newgame.game_creation.heightmap_height);
+				ShowQueryString(STR_JUST_INT, STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT, 4, this, CS_NUMERAL, QSF_ENABLE_DEFAULT);
 				break;
 
 
@@ -618,6 +807,42 @@ struct GenerateLandscapeWindow : public Window {
 				ShowQueryString(STR_JUST_INT, STR_MAPGEN_START_DATE_QUERY_CAPT, 8, this, CS_NUMERAL, QSF_ENABLE_DEFAULT);
 				break;
 
+			case WID_GL_SNOW_COVERAGE_DOWN:
+			case WID_GL_SNOW_COVERAGE_UP: // Snow coverage buttons
+				/* Don't allow too fast scrolling */
+				if (!(this->flags & WF_TIMEOUT) || this->timeout_timer <= 1) {
+					this->HandleButtonClick(widget);
+
+					_settings_newgame.game_creation.snow_coverage = Clamp(_settings_newgame.game_creation.snow_coverage + (widget - WID_GL_SNOW_COVERAGE_TEXT) * 10, 0, 100);
+					this->InvalidateData();
+				}
+				_left_button_clicked = false;
+				break;
+
+			case WID_GL_SNOW_COVERAGE_TEXT: // Snow coverage text
+				this->widget_id = WID_GL_SNOW_COVERAGE_TEXT;
+				SetDParam(0, _settings_newgame.game_creation.snow_coverage);
+				ShowQueryString(STR_JUST_INT, STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT, 4, this, CS_NUMERAL, QSF_ENABLE_DEFAULT);
+				break;
+
+			case WID_GL_DESERT_COVERAGE_DOWN:
+			case WID_GL_DESERT_COVERAGE_UP: // Desert coverage buttons
+				/* Don't allow too fast scrolling */
+				if (!(this->flags & WF_TIMEOUT) || this->timeout_timer <= 1) {
+					this->HandleButtonClick(widget);
+
+					_settings_newgame.game_creation.desert_coverage = Clamp(_settings_newgame.game_creation.desert_coverage + (widget - WID_GL_DESERT_COVERAGE_TEXT) * 10, 0, 100);
+					this->InvalidateData();
+				}
+				_left_button_clicked = false;
+				break;
+
+			case WID_GL_DESERT_COVERAGE_TEXT: // Desert line text
+				this->widget_id = WID_GL_DESERT_COVERAGE_TEXT;
+				SetDParam(0, _settings_newgame.game_creation.desert_coverage);
+				ShowQueryString(STR_JUST_INT, STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT, 4, this, CS_NUMERAL, QSF_ENABLE_DEFAULT);
+				break;
+
 			case WID_GL_SNOW_LEVEL_DOWN:
 			case WID_GL_SNOW_LEVEL_UP: // Snow line buttons
 				/* Don't allow too fast scrolling */
@@ -636,8 +861,22 @@ struct GenerateLandscapeWindow : public Window {
 				ShowQueryString(STR_JUST_INT, STR_MAPGEN_SNOW_LINE_QUERY_CAPT, 4, this, CS_NUMERAL, QSF_ENABLE_DEFAULT);
 				break;
 
-			case WID_GL_TREE_PULLDOWN: // Tree placer
-				ShowDropDownMenu(this, _tree_placer, _settings_newgame.game_creation.tree_placer, WID_GL_TREE_PULLDOWN, 0, 0);
+			case WID_GL_RAINFOREST_LEVEL_DOWN:
+			case WID_GL_RAINFOREST_LEVEL_UP: // Rainforest line buttons
+				/* Don't allow too fast scrolling */
+				if (!(this->flags & WF_TIMEOUT) || this->timeout_timer <= 1) {
+					this->HandleButtonClick(widget);
+
+					_settings_newgame.game_creation.rainforest_line_height = Clamp(_settings_newgame.game_creation.rainforest_line_height + widget - WID_GL_RAINFOREST_LEVEL_TEXT, MIN_RAINFOREST_HEIGHT, MAX_RAINFOREST_HEIGHT);
+					this->InvalidateData();
+				}
+				_left_button_clicked = false;
+				break;
+
+			case WID_GL_RAINFOREST_LEVEL_TEXT: // Rainforest line text
+				this->widget_id = WID_GL_RAINFOREST_LEVEL_TEXT;
+				SetDParam(0, _settings_newgame.game_creation.rainforest_line_height);
+				ShowQueryString(STR_JUST_INT, STR_MAPGEN_RAINFOREST_LINE_QUERY_CAPT, 4, this, CS_NUMERAL, QSF_ENABLE_DEFAULT);
 				break;
 
 			case WID_GL_LANDSCAPE_PULLDOWN: // Landscape generator
@@ -703,10 +942,14 @@ struct GenerateLandscapeWindow : public Window {
 		}
 	}
 
-	virtual void OnTimeout()
+	void OnTimeout() override
 	{
-		static const int raise_widgets[] = {WID_GL_MAX_HEIGHTLEVEL_DOWN, WID_GL_MAX_HEIGHTLEVEL_UP, WID_GL_START_DATE_DOWN, WID_GL_START_DATE_UP, WID_GL_SNOW_LEVEL_UP, WID_GL_SNOW_LEVEL_DOWN, WIDGET_LIST_END};
-		for (const int *widget = raise_widgets; *widget != WIDGET_LIST_END; widget++) {
+		static const int newgame_raise_widgets[] = {WID_GL_START_DATE_DOWN, WID_GL_START_DATE_UP, WID_GL_SNOW_COVERAGE_UP, WID_GL_SNOW_COVERAGE_DOWN, WID_GL_DESERT_COVERAGE_UP, WID_GL_DESERT_COVERAGE_DOWN, WID_GL_SNOW_LEVEL_UP, WID_GL_SNOW_LEVEL_DOWN, WID_GL_RAINFOREST_LEVEL_UP, WID_GL_RAINFOREST_LEVEL_DOWN, WIDGET_LIST_END};
+		static const int heightmap_raise_widgets[] = {WID_GL_HEIGHTMAP_HEIGHT_DOWN, WID_GL_HEIGHTMAP_HEIGHT_UP, WID_GL_START_DATE_DOWN, WID_GL_START_DATE_UP, WID_GL_SNOW_COVERAGE_UP, WID_GL_SNOW_COVERAGE_DOWN, WID_GL_DESERT_COVERAGE_UP, WID_GL_DESERT_COVERAGE_DOWN, WID_GL_SNOW_LEVEL_UP, WID_GL_SNOW_LEVEL_DOWN, WID_GL_RAINFOREST_LEVEL_UP, WID_GL_RAINFOREST_LEVEL_DOWN, WIDGET_LIST_END};
+
+		const int *widget = (mode == GLWM_HEIGHTMAP) ? heightmap_raise_widgets : newgame_raise_widgets;
+
+		for (; *widget != WIDGET_LIST_END; widget++) {
 			if (this->IsWidgetLowered(*widget)) {
 				this->RaiseWidget(*widget);
 				this->SetWidgetDirty(*widget);
@@ -714,12 +957,17 @@ struct GenerateLandscapeWindow : public Window {
 		}
 	}
 
-	virtual void OnDropdownSelect(int widget, int index)
+	void OnDropdownSelect(int widget, int index) override
 	{
 		switch (widget) {
-			case WID_GL_MAPSIZE_X_PULLDOWN:     _settings_newgame.game_creation.map_x = index; break;
-			case WID_GL_MAPSIZE_Y_PULLDOWN:     _settings_newgame.game_creation.map_y = index; break;
-			case WID_GL_TREE_PULLDOWN:          _settings_newgame.game_creation.tree_placer = index; break;
+			case WID_GL_MAPSIZE_X_PULLDOWN:
+				_settings_newgame.game_creation.map_x = index;
+				SetDropDownColor();
+				break;
+			case WID_GL_MAPSIZE_Y_PULLDOWN:
+				_settings_newgame.game_creation.map_y = index;
+				SetDropDownColor();
+				break;
 			case WID_GL_RIVER_PULLDOWN:         _settings_newgame.game_creation.amount_of_rivers = index; break;
 			case WID_GL_SMOOTHNESS_PULLDOWN:    _settings_newgame.game_creation.tgen_smoothness = index;  break;
 			case WID_GL_VARIETY_PULLDOWN:       _settings_newgame.game_creation.variety = index; break;
@@ -742,8 +990,23 @@ struct GenerateLandscapeWindow : public Window {
 				_settings_newgame.difficulty.number_towns = index;
 				break;
 
+			case WID_GL_TOWNNAME_DROPDOWN: // Town names
+				if (_game_mode == GM_MENU || Town::GetNumItems() == 0) {
+					_settings_newgame.game_creation.town_name = index;
+					SetWindowDirty(WC_GAME_OPTIONS, WN_GAME_OPTIONS_GAME_OPTIONS);
+				}
+				break;
+
 			case WID_GL_INDUSTRY_PULLDOWN: _settings_newgame.difficulty.industry_density = index; break;
-			case WID_GL_TERRAIN_PULLDOWN:  _settings_newgame.difficulty.terrain_type     = index; break;
+			case WID_GL_TERRAIN_PULLDOWN: {
+				if ((uint)index == CUSTOM_TERRAIN_TYPE_NUMBER_DIFFICULTY) {
+					this->widget_id = widget;
+					SetDParam(0, _settings_newgame.game_creation.custom_terrain_type);
+					ShowQueryString(STR_JUST_INT, STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT, 4, this, CS_NUMERAL, QSF_NONE);
+				}
+				_settings_newgame.difficulty.terrain_type = index;
+				break;
+			}
 
 			case WID_GL_WATER_PULLDOWN: {
 				if ((uint)index == CUSTOM_SEA_LEVEL_NUMBER_DIFFICULTY) {
@@ -758,10 +1021,10 @@ struct GenerateLandscapeWindow : public Window {
 		this->InvalidateData();
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
 		/* Was 'cancel' pressed? */
-		if (str == NULL) return;
+		if (str == nullptr) return;
 
 		int32 value;
 		if (!StrEmpty(str)) {
@@ -769,19 +1032,23 @@ struct GenerateLandscapeWindow : public Window {
 		} else {
 			/* An empty string means revert to the default */
 			switch (this->widget_id) {
-				case WID_GL_MAX_HEIGHTLEVEL_TEXT: value = DEF_MAX_HEIGHTLEVEL; break;
+				case WID_GL_HEIGHTMAP_HEIGHT_TEXT: value = MAP_HEIGHT_LIMIT_AUTO_MINIMUM; break;
 				case WID_GL_START_DATE_TEXT: value = DEF_START_YEAR; break;
+				case WID_GL_SNOW_COVERAGE_TEXT: value = DEF_SNOW_COVERAGE; break;
+				case WID_GL_DESERT_COVERAGE_TEXT: value = DEF_DESERT_COVERAGE; break;
+				case WID_GL_TOWN_PULLDOWN: value = 1; break;
+				case WID_GL_TERRAIN_PULLDOWN: value = MIN_MAP_HEIGHT_LIMIT; break;
+				case WID_GL_WATER_PULLDOWN: value = CUSTOM_SEA_LEVEL_MIN_PERCENTAGE; break;
 				case WID_GL_SNOW_LEVEL_TEXT: value = DEF_SNOWLINE_HEIGHT; break;
-				case WID_GL_TOWN_PULLDOWN:   value = 1; break;
-				case WID_GL_WATER_PULLDOWN:  value = CUSTOM_SEA_LEVEL_MIN_PERCENTAGE; break;
+				case WID_GL_RAINFOREST_LEVEL_TEXT: value = DEF_RAINFOREST_HEIGHT; break;
 				default: NOT_REACHED();
 			}
 		}
 
 		switch (this->widget_id) {
-			case WID_GL_MAX_HEIGHTLEVEL_TEXT:
-				this->SetWidgetDirty(WID_GL_MAX_HEIGHTLEVEL_TEXT);
-				_settings_newgame.construction.max_heightlevel = Clamp(value, MIN_MAX_HEIGHTLEVEL, MAX_MAX_HEIGHTLEVEL);
+			case WID_GL_HEIGHTMAP_HEIGHT_TEXT:
+				this->SetWidgetDirty(WID_GL_HEIGHTMAP_HEIGHT_TEXT);
+				_settings_newgame.game_creation.heightmap_height = Clamp(value, MIN_HEIGHTMAP_HEIGHT, GetMapHeightLimit());
 				break;
 
 			case WID_GL_START_DATE_TEXT:
@@ -789,13 +1056,32 @@ struct GenerateLandscapeWindow : public Window {
 				_settings_newgame.game_creation.starting_year = Clamp(value, MIN_YEAR, MAX_YEAR);
 				break;
 
+			case WID_GL_SNOW_COVERAGE_TEXT:
+				this->SetWidgetDirty(WID_GL_SNOW_COVERAGE_TEXT);
+				_settings_newgame.game_creation.snow_coverage = Clamp(value, 0, 100);
+				break;
+
+			case WID_GL_DESERT_COVERAGE_TEXT:
+				this->SetWidgetDirty(WID_GL_DESERT_COVERAGE_TEXT);
+				_settings_newgame.game_creation.desert_coverage = Clamp(value, 0, 100);
+				break;
+
 			case WID_GL_SNOW_LEVEL_TEXT:
 				this->SetWidgetDirty(WID_GL_SNOW_LEVEL_TEXT);
 				_settings_newgame.game_creation.snow_line_height = Clamp(value, MIN_SNOWLINE_HEIGHT, MAX_SNOWLINE_HEIGHT);
 				break;
 
+			case WID_GL_RAINFOREST_LEVEL_TEXT:
+				this->SetWidgetDirty(WID_GL_RAINFOREST_LEVEL_TEXT);
+				_settings_newgame.game_creation.rainforest_line_height = Clamp(value, MIN_RAINFOREST_HEIGHT, MAX_RAINFOREST_HEIGHT);
+				break;
+
 			case WID_GL_TOWN_PULLDOWN:
 				_settings_newgame.game_creation.custom_town_number = Clamp(value, 1, CUSTOM_TOWN_MAX_NUMBER);
+				break;
+
+			case WID_GL_TERRAIN_PULLDOWN:
+				_settings_newgame.game_creation.custom_terrain_type = Clamp(value, MIN_CUSTOM_TERRAIN_TYPE, GetMapHeightLimit());
 				break;
 
 			case WID_GL_WATER_PULLDOWN:
@@ -808,14 +1094,14 @@ struct GenerateLandscapeWindow : public Window {
 };
 
 static WindowDesc _generate_landscape_desc(
-	WDP_CENTER, NULL, 0, 0,
+	WDP_CENTER, nullptr, 0, 0,
 	WC_GENERATE_LANDSCAPE, WC_NONE,
 	0,
 	_nested_generate_landscape_widgets, lengthof(_nested_generate_landscape_widgets)
 );
 
 static WindowDesc _heightmap_load_desc(
-	WDP_CENTER, NULL, 0, 0,
+	WDP_CENTER, nullptr, 0, 0,
 	WC_GENERATE_LANDSCAPE, WC_NONE,
 	0,
 	_nested_heightmap_load_widgets, lengthof(_nested_heightmap_load_widgets)
@@ -833,7 +1119,7 @@ static void _ShowGenerateLandscape(GenerateLandscapeWindowMode mode)
 
 	if (mode == GLWM_HEIGHTMAP) {
 		/* If the function returns negative, it means there was a problem loading the heightmap */
-		if (!GetHeightmapDimensions(_file_to_saveload.detail_ftype, _file_to_saveload.name, &x, &y)) return;
+		if (!GetHeightmapDimensions(_file_to_saveload.detail_ftype, _file_to_saveload.name.c_str(), &x, &y)) return;
 	}
 
 	WindowDesc *desc = (mode == GLWM_HEIGHTMAP) ? &_heightmap_load_desc : &_generate_landscape_desc;
@@ -882,13 +1168,22 @@ struct CreateScenarioWindow : public Window
 {
 	uint widget_id;
 
+	void SetDropDownColor()
+	{
+		/* Draw sizes in mapsize selection dropdowns in red if too large size is selected */
+		bool mapsize_valid = CheckMapSize(false);
+		this->GetWidget<NWidgetCore>(WID_CS_MAPSIZE_X_PULLDOWN)->widget_data = mapsize_valid ? STR_JUST_INT : STR_RED_INT;
+		this->GetWidget<NWidgetCore>(WID_CS_MAPSIZE_Y_PULLDOWN)->widget_data = mapsize_valid ? STR_JUST_INT : STR_RED_INT;
+	}
+
 	CreateScenarioWindow(WindowDesc *desc, WindowNumber window_number) : Window(desc)
 	{
 		this->InitNested(window_number);
 		this->LowerWidget(_settings_newgame.game_creation.landscape + WID_CS_TEMPERATE);
+		SetDropDownColor();
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_CS_START_DATE_TEXT:
@@ -909,12 +1204,12 @@ struct CreateScenarioWindow : public Window
 		}
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		this->SetWidgetDisabledState(WID_CS_START_DATE_DOWN,       _settings_newgame.game_creation.starting_year <= MIN_YEAR);
 		this->SetWidgetDisabledState(WID_CS_START_DATE_UP,         _settings_newgame.game_creation.starting_year >= MAX_YEAR);
 		this->SetWidgetDisabledState(WID_CS_FLAT_LAND_HEIGHT_DOWN, _settings_newgame.game_creation.se_flat_world_height <= 0);
-		this->SetWidgetDisabledState(WID_CS_FLAT_LAND_HEIGHT_UP,   _settings_newgame.game_creation.se_flat_world_height >= MAX_TILE_HEIGHT);
+		this->SetWidgetDisabledState(WID_CS_FLAT_LAND_HEIGHT_UP,   _settings_newgame.game_creation.se_flat_world_height >= GetMapHeightLimit());
 
 		this->SetWidgetLoweredState(WID_CS_TEMPERATE, _settings_newgame.game_creation.landscape == LT_TEMPERATE);
 		this->SetWidgetLoweredState(WID_CS_ARCTIC,    _settings_newgame.game_creation.landscape == LT_ARCTIC);
@@ -924,7 +1219,7 @@ struct CreateScenarioWindow : public Window
 		this->DrawWidgets();
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		StringID str = STR_JUST_INT;
 		switch (widget) {
@@ -950,7 +1245,7 @@ struct CreateScenarioWindow : public Window
 		size->height += padding.height;
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_CS_TEMPERATE:
@@ -962,18 +1257,20 @@ struct CreateScenarioWindow : public Window
 				break;
 
 			case WID_CS_MAPSIZE_X_PULLDOWN: // Mapsize X
-				ShowDropDownList(this, BuildMapsizeDropDown(), _settings_newgame.game_creation.map_x, WID_CS_MAPSIZE_X_PULLDOWN);
+				ShowDropDownList(this, BuildMapsizeDropDown(_settings_newgame.game_creation.map_y), _settings_newgame.game_creation.map_x, WID_CS_MAPSIZE_X_PULLDOWN);
 				break;
 
 			case WID_CS_MAPSIZE_Y_PULLDOWN: // Mapsize Y
-				ShowDropDownList(this, BuildMapsizeDropDown(), _settings_newgame.game_creation.map_y, WID_CS_MAPSIZE_Y_PULLDOWN);
+				ShowDropDownList(this, BuildMapsizeDropDown(_settings_newgame.game_creation.map_x), _settings_newgame.game_creation.map_y, WID_CS_MAPSIZE_Y_PULLDOWN);
 				break;
 
 			case WID_CS_EMPTY_WORLD: // Empty world / flat world
+				if (!CheckMapSize()) break;
 				StartGeneratingLandscape(GLWM_SCENARIO);
 				break;
 
 			case WID_CS_RANDOM_WORLD: // Generate
+				if (!CheckMapSize()) break;
 				ShowGenerateLandscape();
 				break;
 
@@ -1002,7 +1299,7 @@ struct CreateScenarioWindow : public Window
 					this->HandleButtonClick(widget);
 					this->SetDirty();
 
-					_settings_newgame.game_creation.se_flat_world_height = Clamp(_settings_newgame.game_creation.se_flat_world_height + widget - WID_CS_FLAT_LAND_HEIGHT_TEXT, 0, _settings_game.construction.max_heightlevel);
+					_settings_newgame.game_creation.se_flat_world_height = Clamp(_settings_newgame.game_creation.se_flat_world_height + widget - WID_CS_FLAT_LAND_HEIGHT_TEXT, 0, GetMapHeightLimit());
 				}
 				_left_button_clicked = false;
 				break;
@@ -1015,7 +1312,7 @@ struct CreateScenarioWindow : public Window
 		}
 	}
 
-	virtual void OnTimeout()
+	void OnTimeout() override
 	{
 		static const int raise_widgets[] = {WID_CS_START_DATE_DOWN, WID_CS_START_DATE_UP, WID_CS_FLAT_LAND_HEIGHT_DOWN, WID_CS_FLAT_LAND_HEIGHT_UP, WIDGET_LIST_END};
 		for (const int *widget = raise_widgets; *widget != WIDGET_LIST_END; widget++) {
@@ -1026,16 +1323,18 @@ struct CreateScenarioWindow : public Window
 		}
 	}
 
-	virtual void OnDropdownSelect(int widget, int index)
+	void OnDropdownSelect(int widget, int index) override
 	{
 		switch (widget) {
 			case WID_CS_MAPSIZE_X_PULLDOWN: _settings_newgame.game_creation.map_x = index; break;
 			case WID_CS_MAPSIZE_Y_PULLDOWN: _settings_newgame.game_creation.map_y = index; break;
 		}
+		SetDropDownColor();
+
 		this->SetDirty();
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
 		if (!StrEmpty(str)) {
 			int32 value = atoi(str);
@@ -1048,7 +1347,7 @@ struct CreateScenarioWindow : public Window
 
 				case WID_CS_FLAT_LAND_HEIGHT_TEXT:
 					this->SetWidgetDirty(WID_CS_FLAT_LAND_HEIGHT_TEXT);
-					_settings_newgame.game_creation.se_flat_world_height = Clamp(value, 0, _settings_game.construction.max_heightlevel);
+					_settings_newgame.game_creation.se_flat_world_height = Clamp(value, 0, GetMapHeightLimit());
 					break;
 			}
 
@@ -1110,7 +1409,7 @@ static const NWidgetPart _nested_create_scenario_widgets[] = {
 };
 
 static WindowDesc _create_scenario_desc(
-	WDP_CENTER, NULL, 0, 0,
+	WDP_CENTER, nullptr, 0, 0,
 	WC_GENERATE_LANDSCAPE, WC_NONE,
 	0,
 	_nested_create_scenario_widgets, lengthof(_nested_create_scenario_widgets)
@@ -1138,7 +1437,7 @@ static const NWidgetPart _nested_generate_progress_widgets[] = {
 
 
 static WindowDesc _generate_progress_desc(
-	WDP_CENTER, NULL, 0, 0,
+	WDP_CENTER, nullptr, 0, 0,
 	WC_MODAL_PROGRESS, WC_NONE,
 	0,
 	_nested_generate_progress_widgets, lengthof(_nested_generate_progress_widgets)
@@ -1149,7 +1448,7 @@ struct GenWorldStatus {
 	StringID cls;
 	uint current;
 	uint total;
-	int timer;
+	std::chrono::steady_clock::time_point next_update;
 };
 
 static GenWorldStatus _gws;
@@ -1163,12 +1462,13 @@ static const StringID _generation_class_table[]  = {
 	STR_SCENEDIT_TOOLBAR_INDUSTRY_GENERATION,
 	STR_GENERATION_OBJECT_GENERATION,
 	STR_GENERATION_TREE_GENERATION,
+	STR_GENERATION_PUBLIC_ROADS_GENERATION,
 	STR_GENERATION_SETTINGUP_GAME,
 	STR_GENERATION_PREPARING_TILELOOP,
 	STR_GENERATION_PREPARING_SCRIPT,
 	STR_GENERATION_PREPARING_GAME
 };
-assert_compile(lengthof(_generation_class_table) == GWP_CLASS_COUNT);
+static_assert(lengthof(_generation_class_table) == GWP_CLASS_COUNT);
 
 
 static void AbortGeneratingWorldCallback(Window *w, bool confirmed)
@@ -1187,7 +1487,7 @@ struct GenerateProgressWindow : public Window {
 		this->InitNested();
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_GP_ABORT:
@@ -1202,7 +1502,7 @@ struct GenerateProgressWindow : public Window {
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_GP_PROGRESS_BAR: {
@@ -1216,14 +1516,14 @@ struct GenerateProgressWindow : public Window {
 
 			case WID_GP_PROGRESS_TEXT:
 				for (uint i = 0; i < GWP_CLASS_COUNT; i++) {
-					size->width = max(size->width, GetStringBoundingBox(_generation_class_table[i]).width);
+					size->width = std::max(size->width, GetStringBoundingBox(_generation_class_table[i]).width);
 				}
 				size->height = FONT_HEIGHT_NORMAL * 2 + WD_PAR_VSEP_NORMAL;
 				break;
 		}
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
 			case WID_GP_PROGRESS_BAR:
@@ -1251,11 +1551,11 @@ struct GenerateProgressWindow : public Window {
  */
 void PrepareGenerateWorldProgress()
 {
-	_gws.cls     = STR_GENERATION_WORLD_GENERATION;
+	_gws.cls = STR_GENERATION_WORLD_GENERATION;
 	_gws.current = 0;
-	_gws.total   = 0;
+	_gws.total = 0;
 	_gws.percent = 0;
-	_gws.timer   = 0; // Forces to paint the progress window immediately
+	_gws.next_update = std::chrono::steady_clock::now();
 }
 
 /**
@@ -1269,14 +1569,20 @@ void ShowGenerateWorldProgress()
 
 static void _SetGeneratingWorldProgress(GenWorldProgress cls, uint progress, uint total)
 {
-	static const int percent_table[] = {0, 5, 14, 17, 20, 40, 60, 65, 80, 85, 95, 99, 100 };
-	assert_compile(lengthof(percent_table) == GWP_CLASS_COUNT + 1);
+	static const int percent_table[] = {0, 7, 14, 22, 29, 36, 44, 51, 58, 65, 73, 80, 90, 100 };
+	static_assert(lengthof(percent_table) == GWP_CLASS_COUNT + 1);
 	assert(cls < GWP_CLASS_COUNT);
 
-	/* Do not run this function if we aren't in a thread */
-	if (!IsGenerateWorldThreaded() && !_network_dedicated) return;
+	/* Check if we really are generating the world.
+	 * For example, placing trees via the SE also calls this function, but
+	 * shouldn't try to update the progress.
+	 */
+	if (!HasModalProgress()) return;
 
-	if (IsGeneratingWorldAborted()) HandleGeneratingWorldAbortion();
+	if (IsGeneratingWorldAborted()) {
+		HandleGeneratingWorldAbortion();
+		return;
+	}
 
 	if (total == 0) {
 		assert(_gws.cls == _generation_class_table[cls]);
@@ -1288,9 +1594,6 @@ static void _SetGeneratingWorldProgress(GenWorldProgress cls, uint progress, uin
 		_gws.total   = total;
 		_gws.percent = percent_table[cls];
 	}
-
-	/* Don't update the screen too often. So update it once in every once in a while... */
-	if (!_network_dedicated && _gws.timer != 0 && _realtime_tick - _gws.timer < MODAL_PROGRESS_REDRAW_TIMEOUT) return;
 
 	/* Percentage is about the number of completed tasks, so 'current - 1' */
 	_gws.percent = percent_table[cls] + (percent_table[cls + 1] - percent_table[cls]) * (_gws.current == 0 ? 0 : _gws.current - 1) / _gws.total;
@@ -1307,26 +1610,15 @@ static void _SetGeneratingWorldProgress(GenWorldProgress cls, uint progress, uin
 		/* Never show steps smaller than 2%, even if it is a mod 5% */
 		if (_gws.percent <= last_percent + 2) return;
 
-		DEBUG(net, 1, "Map generation percentage complete: %d", _gws.percent);
+		DEBUG(net, 3, "Map generation percentage complete: %d", _gws.percent);
 		last_percent = _gws.percent;
 
-		/* Don't continue as dedicated never has a thread running */
 		return;
 	}
 
 	SetWindowDirty(WC_MODAL_PROGRESS, 0);
-	MarkWholeScreenDirty();
 
-	/* Release the rights to the map generator, and acquire the rights to the
-	 * paint thread. The 'other' thread already has the paint thread rights so
-	 * this ensures us that we are waiting until the paint thread is done
-	 * before we reacquire the mapgen rights */
-	_modal_progress_work_mutex->EndCritical();
-	_modal_progress_paint_mutex->BeginCritical();
-	_modal_progress_work_mutex->BeginCritical();
-	_modal_progress_paint_mutex->EndCritical();
-
-	_gws.timer = _realtime_tick;
+	VideoDriver::GetInstance()->GameLoopPause();
 }
 
 /**

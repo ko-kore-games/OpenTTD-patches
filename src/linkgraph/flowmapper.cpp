@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -24,8 +22,9 @@ void FlowMapper::Run(LinkGraphJob &job) const
 		Node prev_node = job[node_id];
 		StationID prev = prev_node.Station();
 		PathList &paths = prev_node.Paths();
-		for (PathList::iterator i = paths.begin(); i != paths.end(); ++i) {
+		for (PathList::reverse_iterator i = paths.rbegin(); i != paths.rend(); ++i) {
 			Path *path = *i;
+			if (!path) continue;
 			uint flow = path->GetFlow();
 			if (flow == 0) break;
 			Node node = job[path->GetNode()];
@@ -54,16 +53,13 @@ void FlowMapper::Run(LinkGraphJob &job) const
 			/* Scale by time the graph has been running without being compressed. Add 1 to avoid
 			 * division by 0 if spawn date == last compression date. This matches
 			 * LinkGraph::Monthly(). */
-			uint runtime = job.JoinDate() - job.Settings().recalc_time - job.LastCompression() + 1;
+			uint runtime = (job.StartDateTicks() / DAY_TICKS) - job.LastCompression() + 1;
 			for (FlowStatMap::iterator i = flows.begin(); i != flows.end(); ++i) {
-				i->second.ScaleToMonthly(runtime);
+				i->ScaleToMonthly(runtime);
 			}
 		}
 		/* Clear paths. */
-		PathList &paths = node.Paths();
-		for (PathList::iterator i = paths.begin(); i != paths.end(); ++i) {
-			delete *i;
-		}
-		paths.clear();
+		node.Paths().clear();
 	}
+	job.path_allocator.ResetArena();
 }

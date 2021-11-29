@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,6 +12,55 @@
  * bug fixes can be found in the normal changelog. Note that removed API
  * functions may still be available if you return an older API version
  * in GetAPIVersion() in info.nut.
+ *
+ * \b 13.0
+ *
+ * This version is not yet released. The following changes are not set in stone yet.
+ *
+ * \b 12.0
+ *
+ * API additions:
+ * \li AINewGRF
+ * \li AINewGRFList
+ * \li AIGroup::GetNumVehicles
+ * \li AIMarine::BT_LOCK
+ * \li AIMarine::BT_CANAL
+ * \li AITile::IsSeaTile
+ * \li AITile::IsRiverTile
+ * \li AITile::BT_CLEAR_WATER
+ * \li AIObjectTypeList
+ * \li AIObjectType
+ *
+ * \b 1.11.0
+ *
+ * API additions:
+ * \li AICargo::GetName
+ * \li AIPriorityQueue
+ *
+ * Other changes:
+ * \li AIVehicle::CloneVehicle now correctly returns estimate when short on cash
+ *
+ * \b 1.10.0
+ *
+ * API additions:
+ * \li AIGroup::SetPrimaryColour
+ * \li AIGroup::SetSecondaryColour
+ * \li AIGroup::GetPrimaryColour
+ * \li AIGroup::GetSecondaryColour
+ * \li AIVehicle::BuildVehicleWithRefit
+ * \li AIVehicle::GetBuildWithRefitCapacity
+ * \li AIRoad::GetName
+ * \li AIRoad::RoadVehCanRunOnRoad
+ * \li AIRoad::RoadVehHasPowerOnRoad
+ * \li AIRoad::ConvertRoadType
+ * \li AIRoad::GetMaxSpeed
+ * \li AIEngine::CanRunOnRoad
+ * \li AIEngine::HasPowerOnRoad
+ * \li AIRoadTypeList::RoadTypeList
+ * \li AIEventVehicleAutoReplaced
+ *
+ * Other changes:
+ * \li AITile::DemolishTile works without a selected company
  *
  * \b 1.9.0
  *
@@ -33,6 +80,9 @@
  * \b 1.8.0
  *
  * No changes
+ *
+ * API additions:
+ * \li AIRoad::ERR_ROADTYPE_DISALLOWS_CROSSING
  *
  * \b 1.7.0 - 1.7.2
  *
@@ -287,7 +337,7 @@
  *     destination it its catchment area. One industry tile or one town house
  *     is enough as long as station accepts the cargo. Awarded subsidies are no
  *     longer bound to stations used for first delivery, any station can be
- *     used for loading and unloading as long as cargo is transfered from
+ *     used for loading and unloading as long as cargo is transferred from
  *     source to destination.
  * \li Make AIEngine:CanRefitCargo() not report refittability to mail by
  *     default for aircraft. It is not necessarily true. This means that even

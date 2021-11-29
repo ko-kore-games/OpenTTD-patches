@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -12,15 +10,23 @@
 #include "stdafx.h"
 #include "cheat_type.h"
 
+#include <map>
+#include <string>
+
 #include "safeguards.h"
 
 /** All the cheats. */
 Cheats _cheats;
+ExtraCheats _extra_cheats;
+
+std::map<std::string, Cheat> _unknown_cheats;
 
 /** Reinitialise all the cheats. */
 void InitializeCheats()
 {
 	memset(&_cheats, 0, sizeof(Cheats));
+	memset(&_extra_cheats, 0, sizeof(ExtraCheats));
+	_unknown_cheats.clear();
 }
 
 /**
@@ -32,6 +38,13 @@ bool CheatHasBeenUsed()
 	/* Cannot use lengthof because _cheats is of type Cheats, not Cheat */
 	const Cheat *cht = (Cheat*)&_cheats;
 	const Cheat *cht_last = &cht[sizeof(_cheats) / sizeof(Cheat)];
+
+	for (; cht != cht_last; cht++) {
+		if (cht->been_used) return true;
+	}
+
+	cht = (Cheat*)&_extra_cheats;
+	cht_last = &cht[sizeof(_extra_cheats) / sizeof(Cheat)];
 
 	for (; cht != cht_last; cht++) {
 		if (cht->been_used) return true;

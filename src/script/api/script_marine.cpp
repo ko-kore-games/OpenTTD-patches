@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -64,11 +62,11 @@
 	DiagDirection to_other_tile = ::DiagdirBetweenTiles(t2, t1);
 
 	/* Determine the reachable tracks from the shared edge */
-	TrackBits gtts1 = ::TrackStatusToTrackBits(::GetTileTrackStatus(t1, TRANSPORT_WATER, 0, to_other_tile)) & ::DiagdirReachesTracks(to_other_tile);
+	TrackBits gtts1 = ::TrackStatusToTrackBits(::GetTileTrackStatus(t1, TRANSPORT_WATER, 0, ReverseDiagDir(to_other_tile))) & ::DiagdirReachesTracks(to_other_tile);
 	if (gtts1 == TRACK_BIT_NONE) return false;
 
 	to_other_tile = ReverseDiagDir(to_other_tile);
-	TrackBits gtts2 = ::TrackStatusToTrackBits(::GetTileTrackStatus(t2, TRANSPORT_WATER, 0, to_other_tile)) & ::DiagdirReachesTracks(to_other_tile);
+	TrackBits gtts2 = ::TrackStatusToTrackBits(::GetTileTrackStatus(t2, TRANSPORT_WATER, 0, ReverseDiagDir(to_other_tile))) & ::DiagdirReachesTracks(to_other_tile);
 
 	return gtts2 != TRACK_BIT_NONE;
 }
@@ -116,6 +114,13 @@
 	EnforcePrecondition(false, ::IsValidTile(tile));
 
 	return ScriptObject::DoCommand(tile, tile, WATER_CLASS_CANAL, CMD_BUILD_CANAL);
+}
+
+/* static */ bool ScriptMarine::BuildRiver(TileIndex tile)
+{
+	EnforcePrecondition(false, ::IsValidTile(tile));
+
+	return ScriptObject::DoCommand(tile, tile, WATER_CLASS_RIVER, CMD_BUILD_CANAL);
 }
 
 /* static */ bool ScriptMarine::RemoveWaterDepot(TileIndex tile)
@@ -166,9 +171,11 @@
 /* static */ Money ScriptMarine::GetBuildCost(BuildType build_type)
 {
 	switch (build_type) {
-		case BT_DOCK:  return ::GetPrice(PR_BUILD_STATION_DOCK, 1, NULL);
-		case BT_DEPOT: return ::GetPrice(PR_BUILD_DEPOT_SHIP, 1, NULL);
-		case BT_BUOY:  return ::GetPrice(PR_BUILD_WAYPOINT_BUOY, 1, NULL);
+		case BT_DOCK:  return ::GetPrice(PR_BUILD_STATION_DOCK, 1, nullptr);
+		case BT_DEPOT: return ::GetPrice(PR_BUILD_DEPOT_SHIP, 1, nullptr);
+		case BT_BUOY:  return ::GetPrice(PR_BUILD_WAYPOINT_BUOY, 1, nullptr);
+		case BT_LOCK:  return ::GetPrice(PR_BUILD_LOCK, 1, nullptr);
+		case BT_CANAL: return ::GetPrice(PR_BUILD_CANAL, 1, nullptr);
 		default: return -1;
 	}
 }

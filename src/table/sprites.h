@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -27,10 +25,10 @@
  * All sprites which are described here are referenced only one to a handful of times
  * throughout the code. When introducing new sprite enums, use meaningful names.
  * Don't be lazy and typing, and only use abbreviations when their meaning is clear or
- * the length of the enum would get out of hand. In that case EXPLAIN THE ABBREVATION
+ * the length of the enum would get out of hand. In that case EXPLAIN THE ABBREVIATION
  * IN THIS FILE, and perhaps add some comments in the code where it is used.
  * Now, don't whine about this being too much typing work if the enums are like
- * 30 characters in length. If your editor doen't help you simplifying your work,
+ * 30 characters in length. If your editor doesn't help you simplifying your work,
  * get a proper editor. If your Operating Systems don't have any decent editors,
  * get a proper Operating System.
  *
@@ -56,7 +54,7 @@ static const SpriteID SPR_LARGE_SMALL_WINDOW = 682;
 
 /** Extra graphic spritenumbers */
 static const SpriteID SPR_OPENTTD_BASE   = 4896;
-static const uint16 OPENTTD_SPRITE_COUNT = 179;
+static const uint16 OPENTTD_SPRITE_COUNT = 191;
 
 /* Halftile-selection sprites */
 static const SpriteID SPR_HALFTILE_SELECTION_FLAT = SPR_OPENTTD_BASE;
@@ -165,6 +163,14 @@ static const SpriteID SPR_IMG_DELETE_LEFT            = SPR_OPENTTD_BASE + 166;
 static const SpriteID SPR_IMG_DELETE_RIGHT           = SPR_OPENTTD_BASE + 167;
 
 static const SpriteID SPR_WINDOW_DEFSIZE             = SPR_OPENTTD_BASE + 168;
+static const SpriteID SPR_RENAME                     = SPR_OPENTTD_BASE + 184;
+static const SpriteID SPR_GOTO_LOCATION              = SPR_OPENTTD_BASE + 185;
+
+static const SpriteID SPR_CHAT                       = SPR_OPENTTD_BASE + 186;
+static const SpriteID SPR_ADMIN                      = SPR_OPENTTD_BASE + 187;
+static const SpriteID SPR_JOIN                       = SPR_OPENTTD_BASE + 188;
+static const SpriteID SPR_PLAYER_SELF                = SPR_OPENTTD_BASE + 189;
+static const SpriteID SPR_PLAYER_HOST                = SPR_OPENTTD_BASE + 190;
 
 static const SpriteID SPR_IMG_CARGOFLOW              = SPR_OPENTTD_BASE + 174;
 
@@ -273,13 +279,15 @@ static const SpriteID SPR_TRAMWAY_BUS_STOP_DT_X_W      = SPR_TRAMWAY_BASE + 24;
 static const SpriteID SPR_TRAMWAY_BUS_STOP_DT_X_E      = SPR_TRAMWAY_BASE + 26;
 static const SpriteID SPR_TRAMWAY_PAVED_STRAIGHT_Y     = SPR_TRAMWAY_BASE + 46;
 static const SpriteID SPR_TRAMWAY_PAVED_STRAIGHT_X     = SPR_TRAMWAY_BASE + 47;
+static const SpriteID SPR_TRAMWAY_DEPOT_WITH_TRACK     = SPR_TRAMWAY_BASE + 49;
 static const SpriteID SPR_TRAMWAY_BACK_WIRES_STRAIGHT  = SPR_TRAMWAY_BASE + 55;
 static const SpriteID SPR_TRAMWAY_FRONT_WIRES_STRAIGHT = SPR_TRAMWAY_BASE + 56;
-static const SpriteID SPR_TRAMWAY_BACK_WIRES_SLOPED    = SPR_TRAMWAY_BASE + 72;
-static const SpriteID SPR_TRAMWAY_FRONT_WIRES_SLOPED   = SPR_TRAMWAY_BASE + 68;
+static const SpriteID SPR_TRAMWAY_BACK_WIRES_SLOPED    = SPR_TRAMWAY_BASE + 68;
+static const SpriteID SPR_TRAMWAY_FRONT_WIRES_SLOPED   = SPR_TRAMWAY_BASE + 72;
 static const SpriteID SPR_TRAMWAY_TUNNEL_WIRES         = SPR_TRAMWAY_BASE + 80;
 static const SpriteID SPR_TRAMWAY_BRIDGE               = SPR_TRAMWAY_BASE + 107;
-static const uint16 TRAMWAY_SPRITE_COUNT = 113;
+static const SpriteID SPR_TRAMWAY_DEPOT_NO_TRACK       = SPR_TRAMWAY_BASE + 113;
+static const uint16 TRAMWAY_SPRITE_COUNT = 119;
 
 /** One way road sprites */
 static const SpriteID SPR_ONEWAY_BASE = SPR_TRAMWAY_BASE + TRAMWAY_SPRITE_COUNT;
@@ -301,8 +309,49 @@ static const uint16 EMPTY_BOUNDING_BOX_SPRITE_COUNT = 1;
 static const SpriteID SPR_PALETTE_BASE = SPR_EMPTY_BOUNDING_BOX + EMPTY_BOUNDING_BOX_SPRITE_COUNT;
 static const uint16 PALETTE_SPRITE_COUNT = 1;
 
+/* Programmable pre-signal sprites */
+static const SpriteID SPR_PROGSIGNAL_BASE = SPR_PALETTE_BASE + PALETTE_SPRITE_COUNT;
+static const uint16 PROGSIGNAL_SPRITE_COUNT = 32;
+static const SpriteID SPR_DUP_PROGSIGNAL_BASE = SPR_PROGSIGNAL_BASE + PROGSIGNAL_SPRITE_COUNT;
+
+/* Extra signal sprites */
+static const SpriteID SPR_EXTRASIGNAL_BASE = SPR_DUP_PROGSIGNAL_BASE + PALETTE_SPRITE_COUNT;
+static const uint16 EXTRASIGNAL_SPRITE_COUNT = 16;
+static const SpriteID SPR_DUP_EXTRASIGNAL_BASE = SPR_EXTRASIGNAL_BASE + EXTRASIGNAL_SPRITE_COUNT;
+
+/* Zoning sprites */
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_BASE       = SPR_DUP_EXTRASIGNAL_BASE + EXTRASIGNAL_SPRITE_COUNT;
+static const uint16 ZONING_INNER_HIGHLIGHT_SPRITE_COUNT = 32;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_RED        = SPR_ZONING_INNER_HIGHLIGHT_BASE + 19;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_GREEN      = SPR_ZONING_INNER_HIGHLIGHT_BASE + 20;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_BLACK      = SPR_ZONING_INNER_HIGHLIGHT_BASE + 21;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_LIGHT_BLUE = SPR_ZONING_INNER_HIGHLIGHT_BASE + 22;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_ORANGE     = SPR_ZONING_INNER_HIGHLIGHT_BASE + 23;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_WHITE      = SPR_ZONING_INNER_HIGHLIGHT_BASE + 24;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_PURPLE     = SPR_ZONING_INNER_HIGHLIGHT_BASE + 25;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_BROWN      = SPR_ZONING_INNER_HIGHLIGHT_BASE + 26;
+static const SpriteID SPR_ZONING_INNER_HIGHLIGHT_YELLOW     = SPR_ZONING_INNER_HIGHLIGHT_BASE + 27;
+
+/* Sprites for the route step marker. */
+static const SpriteID SPR_ROUTE_STEP_BASE          = SPR_ZONING_INNER_HIGHLIGHT_BASE + ZONING_INNER_HIGHLIGHT_SPRITE_COUNT;
+static const SpriteID SPR_ROUTE_STEP_TOP           = SPR_ROUTE_STEP_BASE + 0;
+static const SpriteID SPR_ROUTE_STEP_MIDDLE        = SPR_ROUTE_STEP_BASE + 1;
+static const SpriteID SPR_ROUTE_STEP_BOTTOM        = SPR_ROUTE_STEP_BASE + 2;
+static const SpriteID SPR_ROUTE_STEP_BOTTOM_SHADOW = SPR_ROUTE_STEP_BASE + 3;
+static const SpriteID ROUTE_STEP_SPRITE_COUNT = 4;
+
+/* Tracerestrict sprites */
+static const SpriteID SPR_TRACERESTRICT_BASE = SPR_ROUTE_STEP_BASE + ROUTE_STEP_SPRITE_COUNT;
+static const uint16 TRACERESTRICT_SPRITE_COUNT = 2;
+
+/* Duplicated signal sprites */
+static const SpriteID SPR_DUP_ORIGINAL_SIGNALS_BASE = SPR_TRACERESTRICT_BASE + TRACERESTRICT_SPRITE_COUNT;
+static const uint16 DUP_ORIGINAL_SIGNALS_SPRITE_COUNT = 16;
+static const SpriteID SPR_DUP_SIGNALS_BASE = SPR_DUP_ORIGINAL_SIGNALS_BASE + DUP_ORIGINAL_SIGNALS_SPRITE_COUNT;
+static const uint16 DUP_SIGNALS_SPRITE_COUNT = PRESIGNAL_SEMAPHORE_AND_PBS_SPRITE_COUNT;
+
 /* From where can we start putting NewGRFs? */
-static const SpriteID SPR_NEWGRFS_BASE = SPR_PALETTE_BASE + PALETTE_SPRITE_COUNT;
+static const SpriteID SPR_NEWGRFS_BASE = SPR_DUP_SIGNALS_BASE + DUP_SIGNALS_SPRITE_COUNT;
 
 /* Manager face sprites */
 static const SpriteID SPR_GRADIENT = 874; // background gradient behind manager face
@@ -563,6 +612,7 @@ static const SpriteID SPR_ROAD_SLOPE_START        = 1343;
 static const SpriteID SPR_ROAD_Y_SNOW             = 1351;
 static const SpriteID SPR_ROAD_X_SNOW             = 1352;
 /* see _road_sloped_sprites_offset in road_cmd.cpp for offsets for sloped road tiles */
+static const SpriteID SPR_ROAD_DEPOT              = 1408;
 
 static const SpriteID SPR_EXCAVATION_X = 1414;
 static const SpriteID SPR_EXCAVATION_Y = 1415;
@@ -1099,6 +1149,7 @@ static const SpriteID SPR_IMG_ZOOMIN          = 735;
 static const SpriteID SPR_IMG_ZOOMOUT         = 736;
 static const SpriteID SPR_IMG_BUILDRAIL       = 727;
 static const SpriteID SPR_IMG_BUILDROAD       = 728;
+static const SpriteID SPR_IMG_BUILDTRAMS      = SPR_OPENTTD_BASE + 179;
 static const SpriteID SPR_IMG_BUILDWATER      = 729;
 static const SpriteID SPR_IMG_BUILDAIR        = 730;
 static const SpriteID SPR_IMG_LANDSCAPING     = 4083;
@@ -1137,33 +1188,38 @@ static const SpriteID SPR_IT_TOY_FACTORY_ROBOT        = 4720;
 static const SpriteID SPR_IT_POWER_PLANT_TRANSFORMERS = 2054;
 
 /* small icons of cargo available in station waiting*/
-static const SpriteID SPR_CARGO_PASSENGER             = 4297;
+static const SpriteID SPR_CARGO_PASSENGERS            = 4297;
 static const SpriteID SPR_CARGO_COAL                  = 4298;
 static const SpriteID SPR_CARGO_MAIL                  = 4299;
 static const SpriteID SPR_CARGO_OIL                   = 4300;
 static const SpriteID SPR_CARGO_LIVESTOCK             = 4301;
 static const SpriteID SPR_CARGO_GOODS                 = 4302;
-static const SpriteID SPR_CARGO_GRAIN                 = 4303;
+static const SpriteID SPR_CARGO_GRAIN                 = 4303;  // shared sprite with SPR_CARGO_WHEAT, SPR_CARGO_MAIZE
+static const SpriteID SPR_CARGO_WHEAT                 = 4303;  // shared sprite with SPR_CARGO_GRAIN, SPR_CARGO_MAIZE
+static const SpriteID SPR_CARGO_MAIZE                 = 4303;  // shared sprite with SPR_CARGO_GRAIN, SPR_CARGO_WHEAT
 static const SpriteID SPR_CARGO_WOOD                  = 4304;
 static const SpriteID SPR_CARGO_IRON_ORE              = 4305;
 static const SpriteID SPR_CARGO_STEEL                 = 4306;
-static const SpriteID SPR_CARGO_VALUES_GOLD           = 4307;  // shared between temperate and arctic
+static const SpriteID SPR_CARGO_VALUABLES             = 4307;  // shared between temperate and arctic ( SPR_CARGO_GOLD )
+static const SpriteID SPR_CARGO_GOLD                  = 4307;  // shared between temperate and arctic ( SPR_CARGO_VALUABLES )
 static const SpriteID SPR_CARGO_FRUIT                 = 4308;
 static const SpriteID SPR_CARGO_COPPER_ORE            = 4309;
-static const SpriteID SPR_CARGO_WATERCOLA             = 4310;  // shared between desert and toyland
+static const SpriteID SPR_CARGO_WATER                 = 4310;  // shared between desert and toyland ( SPR_CARGO_COLA )
+static const SpriteID SPR_CARGO_COLA                  = 4310;  // shared between desert and toyland ( SPR_CARGO_WATER )
 static const SpriteID SPR_CARGO_DIAMONDS              = 4311;
 static const SpriteID SPR_CARGO_FOOD                  = 4312;
 static const SpriteID SPR_CARGO_PAPER                 = 4313;
 static const SpriteID SPR_CARGO_RUBBER                = 4314;
-static const SpriteID SPR_CARGO_CANDY                 = 4315;
+static const SpriteID SPR_CARGO_SWEETS                = 4315;
 static const SpriteID SPR_CARGO_SUGAR                 = 4316;
 static const SpriteID SPR_CARGO_TOYS                  = 4317;
-static const SpriteID SPR_CARGO_COTTONCANDY           = 4318;
-static const SpriteID SPR_CARGO_FIZZYDRINK            = 4319;
+static const SpriteID SPR_CARGO_CANDYFLOSS            = 4318;
+static const SpriteID SPR_CARGO_FIZZY_DRINKS          = 4319;
 static const SpriteID SPR_CARGO_TOFFEE                = 4320;
 static const SpriteID SPR_CARGO_BUBBLES               = 4321;
 static const SpriteID SPR_CARGO_PLASTIC               = 4322;
 static const SpriteID SPR_CARGO_BATTERIES             = 4323;
+static const SpriteID SPR_CARGO_NOTHING               = SPR_ASCII_SPACE; // Placeholder for void cargo slots.
 
 /* Effect vehicles */
 static const SpriteID SPR_BULLDOZER_NE = 1416;
@@ -1320,12 +1376,16 @@ static const SpriteID SPR_IMG_SIGNAL_ELECTRIC_EXIT     = SPR_SIGNALS_BASE +  28;
 static const SpriteID SPR_IMG_SIGNAL_ELECTRIC_COMBO    = SPR_SIGNALS_BASE +  44;
 static const SpriteID SPR_IMG_SIGNAL_ELECTRIC_PBS      = SPR_SIGNALS_BASE + 124;
 static const SpriteID SPR_IMG_SIGNAL_ELECTRIC_PBS_OWAY = SPR_SIGNALS_BASE + 140;
+static const SpriteID SPR_IMG_SIGNAL_ELECTRIC_PROG     = SPR_PROGSIGNAL_BASE + 28;
+static const SpriteID SPR_IMG_SIGNAL_ELECTRIC_NO_ENTRY = SPR_EXTRASIGNAL_BASE + 14;
 static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_NORM    = SPR_SIGNALS_BASE +  60;
 static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_ENTRY   = SPR_SIGNALS_BASE +  76;
 static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_EXIT    = SPR_SIGNALS_BASE +  92;
 static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_COMBO   = SPR_SIGNALS_BASE + 108;
 static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_PBS     = SPR_SIGNALS_BASE + 188;
 static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_PBS_OWAY= SPR_SIGNALS_BASE + 204;
+static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_PROG    = SPR_PROGSIGNAL_BASE + 12;
+static const SpriteID SPR_IMG_SIGNAL_SEMAPHORE_NO_ENTRY= SPR_EXTRASIGNAL_BASE + 6;
 static const SpriteID SPR_IMG_SIGNAL_CONVERT           = SPR_OPENTTD_BASE + 135;
 
 static const SpriteID SPR_IMG_TUNNEL_RAIL   = 2430;
@@ -1342,6 +1402,11 @@ static const SpriteID SPR_IMG_VIEW_LOCATION  = SPR_OPENTTD_BASE + 170;
 static const SpriteID SPR_IMG_GOAL           = SPR_OPENTTD_BASE + 171;
 static const SpriteID SPR_IMG_GOAL_COMPLETED = SPR_OPENTTD_BASE + 172;
 static const SpriteID SPR_IMG_GOAL_BROKEN_REF= SPR_OPENTTD_BASE + 173;
+
+static const SpriteID SPR_IMG_CONVERT_ROAD           = SPR_OPENTTD_BASE + 180;
+static const CursorID SPR_CURSOR_CONVERT_ROAD        = SPR_OPENTTD_BASE + 181;
+static const SpriteID SPR_IMG_CONVERT_TRAM           = SPR_OPENTTD_BASE + 182;
+static const CursorID SPR_CURSOR_CONVERT_TRAM        = SPR_OPENTTD_BASE + 183;
 
 /* intro_gui.cpp, genworld_gui.cpp */
 static const SpriteID SPR_SELECT_TEMPERATE           = 4882;
@@ -1500,6 +1565,9 @@ enum SpriteSetup {
 
 	/* This bit is applied to palette ID */
 	PALETTE_TEXT_RECOLOUR = 31, ///< Set if palette is actually a magic text recolour
+	PALETTE_BRIGHTNESS_MODIFY = 30, ///< Set if palette has a brightness adjustment
+	PALETTE_BRIGHTNESS_OFFSET = 24, ///< Palette brightness adjustment bit offset
+	PALETTE_BRIGHTNESS_WIDTH = 5,   ///< Palette brightness adjustment width
 
 	PALETTE_WIDTH = 24,         ///< number of bits of the sprite containing the recolour palette
 	SPRITE_WIDTH = 24,          ///< number of bits for the sprite number
@@ -1533,11 +1601,11 @@ enum SpriteMasks {
 	PALETTE_MASK = MAX_PALETTES - 1,       ///< The mask for the auxiliary sprite (the one that takes care of recolouring)
 };
 
-assert_compile( (1 << TRANSPARENT_BIT & SPRITE_MASK) == 0 );
-assert_compile( (1 << RECOLOUR_BIT & SPRITE_MASK) == 0 );
-assert_compile( TRANSPARENT_BIT != RECOLOUR_BIT );
-assert_compile( (1 << TRANSPARENT_BIT & PALETTE_MASK) == 0);
-assert_compile( (1 << RECOLOUR_BIT & PALETTE_MASK) == 0 );
+static_assert( (1 << TRANSPARENT_BIT & SPRITE_MASK) == 0 );
+static_assert( (1 << RECOLOUR_BIT & SPRITE_MASK) == 0 );
+static_assert( TRANSPARENT_BIT != RECOLOUR_BIT );
+static_assert( (1 << TRANSPARENT_BIT & PALETTE_MASK) == 0);
+static_assert( (1 << RECOLOUR_BIT & PALETTE_MASK) == 0 );
 
 
 static const PaletteID PAL_NONE                    = 0;

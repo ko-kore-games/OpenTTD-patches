@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,8 +12,13 @@
 #include "window_gui.h"
 #include "viewport_func.h"
 #include "strings_func.h"
+#include "tunnelbridge.h"
+#include "tilehighlight_func.h"
 #include "zoom_func.h"
 #include "window_func.h"
+#include "gfx_func.h"
+#include "industry.h"
+#include "town_map.h"
 
 #include "widgets/viewport_widget.h"
 
@@ -24,11 +27,11 @@
 
 #include "safeguards.h"
 
-/* Extra ViewPort Window Stuff */
-static const NWidgetPart _nested_extra_view_port_widgets[] = {
+/* Extra Viewport Window Stuff */
+static const NWidgetPart _nested_extra_viewport_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
-		NWidget(WWT_CAPTION, COLOUR_GREY, WID_EV_CAPTION), SetDataTip(STR_EXTRA_VIEW_PORT_TITLE, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_CAPTION, COLOUR_GREY, WID_EV_CAPTION), SetDataTip(STR_EXTRA_VIEWPORT_TITLE, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
 		NWidget(WWT_SHADEBOX, COLOUR_GREY),
 		NWidget(WWT_DEFSIZEBOX, COLOUR_GREY),
 		NWidget(WWT_STICKYBOX, COLOUR_GREY),
@@ -78,9 +81,10 @@ public:
 		this->viewport->scrollpos_y = pt.y - this->viewport->virtual_height / 2;
 		this->viewport->dest_scrollpos_x = this->viewport->scrollpos_x;
 		this->viewport->dest_scrollpos_y = this->viewport->scrollpos_y;
+		this->viewport->map_type = (ViewportMapType) _settings_client.gui.default_viewport_map_mode;
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_EV_CAPTION:
@@ -90,7 +94,7 @@ public:
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_EV_ZOOM_IN: DoZoomInOutWindow(ZOOM_IN,  this); break;
@@ -120,15 +124,15 @@ public:
 		}
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
-		if (this->viewport != NULL) {
+		if (this->viewport != nullptr) {
 			NWidgetViewport *nvp = this->GetWidget<NWidgetViewport>(WID_EV_VIEWPORT);
 			nvp->UpdateViewportCoordinates(this);
 		}
 	}
 
-	virtual void OnScroll(Point delta)
+	void OnScroll(Point delta) override
 	{
 		this->viewport->scrollpos_x += ScaleByZoom(delta.x, this->viewport->zoom);
 		this->viewport->scrollpos_y += ScaleByZoom(delta.y, this->viewport->zoom);
@@ -136,10 +140,24 @@ public:
 		this->viewport->dest_scrollpos_y = this->viewport->scrollpos_y;
 	}
 
-	virtual void OnMouseWheel(int wheel)
+	void OnMouseWheel(int wheel) override
 	{
-		if (_settings_client.gui.scrollwheel_scrolling != 2) {
+		if (_ctrl_pressed) {
+			/* Cycle through the drawing modes */
+			ChangeRenderMode(this->viewport, wheel < 0);
+			this->SetDirty();
+		} else if (_settings_client.gui.scrollwheel_scrolling != 2) {
 			ZoomInOrOutToCursorWindow(wheel < 0, this);
+		}
+	}
+
+	virtual void OnMouseOver(Point pt, int widget) override
+	{
+		if (pt.x != -1 && (_mouse_hovering || _settings_client.gui.hover_delay_ms == 0)) {
+			/* Show tooltip with last month production or town name */
+			const Point p = GetTileBelowCursor();
+			const TileIndex tile = TileVirtXY(p.x, p.y);
+			if (tile < MapSize()) ShowTooltipForTile(this, tile);
 		}
 	}
 
@@ -148,7 +166,7 @@ public:
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 		/* Only handle zoom message if intended for us (msg ZOOM_IN/ZOOM_OUT) */
@@ -156,36 +174,80 @@ public:
 	}
 };
 
-static WindowDesc _extra_view_port_desc(
+static WindowDesc _extra_viewport_desc(
 	WDP_AUTO, "extra_viewport", 300, 268,
-	WC_EXTRA_VIEW_PORT, WC_NONE,
+	WC_EXTRA_VIEWPORT, WC_NONE,
 	0,
-	_nested_extra_view_port_widgets, lengthof(_nested_extra_view_port_widgets)
+	_nested_extra_viewport_widgets, lengthof(_nested_extra_viewport_widgets)
 );
 
 /**
  * Show a new Extra Viewport window.
  * @param tile Tile to center the view on. INVALID_TILE means to use the center of main viewport.
  */
-void ShowExtraViewPortWindow(TileIndex tile)
+void ShowExtraViewportWindow(TileIndex tile)
 {
 	int i = 0;
 
 	/* find next free window number for extra viewport */
-	while (FindWindowById(WC_EXTRA_VIEW_PORT, i) != NULL) i++;
+	while (FindWindowById(WC_EXTRA_VIEWPORT, i) != nullptr) i++;
 
-	new ExtraViewportWindow(&_extra_view_port_desc, i, tile);
+	new ExtraViewportWindow(&_extra_viewport_desc, i, tile);
 }
 
 /**
  * Show a new Extra Viewport window.
- * Center it on the tile under the cursor, if the cursor is inside a viewport.
+ * When building a tunnel, the tunnel end-tile is used as center for new viewport.
+ * Otherwise center it on the tile under the cursor, if the cursor is inside a viewport.
  * If that fails, center it on main viewport center.
  */
-void ShowExtraViewPortWindowForTileUnderCursor()
+void ShowExtraViewportWindowForTileUnderCursor()
 {
+	if (_build_tunnel_endtile != 0 && _thd.place_mode & HT_TUNNEL) {
+		ShowExtraViewportWindow(_build_tunnel_endtile);
+		return;
+	}
+
 	/* Use tile under mouse as center for new viewport.
 	 * Do this before creating the window, it might appear just below the mouse. */
 	Point pt = GetTileBelowCursor();
-	ShowExtraViewPortWindow(pt.x != -1 ? TileVirtXY(pt.x, pt.y) : INVALID_TILE);
+	ShowExtraViewportWindow(pt.x != -1 ? TileVirtXY(pt.x, pt.y) : INVALID_TILE);
+}
+
+void ShowTooltipForTile(Window *w, const TileIndex tile)
+{
+	switch (GetTileType(tile)) {
+		case MP_ROAD:
+			if (IsRoadDepot(tile)) return;
+			/* FALL THROUGH */
+		case MP_HOUSE: {
+			if (HasBit(_display_opt, DO_SHOW_TOWN_NAMES)) return; // No need for a town name tooltip when it is already displayed
+			SetDParam(0, GetTownIndex(tile));
+			GuiShowTooltips(w, STR_TOWN_NAME_TOOLTIP, 0, nullptr, TCC_HOVER_VIEWPORT);
+			break;
+		}
+		case MP_INDUSTRY: {
+			static char buffer[1024];
+			const Industry *ind = Industry::GetByTile(tile);
+			const IndustrySpec *indsp = GetIndustrySpec(ind->type);
+
+			buffer[0] = 0;
+			char *buf_pos = buffer;
+
+			for (byte i = 0; i < lengthof(ind->produced_cargo); i++) {
+				if (ind->produced_cargo[i] != CT_INVALID) {
+					SetDParam(0, ind->produced_cargo[i]);
+					SetDParam(1, ind->last_month_production[i]);
+					SetDParam(2, ToPercent8(ind->last_month_pct_transported[i]));
+					buf_pos = GetString(buf_pos, STR_INDUSTRY_VIEW_TRANSPORTED_TOOLTIP_EXTENSION, lastof(buffer));
+				}
+			}
+			SetDParam(0, indsp->name);
+			SetDParamStr(1, buffer);
+			GuiShowTooltips(w, STR_INDUSTRY_VIEW_TRANSPORTED_TOOLTIP, 0, nullptr, TCC_HOVER_VIEWPORT);
+			break;
+		}
+		default:
+			return;
+	}
 }

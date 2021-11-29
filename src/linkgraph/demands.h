@@ -19,11 +19,14 @@ private:
 	int32 accuracy;     ///< Accuracy of the calculation.
 
 	template<class Tscaler>
-	void CalcDemand(LinkGraphJob &job, Tscaler scaler);
+	void CalcDemand(LinkGraphJob &job, const std::vector<bool> &reachable_nodes, Tscaler scaler);
+
+	template<class Tscaler>
+	void CalcMinimisedDistanceDemand(LinkGraphJob &job, const std::vector<bool> &reachable_nodes, Tscaler scaler);
 };
 
 /**
- * Stateless, thread safe demand hander. Doesn't do anything but call DemandCalculator.
+ * Stateless, thread safe demand handler. Doesn't do anything but call DemandCalculator.
  */
 class DemandHandler : public ComponentHandler {
 public:

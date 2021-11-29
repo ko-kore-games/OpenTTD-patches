@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,16 +12,16 @@
 
 #include "../cargo_type.h"
 #include "../vehicle_base.h"
+#include "../3rdparty/cpp-btree/btree_set.h"
 #include <vector>
 #include <map>
-#include <set>
 
 /**
  * Utility to refresh links a consist will visit.
  */
 class LinkRefresher {
 public:
-	static void Run(Vehicle *v, bool allow_merge = true, bool is_full_loading = false);
+	static void Run(Vehicle *v, bool allow_merge = true, bool is_full_loading = false, CargoTypes cargo_mask = ALL_CARGOTYPES);
 
 protected:
 	/**
@@ -67,7 +65,7 @@ protected:
 		 * Default constructor should not be called but has to be visible for
 		 * usage in std::set.
 		 */
-		Hop() {NOT_REACHED();}
+		Hop() {}
 
 		/**
 		 * Real constructor, only use this one.
@@ -80,7 +78,7 @@ protected:
 	};
 
 	typedef std::vector<RefitDesc> RefitList;
-	typedef std::set<Hop> HopSet;
+	typedef btree::btree_set<Hop> HopSet;
 
 	Vehicle *vehicle;           ///< Vehicle for which the links should be refreshed.
 	uint capacities[NUM_CARGO]; ///< Current added capacities per cargo ID in the consist.
@@ -89,8 +87,9 @@ protected:
 	CargoID cargo;              ///< Cargo given in last refit order.
 	bool allow_merge;           ///< If the refresher is allowed to merge or extend link graphs.
 	bool is_full_loading;       ///< If the vehicle is full loading.
+	CargoTypes cargo_mask;      ///< Bit-mask of cargo IDs to refresh.
 
-	LinkRefresher(Vehicle *v, HopSet *seen_hops, bool allow_merge, bool is_full_loading);
+	LinkRefresher(Vehicle *v, HopSet *seen_hops, bool allow_merge, bool is_full_loading, CargoTypes cargo_mask);
 
 	bool HandleRefit(CargoID refit_cargo);
 	void ResetRefit();

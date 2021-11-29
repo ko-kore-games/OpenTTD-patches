@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -33,7 +31,7 @@ public:
 		uint8 m;
 		uint8 v;
 	};
-	assert_compile(sizeof(MapValue) == 2);
+	static_assert(sizeof(MapValue) == 2);
 
 	/** Helper for creating specialised functions for specific optimisations. */
 	enum ReadMode {
@@ -49,18 +47,6 @@ public:
 		BT_NONE, ///< No specialisation for either case.
 	};
 
-	/** Helper for using specialised functions designed to prevent whenever it's possible things like:
-	 *  - IO (reading video buffer),
-	 *  - calculations (alpha blending),
-	 *  - heavy branching (remap lookups and animation buffer handling).
-	 */
-	enum SpriteFlags {
-		SF_NONE        = 0,
-		SF_TRANSLUCENT = 1 << 1, ///< The sprite has at least 1 translucent pixel.
-		SF_NO_REMAP    = 1 << 2, ///< The sprite has no remappable colour pixel.
-		SF_NO_ANIM     = 1 << 3, ///< The sprite has no palette animated pixel.
-	};
-
 	/** Data stored about a (single) sprite. */
 	struct SpriteInfo {
 		uint32 sprite_offset;    ///< The offset to the sprite data.
@@ -69,7 +55,7 @@ public:
 		uint16 sprite_width;     ///< The width of the sprite.
 	};
 	struct SpriteData {
-		SpriteFlags flags;
+		BlitterSpriteFlags flags;
 		SpriteInfo infos[ZOOM_LVL_COUNT];
 		byte data[]; ///< Data, all zoomlevels.
 	};
@@ -77,27 +63,25 @@ public:
 	Sprite *Encode(const SpriteLoader::Sprite *sprite, AllocatorProc *allocator);
 };
 
-DECLARE_ENUM_AS_BIT_SET(Blitter_32bppSSE_Base::SpriteFlags);
-
 /** The SSE2 32 bpp blitter (without palette animation). */
 class Blitter_32bppSSE2 : public Blitter_32bppSimple, public Blitter_32bppSSE_Base {
 public:
-	/* virtual */ void Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom);
+	void Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom) override;
 	template <BlitterMode mode, Blitter_32bppSSE_Base::ReadMode read_mode, Blitter_32bppSSE_Base::BlockType bt_last, bool translucent>
 	void Draw(const Blitter::BlitterParams *bp, ZoomLevel zoom);
 
-	/* virtual */ Sprite *Encode(const SpriteLoader::Sprite *sprite, AllocatorProc *allocator) {
+	Sprite *Encode(const SpriteLoader::Sprite *sprite, AllocatorProc *allocator) override {
 		return Blitter_32bppSSE_Base::Encode(sprite, allocator);
 	}
 
-	/* virtual */ const char *GetName() { return "32bpp-sse2"; }
+	const char *GetName() override { return "32bpp-sse2"; }
 };
 
 /** Factory for the SSE2 32 bpp blitter (without palette animation). */
 class FBlitter_32bppSSE2 : public BlitterFactory {
 public:
 	FBlitter_32bppSSE2() : BlitterFactory("32bpp-sse2", "32bpp SSE2 Blitter (no palette animation)", HasCPUIDFlag(1, 3, 26)) {}
-	/* virtual */ Blitter *CreateInstance() { return new Blitter_32bppSSE2(); }
+	Blitter *CreateInstance() override { return new Blitter_32bppSSE2(); }
 };
 
 #endif /* WITH_SSE */

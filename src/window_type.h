@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -27,7 +25,6 @@ enum WindowNumberEnum {
 	WN_CONFIRM_POPUP_QUERY_BOOTSTRAP, ///< Query popup confirm for bootstrap.
 
 	WN_NETWORK_WINDOW_GAME = 0,     ///< Network game window.
-	WN_NETWORK_WINDOW_LOBBY,        ///< Network lobby window.
 	WN_NETWORK_WINDOW_CONTENT_LIST, ///< Network content list.
 	WN_NETWORK_WINDOW_START,        ///< Network start server.
 
@@ -109,6 +106,12 @@ enum WindowClass {
 	 *   - 0 = #ToolTipsWidgets
 	 */
 	WC_TOOLTIPS,
+	
+	/**
+	* Station rating tooltip window; %Window numbers:
+	*   - 0 = #ToolTipsWidgets
+	*/
+	WC_STATION_RATING_TOOLTIP,
 
 	/**
 	 * Query string window; %Window numbers:
@@ -207,6 +210,18 @@ enum WindowClass {
 	WC_VEHICLE_ORDERS,
 
 	/**
+	 * Vehicle cargo type load orders; %Window numbers:
+	 *   - #VehicleID = #CargoTypeOrdersWidgets
+	 */
+	WC_VEHICLE_CARGO_TYPE_LOAD_ORDERS,
+
+	/**
+	 * Vehicle cargo type unload orders; %Window numbers:
+	 *   - #VehicleID = #CargoTypeOrdersWidgets
+	 */
+	WC_VEHICLE_CARGO_TYPE_UNLOAD_ORDERS,
+
+	/**
 	 * Replace vehicle window; %Window numbers:
 	 *   - #VehicleType = #ReplaceVehicleWidgets
 	 */
@@ -235,6 +250,12 @@ enum WindowClass {
 	 *   - 0 = #JoinStationWidgets
 	 */
 	WC_SELECT_STATION,
+
+	/**
+	 * Select town (when placing a house); %Window numbers:
+	 *   - 0 = #SelectTownWidgets
+	 */
+	WC_SELECT_TOWN,
 
 	/**
 	 * News window; %Window numbers:
@@ -371,6 +392,12 @@ enum WindowClass {
 	WC_BUILD_OBJECT,
 
 	/**
+	 * Build house; %Window numbers:
+	 *  - 0 = #BuildHouseWidgets
+	*/
+	WC_BUILD_HOUSE,
+
+	/**
 	 * Build vehicle; %Window numbers:
 	 *   - #VehicleType = #BuildVehicleWidgets
 	 *   - #TileIndex = #BuildVehicleWidgets
@@ -461,7 +488,6 @@ enum WindowClass {
 	/**
 	 * Network window; %Window numbers:
 	 *   - #WN_NETWORK_WINDOW_GAME = #NetworkGameWidgets
-	 *   - #WN_NETWORK_WINDOW_LOBBY = #NetworkLobbyWidgets
 	 *   - #WN_NETWORK_WINDOW_CONTENT_LIST = #NetworkContentListWidgets
 	 *   - #WN_NETWORK_WINDOW_START = #NetworkStartServerWidgets
 	 */
@@ -474,17 +500,17 @@ enum WindowClass {
 	WC_CLIENT_LIST,
 
 	/**
-	 * Popup for the client list; %Window numbers:
-	 *   - #ClientID = #ClientListPopupWidgets
-	 */
-	WC_CLIENT_LIST_POPUP,
-
-	/**
 	 * Network status window; %Window numbers:
 	 *   - #WN_NETWORK_STATUS_WINDOW_JOIN = #NetworkJoinStatusWidgets
 	 *   - #WN_NETWORK_STATUS_WINDOW_CONTENT_DOWNLOAD = #NetworkContentDownloadStatusWidgets
 	 */
 	WC_NETWORK_STATUS_WINDOW,
+
+	/**
+	 * Network ask relay window; %Window numbers:
+	 *   - 0 - #NetworkAskRelayWidgets
+	 */
+	WC_NETWORK_ASK_RELAY,
 
 	/**
 	 * Chatbox; %Window numbers:
@@ -560,6 +586,12 @@ enum WindowClass {
 	WC_PAYMENT_RATES,
 
 	/**
+	* Station cargo graph; %Window numbers:
+	*   - #StationID = #StationCargoWidgets
+	*/
+	WC_STATION_CARGO,
+
+	/**
 	 * Performance detail window; %Window numbers:
 	 *   - 0 = #PerformanceRatingDetailsWidgets
 	 */
@@ -623,7 +655,7 @@ enum WindowClass {
 	 * Extra viewport; %Window numbers:
 	 *   - Ascending value = #ExtraViewportWidgets
 	 */
-	WC_EXTRA_VIEW_PORT,
+	WC_EXTRA_VIEWPORT,
 
 
 	/**
@@ -668,6 +700,7 @@ enum WindowClass {
 	 *   - 0 = #SpriteAlignerWidgets
 	 */
 	WC_SPRITE_ALIGNER,
+	WC_ZONING_TOOLBAR,
 
 	/**
 	 * Linkgraph legend; %Window numbers:
@@ -692,6 +725,59 @@ enum WindowClass {
 	 *   - 0 = #FrametimeGraphWindowWidgets
 	 */
 	WC_FRAMETIME_GRAPH,
+	/**
+	 * Screenshot window; %Window numbers:
+	 *   - 0 = #ScreenshotWidgets
+	 */
+	WC_SCREENSHOT,
+
+	/**
+	 * Trace restrict programme window; %Window numbers:
+	 *   - #TileIndex << 3 | #Track = #TraceRestrictWindow
+	 */
+	WC_TRACE_RESTRICT,
+
+	/**
+	 * Trace restrict slot window; %Window numbers:
+	 *   - Packed value = #SlotListWidgets / #VehicleListWidgets
+	 */
+	WC_TRACE_RESTRICT_SLOTS,
+
+	/**
+	 * Trace restrict counter window; %Window numbers:
+	 *   - Packed value = #SlotListWidgets / #VehicleListWidgets
+	 */
+	WC_TRACE_RESTRICT_COUNTERS,
+
+	/**
+	 * Programmable pre-signals window
+	 */
+	WC_SIGNAL_PROGRAM,
+
+	/**
+	 * Departure boards
+	 */
+	WC_DEPARTURES_BOARD,
+
+	/**
+	 * Vehicle scheduled dispatch - departure slots
+	 */
+	WC_SCHDISPATCH_SLOTS,
+
+	/**
+	 * Plans window.
+	 */
+	WC_PLANS,
+
+	WC_TEMPLATEGUI_MAIN,
+	WC_TEMPLATEGUI_RPLALL,
+	WC_BUILD_VIRTUAL_TRAIN,
+	WC_CREATE_TEMPLATE,
+
+	/**
+	 * Modifier key toggle window.
+	 */
+	WC_MODIFIER_KEY_TOGGLE,
 
 	WC_INVALID = 0xFFFF, ///< Invalid window.
 };
@@ -699,12 +785,15 @@ enum WindowClass {
 /** Data value for #Window::OnInvalidateData() of windows with class #WC_GAME_OPTIONS. */
 enum GameOptionsInvalidationData {
 	GOID_DEFAULT = 0,
-	GOID_NEWGRF_RESCANNED,     ///< NewGRFs were just rescanned.
-	GOID_NEWGRF_LIST_EDITED,   ///< List of active NewGRFs is being edited.
-	GOID_NEWGRF_PRESET_LOADED, ///< A NewGRF preset was picked.
+	GOID_NEWGRF_RESCANNED,       ///< NewGRFs were just rescanned.
+	GOID_NEWGRF_CURRENT_LOADED,  ///< The current list of active NewGRF has been loaded.
+	GOID_NEWGRF_LIST_EDITED,     ///< List of active NewGRFs is being edited.
+	GOID_NEWGRF_CHANGES_MADE,    ///< Changes have been made to a given NewGRF either through the palette or its parameters.
+	GOID_NEWGRF_CHANGES_APPLIED, ///< The active NewGRF list changes have been applied.
 };
 
 struct Window;
+struct WindowBase;
 
 /** Number to differentiate different windows of the same class */
 typedef int32 WindowNumber;

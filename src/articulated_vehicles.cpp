@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,6 +14,7 @@
 #include "engine_func.h"
 #include "company_func.h"
 #include "newgrf.h"
+#include <vector>
 
 #include "table/strings.h"
 
@@ -31,9 +30,9 @@ static const uint MAX_ARTICULATED_PARTS = 100; ///< Maximum of articulated parts
  * @param mirrored Returns whether the part shall be flipped.
  * @return engine to add or INVALID_ENGINE
  */
-static EngineID GetNextArticulatedPart(uint index, EngineID front_type, Vehicle *front = NULL, bool *mirrored = NULL)
+static EngineID GetNextArticulatedPart(uint index, EngineID front_type, Vehicle *front = nullptr, bool *mirrored = nullptr)
 {
-	assert(front == NULL || front->engine_type == front_type);
+	assert(front == nullptr || front->engine_type == front_type);
 
 	const Engine *front_engine = Engine::Get(front_type);
 
@@ -44,12 +43,12 @@ static EngineID GetNextArticulatedPart(uint index, EngineID front_type, Vehicle 
 		/* 8 bits, bit 7 for mirroring */
 		callback = GB(callback, 0, 8);
 		if (callback == 0xFF) return INVALID_ENGINE;
-		if (mirrored != NULL) *mirrored = HasBit(callback, 7);
+		if (mirrored != nullptr) *mirrored = HasBit(callback, 7);
 		callback = GB(callback, 0, 7);
 	} else {
 		/* 15 bits, bit 14 for mirroring */
 		if (callback == 0x7FFF) return INVALID_ENGINE;
-		if (mirrored != NULL) *mirrored = HasBit(callback, 14);
+		if (mirrored != nullptr) *mirrored = HasBit(callback, 14);
 		callback = GB(callback, 0, 14);
 	}
 
@@ -80,7 +79,7 @@ uint CountArticulatedParts(EngineID engine_type, bool purchase_window)
 	 * either, so it doesn't matter how many articulated parts there are. */
 	if (!Vehicle::CanAllocateItem()) return 0;
 
-	Vehicle *v = NULL;
+	Vehicle *v = nullptr;
 	if (!purchase_window) {
 		v = new Vehicle();
 		v->engine_type = engine_type;
@@ -97,6 +96,38 @@ uint CountArticulatedParts(EngineID engine_type, bool purchase_window)
 	return i - 1;
 }
 
+/**
+ * Count the number of articulated parts of an engine.
+ * @param engine_type The engine to get the number of parts of.
+ * @param purchase_window Whether we are in the scope of the purchase window or not, i.e. whether we cannot allocate vehicles.
+ * @param ids [Out] The list of engine IDs.
+ */
+void GetArticulatedPartsEngineIDs(EngineID engine_type, bool purchase_window, std::vector<EngineID> &ids)
+{
+	ids.clear();
+	if (!HasBit(EngInfo(engine_type)->callback_mask, CBM_VEHICLE_ARTIC_ENGINE)) return;
+
+	/* If we can't allocate a vehicle now, we can't allocate it in the command
+	 * either, so it doesn't matter how many articulated parts there are. */
+	if (!Vehicle::CanAllocateItem()) return;
+
+	Vehicle *v = nullptr;
+	if (!purchase_window) {
+		v = new Vehicle();
+		v->engine_type = engine_type;
+		v->owner = _current_company;
+	}
+
+	uint i;
+	for (i = 1; i < MAX_ARTICULATED_PARTS; i++) {
+		EngineID id = GetNextArticulatedPart(i, engine_type, v);
+		if (id == INVALID_ENGINE) break;
+		ids.push_back(id);
+	}
+
+	delete v;
+}
+
 
 /**
  * Returns the default (non-refitted) capacity of a specific EngineID.
@@ -108,7 +139,7 @@ static inline uint16 GetVehicleDefaultCapacity(EngineID engine, CargoID *cargo_t
 {
 	const Engine *e = Engine::Get(engine);
 	CargoID cargo = (e->CanCarryCargo() ? e->GetDefaultCargoType() : (CargoID)CT_INVALID);
-	if (cargo_type != NULL) *cargo_type = cargo;
+	if (cargo_type != nullptr) *cargo_type = cargo;
 	if (cargo == CT_INVALID) return 0;
 	return e->GetDisplayDefaultCapacity();
 }
@@ -168,16 +199,16 @@ CargoArray GetCapacityOfArticulatedParts(EngineID engine)
  * @param engine Model to investigate.
  * @param[out] cargoes Total amount of units that can be transported, summed by cargo.
  * @param[out] refits Whether a (possibly partial) refit for each cargo is possible.
+ * @param cargo_type Selected refitted cargo type
+ * @param cargo_capacity Capacity of selected refitted cargo type
  */
-void GetArticulatedVehicleCargoesAndRefits(EngineID engine, CargoArray *cargoes, CargoTypes *refits)
+void GetArticulatedVehicleCargoesAndRefits(EngineID engine, CargoArray *cargoes, CargoTypes *refits, CargoID cargo_type, uint cargo_capacity)
 {
 	cargoes->Clear();
 	*refits = 0;
 
 	const Engine *e = Engine::Get(engine);
 
-	CargoID cargo_type;
-	uint16 cargo_capacity = GetVehicleDefaultCapacity(engine, &cargo_type);
 	if (cargo_type < NUM_CARGO && cargo_capacity > 0) {
 		(*cargoes)[cargo_type] += cargo_capacity;
 		if (IsEngineRefittable(engine)) SetBit(*refits, cargo_type);
@@ -290,15 +321,15 @@ bool IsArticulatedVehicleCarryingDifferentCargoes(const Vehicle *v, CargoID *car
 		if (v->cargo_type != CT_INVALID && v->GetEngine()->CanCarryCargo()) {
 			if (first_cargo == CT_INVALID) first_cargo = v->cargo_type;
 			if (first_cargo != v->cargo_type) {
-				if (cargo_type != NULL) *cargo_type = CT_INVALID;
+				if (cargo_type != nullptr) *cargo_type = CT_INVALID;
 				return true;
 			}
 		}
 
-		v = v->HasArticulatedPart() ? v->GetNextArticulatedPart() : NULL;
-	} while (v != NULL);
+		v = v->HasArticulatedPart() ? v->GetNextArticulatedPart() : nullptr;
+	} while (v != nullptr);
 
-	if (cargo_type != NULL) *cargo_type = first_cargo;
+	if (cargo_type != nullptr) *cargo_type = first_cargo;
 	return false;
 }
 
@@ -330,8 +361,8 @@ void CheckConsistencyOfArticulatedVehicle(const Vehicle *v)
 		assert(v->cargo_type < NUM_CARGO);
 		real_default_capacity[v->cargo_type] += v->cargo_cap;
 
-		v = v->HasArticulatedPart() ? v->GetNextArticulatedPart() : NULL;
-	} while (v != NULL);
+		v = v->HasArticulatedPart() ? v->GetNextArticulatedPart() : nullptr;
+	} while (v != nullptr);
 
 	/* Check whether the vehicle carries more cargoes than expected */
 	bool carries_more = false;
@@ -393,6 +424,8 @@ void AddArticulatedParts(Vehicle *first)
 					t->cargo_cap = 0;
 				}
 				t->refit_cap = 0;
+
+				if (front->IsVirtual()) t->SetVirtual();
 
 				t->SetArticulatedPart();
 				break;

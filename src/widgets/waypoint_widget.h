@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -19,6 +17,7 @@ enum WaypointWidgets {
 	WID_W_CENTER_VIEW,   ///< Center the main view on this waypoint.
 	WID_W_RENAME,        ///< Rename this waypoint.
 	WID_W_SHOW_VEHICLES, ///< Show the vehicles visiting this waypoint.
+	WID_W_DEPARTURES,    ///< Departures button.
 };
 
 #endif /* WIDGETS_WAYPOINT_WIDGET_H */

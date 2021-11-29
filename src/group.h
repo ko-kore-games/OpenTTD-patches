@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,6 +16,7 @@
 #include "vehicle_type.h"
 #include "engine_type.h"
 #include "livery.h"
+#include <string>
 
 typedef Pool<Group, GroupID, 16, 64000> GroupPool;
 extern GroupPool _group_pool; ///< Pool of groups.
@@ -63,20 +62,27 @@ struct GroupStatistics {
 	static void UpdateAutoreplace(CompanyID company);
 };
 
+enum GroupFlags : uint8 {
+	GF_REPLACE_PROTECTION,    ///< If set to true, the global autoreplace has no effect on the group
+	GF_REPLACE_WAGON_REMOVAL, ///< If set, autoreplace will perform wagon removal on vehicles in this group.
+	GF_END,
+};
+
 /** Group data. */
 struct Group : GroupPool::PoolItem<&_group_pool> {
-	char *name;                             ///< Group Name
-	OwnerByte owner;                        ///< Group Owner
-	VehicleTypeByte vehicle_type;           ///< Vehicle type of the group
+	std::string name;           ///< Group Name
+	Owner owner;                ///< Group Owner
+	VehicleType vehicle_type;   ///< Vehicle type of the group
 
-	bool replace_protection;                ///< If set to true, the global autoreplace have no effect on the group
-	Livery livery;                          ///< Custom colour scheme for vehicles in this group
-	GroupStatistics statistics;             ///< NOSAVE: Statistics and caches on the vehicles in the group.
+	uint8 flags;                ///< Group flags
+	Livery livery;              ///< Custom colour scheme for vehicles in this group
+	GroupStatistics statistics; ///< NOSAVE: Statistics and caches on the vehicles in the group.
 
-	GroupID parent;                         ///< Parent group
+	bool folded;                ///< NOSAVE: Is this group folded in the group view?
+
+	GroupID parent;             ///< Parent group
 
 	Group(CompanyID owner = INVALID_COMPANY);
-	~Group();
 };
 
 
@@ -95,17 +101,23 @@ static inline bool IsAllGroupID(GroupID id_g)
 	return id_g == ALL_GROUP;
 }
 
-#define FOR_ALL_GROUPS_FROM(var, start) FOR_ALL_ITEMS_FROM(Group, group_index, var, start)
-#define FOR_ALL_GROUPS(var) FOR_ALL_GROUPS_FROM(var, 0)
-
+static inline bool IsTopLevelGroupID(GroupID index)
+{
+	return index == DEFAULT_GROUP || index == ALL_GROUP;
+}
 
 uint GetGroupNumEngines(CompanyID company, GroupID id_g, EngineID id_e);
+uint GetGroupNumVehicle(CompanyID company, GroupID id_g, VehicleType type);
+uint GetGroupNumProfitVehicle(CompanyID company, GroupID id_g, VehicleType type);
+Money GetGroupProfitLastYear(CompanyID company, GroupID id_g, VehicleType type);
 
 void SetTrainGroupID(Train *v, GroupID grp);
 void UpdateTrainGroupID(Train *v);
 void RemoveVehicleFromGroup(const Vehicle *v);
 void RemoveAllGroupsForCompany(const CompanyID company);
 bool GroupIsInGroup(GroupID search, GroupID group);
+
+std::string GenerateAutoNameForVehicleGroup(const Vehicle *v);
 
 extern GroupID _new_group_id;
 

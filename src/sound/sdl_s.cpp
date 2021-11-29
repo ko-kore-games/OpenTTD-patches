@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -33,7 +31,7 @@ static void CDECL fill_sound_buffer(void *userdata, Uint8 *stream, int len)
 	MxMixSamples(stream, len / 4);
 }
 
-const char *SoundDriver_SDL::Start(const char * const *parm)
+const char *SoundDriver_SDL::Start(const StringList &parm)
 {
 	SDL_AudioSpec spec;
 
@@ -54,7 +52,7 @@ const char *SoundDriver_SDL::Start(const char * const *parm)
 	MxInitialize(spec.freq);
 	SDL_OpenAudio(&spec, &spec);
 	SDL_PauseAudio(0);
-	return NULL;
+	return nullptr;
 }
 
 void SoundDriver_SDL::Stop()

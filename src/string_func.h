@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -27,38 +25,50 @@
 #define STRING_FUNC_H
 
 #include <stdarg.h>
+#include <iosfwd>
 
 #include "core/bitmath_func.hpp"
 #include "string_type.h"
 
-char *strecat(char *dst, const char *src, const char *last);
-char *strecpy(char *dst, const char *src, const char *last);
-char *stredup(const char *src, const char *last = NULL);
+char *strecat(char *dst, const char *src, const char *last) NOACCESS(3);
+char *strecpy(char *dst, const char *src, const char *last, bool quiet_mode = false) NOACCESS(3);
+char *stredup(const char *src, const char *last = nullptr) NOACCESS(2);
 
-int CDECL seprintf(char *str, const char *last, const char *format, ...) WARN_FORMAT(3, 4);
-int CDECL vseprintf(char *str, const char *last, const char *format, va_list ap);
+int CDECL seprintf(char *str, const char *last, const char *format, ...) WARN_FORMAT(3, 4) NOACCESS(2);
+int CDECL vseprintf(char *str, const char *last, const char *format, va_list ap) WARN_FORMAT(3, 0) NOACCESS(2);
 
 char *CDECL str_fmt(const char *str, ...) WARN_FORMAT(1, 2);
+char *str_vfmt(const char *str, va_list ap) WARN_FORMAT(1, 0);
+std::string CDECL stdstr_fmt(const char *str, ...) WARN_FORMAT(1, 2);
+std::string stdstr_vfmt(const char *str, va_list va) WARN_FORMAT(1, 0);
 
-void str_validate(char *str, const char *last, StringValidationSettings settings = SVS_REPLACE_WITH_QUESTION_MARK);
-void ValidateString(const char *str);
+char *StrMakeValidInPlace(char *str, const char *last, StringValidationSettings settings = SVS_REPLACE_WITH_QUESTION_MARK) NOACCESS(2);
+[[nodiscard]] std::string StrMakeValid(const std::string &str, StringValidationSettings settings = SVS_REPLACE_WITH_QUESTION_MARK);
+void StrMakeValidInPlace(char *str, StringValidationSettings settings = SVS_REPLACE_WITH_QUESTION_MARK);
 
-void str_fix_scc_encoded(char *str, const char *last);
+const char *str_fix_scc_encoded(char *str, const char *last) NOACCESS(2);
 void str_strip_colours(char *str);
+std::string str_strip_all_scc(const char *str);
+char *str_replace_wchar(char *str, const char *last, WChar find, WChar replace);
 bool strtolower(char *str);
+bool strtolower(std::string &str, std::string::size_type offs = 0);
 
-bool StrValid(const char *str, const char *last);
+bool StrValid(const char *str, const char *last) NOACCESS(2);
+void StrTrimInPlace(std::string &str);
+
+bool StrStartsWith(const std::string_view str, const std::string_view prefix);
+bool StrEndsWith(const std::string_view str, const std::string_view suffix);
 
 /**
  * Check if a string buffer is empty.
  *
  * @param s The pointer to the first element of the buffer
  * @return true if the buffer starts with the terminating null-character or
- *         if the given pointer points to NULL else return false
+ *         if the given pointer points to nullptr else return false
  */
 static inline bool StrEmpty(const char *s)
 {
-	return s == NULL || s[0] == '\0';
+	return s == nullptr || s[0] == '\0';
 }
 
 /**
@@ -81,6 +91,7 @@ bool IsValidChar(WChar key, CharSetFilter afilter);
 
 size_t Utf8Decode(WChar *c, const char *s);
 size_t Utf8Encode(char *buf, WChar c);
+size_t Utf8Encode(std::ostreambuf_iterator<char> &buf, WChar c);
 size_t Utf8TrimString(char *s, size_t maxlen);
 
 
@@ -88,6 +99,14 @@ static inline WChar Utf8Consume(const char **s)
 {
 	WChar c;
 	*s += Utf8Decode(&c, *s);
+	return c;
+}
+
+template <class Titr>
+static inline WChar Utf8Consume(Titr &s)
+{
+	WChar c;
+	s += Utf8Decode(&c, &*s);
 	return c;
 }
 
@@ -155,6 +174,7 @@ static inline const char *Utf8PrevChar(const char *s)
 }
 
 size_t Utf8StringLength(const char *s);
+size_t Utf8StringLength(const std::string &str);
 
 /**
  * Is the given character a lead surrogate code point?

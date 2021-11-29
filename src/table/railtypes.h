@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -67,6 +65,9 @@ static const RailtypeInfo _original_railtypes[] = {
 		/* Compatible railtypes */
 		RAILTYPES_RAIL | RAILTYPES_ELECTRIC,
 
+		/* Computed compatible railtypes */
+		RAILTYPES_NONE,
+
 		/* bridge offset */
 		0,
 
@@ -78,6 +79,12 @@ static const RailtypeInfo _original_railtypes[] = {
 
 		/* flags */
 		RTFB_NONE,
+
+		/* control flags */
+		0,
+
+		/* signal extra aspects */
+		0,
 
 		/* cost multiplier */
 		8,
@@ -112,8 +119,8 @@ static const RailtypeInfo _original_railtypes[] = {
 		/* sort order */
 		0 << 4 | 7,
 
-		{ NULL },
-		{ NULL },
+		{ nullptr },
+		{ nullptr },
 	},
 
 	/** Electrified railway */
@@ -156,7 +163,7 @@ static const RailtypeInfo _original_railtypes[] = {
 			STR_RAIL_MENU_ELRAIL_CONSTRUCTION,
 			STR_BUY_VEHICLE_TRAIN_ELRAIL_CAPTION,
 			STR_REPLACE_ELRAIL_VEHICLES,
-			STR_ENGINE_PREVIEW_RAILROAD_LOCOMOTIVE,
+			STR_ENGINE_PREVIEW_ELRAIL_LOCOMOTIVE,
 		},
 
 		/* Offset of snow tiles */
@@ -167,6 +174,9 @@ static const RailtypeInfo _original_railtypes[] = {
 
 		/* Compatible railtypes */
 		RAILTYPES_ELECTRIC | RAILTYPES_RAIL,
+
+		/* Computed compatible railtypes */
+		RAILTYPES_NONE,
 
 		/* bridge offset */
 		0,
@@ -179,6 +189,12 @@ static const RailtypeInfo _original_railtypes[] = {
 
 		/* flags */
 		RTFB_CATENARY,
+
+		/* control flags */
+		0,
+
+		/* signal extra aspects */
+		0,
 
 		/* cost multiplier */
 		12,
@@ -213,8 +229,8 @@ static const RailtypeInfo _original_railtypes[] = {
 		/* sort order */
 		1 << 4 | 7,
 
-		{ NULL },
-		{ NULL },
+		{ nullptr },
+		{ nullptr },
 	},
 
 	/** Monorail */
@@ -265,6 +281,9 @@ static const RailtypeInfo _original_railtypes[] = {
 		/* Compatible Railtypes */
 		RAILTYPES_MONO,
 
+		/* Computed compatible railtypes */
+		RAILTYPES_NONE,
+
 		/* bridge offset */
 		16,
 
@@ -276,6 +295,12 @@ static const RailtypeInfo _original_railtypes[] = {
 
 		/* flags */
 		RTFB_NONE,
+
+		/* control flags */
+		0,
+
+		/* signal extra aspects */
+		0,
 
 		/* cost multiplier */
 		16,
@@ -310,8 +335,8 @@ static const RailtypeInfo _original_railtypes[] = {
 		/* sort order */
 		2 << 4 | 7,
 
-		{ NULL },
-		{ NULL },
+		{ nullptr },
+		{ nullptr },
 	},
 
 	/** Maglev */
@@ -362,6 +387,9 @@ static const RailtypeInfo _original_railtypes[] = {
 		/* Compatible Railtypes */
 		RAILTYPES_MAGLEV,
 
+		/* Computed compatible railtypes */
+		RAILTYPES_NONE,
+
 		/* bridge offset */
 		24,
 
@@ -373,6 +401,12 @@ static const RailtypeInfo _original_railtypes[] = {
 
 		/* flags */
 		RTFB_NONE,
+
+		/* control flags */
+		0,
+
+		/* signal extra aspects */
+		0,
 
 		/* cost multiplier */
 		24,
@@ -407,8 +441,8 @@ static const RailtypeInfo _original_railtypes[] = {
 		/* sort order */
 		3 << 4 | 7,
 
-		{ NULL },
-		{ NULL },
+		{ nullptr },
+		{ nullptr },
 	},
 };
 

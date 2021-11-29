@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,6 +9,7 @@
 
 #include "../../stdafx.h"
 #include "../../crashlog.h"
+#include "../../crashlog_bfd.h"
 #include "win32.h"
 #include "../../core/alloc_func.hpp"
 #include "../../core/math_func.hpp"
@@ -20,20 +19,28 @@
 #include "../../gamelog.h"
 #include "../../saveload/saveload.h"
 #include "../../video/video_driver.hpp"
+#include "../../screenshot.h"
+#include "../../debug.h"
+#include "../../settings_type.h"
+#include "../../thread.h"
+#if defined(WITH_DEMANGLE)
+#include <cxxabi.h>
+#endif
 
 #include <windows.h>
+#include <mmsystem.h>
 #include <signal.h>
+#include <psapi.h>
 
 #include "../../safeguards.h"
-
-static const uint MAX_SYMBOL_LEN = 512;
-static const uint MAX_FRAMES     = 64;
 
 /* printf format specification for 32/64-bit addresses. */
 #ifdef _M_AMD64
 #define PRINTF_PTR "0x%016IX"
+#define PRINTF_LOC "%.16IX"
 #else
 #define PRINTF_PTR "0x%08X"
+#define PRINTF_LOC "%.8IX"
 #endif
 
 /**
@@ -43,21 +50,22 @@ class CrashLogWindows : public CrashLog {
 	/** Information about the encountered exception */
 	EXCEPTION_POINTERS *ep;
 
-	/* virtual */ char *LogOSVersion(char *buffer, const char *last) const;
-	/* virtual */ char *LogError(char *buffer, const char *last, const char *message) const;
-	/* virtual */ char *LogStacktrace(char *buffer, const char *last) const;
-	/* virtual */ char *LogRegisters(char *buffer, const char *last) const;
-	/* virtual */ char *LogModules(char *buffer, const char *last) const;
+	char *LogOSVersion(char *buffer, const char *last) const override;
+	char *LogError(char *buffer, const char *last, const char *message) const override;
+	char *LogStacktrace(char *buffer, const char *last) const override;
+	char *LogRegisters(char *buffer, const char *last) const override;
+	char *LogModules(char *buffer, const char *last) const override;
 public:
-#if defined(_MSC_VER)
-	/* virtual */ int WriteCrashDump(char *filename, const char *filename_last) const;
+#if defined(_MSC_VER) || defined(WITH_DBGHELP)
+	int WriteCrashDump(char *filename, const char *filename_last) const override;
 	char *AppendDecodedStacktrace(char *buffer, const char *last) const;
 #else
 	char *AppendDecodedStacktrace(char *buffer, const char *last) const { return buffer; }
-#endif /* _MSC_VER */
+#endif /* _MSC_VER || WITH_DBGHELP */
+
 
 	/** Buffer for the generated crash log */
-	char crashlog[65536];
+	char crashlog[65536 * 4];
 	/** Buffer for the filename of the crash log */
 	char crashlog_filename[MAX_PATH];
 	/** Buffer for the filename of the crash dump */
@@ -69,13 +77,14 @@ public:
 	 * A crash log is always generated when it's generated.
 	 * @param ep the data related to the exception.
 	 */
-	CrashLogWindows(EXCEPTION_POINTERS *ep = NULL) :
+	CrashLogWindows(EXCEPTION_POINTERS *ep = nullptr) :
 		ep(ep)
 	{
 		this->crashlog[0] = '\0';
 		this->crashlog_filename[0] = '\0';
 		this->crashdump_filename[0] = '\0';
 		this->screenshot_filename[0] = '\0';
+		this->name_buffer[0] = '\0';
 	}
 
 	/**
@@ -84,7 +93,7 @@ public:
 	static CrashLogWindows *current;
 };
 
-/* static */ CrashLogWindows *CrashLogWindows::current = NULL;
+/* static */ CrashLogWindows *CrashLogWindows::current = nullptr;
 
 /* virtual */ char *CrashLogWindows::LogOSVersion(char *buffer, const char *last) const
 {
@@ -104,21 +113,51 @@ public:
 
 }
 
+static const char *GetAccessViolationTypeString(uint type)
+{
+	switch (type) {
+		case 0:
+			return "read";
+		case 1:
+			return "write";
+		case 8:
+			return "user-mode DEP";
+		default:
+			return "???";
+	}
+}
+
 /* virtual */ char *CrashLogWindows::LogError(char *buffer, const char *last, const char *message) const
 {
-	return buffer + seprintf(buffer, last,
-			"Crash reason:\n"
-			" Exception: %.8X\n"
-#ifdef _M_AMD64
-			" Location:  %.16IX\n"
-#else
-			" Location:  %.8X\n"
-#endif
-			" Message:   %s\n\n",
-			(int)ep->ExceptionRecord->ExceptionCode,
-			(size_t)ep->ExceptionRecord->ExceptionAddress,
-			message == NULL ? "<none>" : message
-	);
+	buffer += seprintf(buffer, last, "Crash reason:\n");
+	for (auto record = ep->ExceptionRecord; record != nullptr; record = record->ExceptionRecord) {
+		buffer += seprintf(buffer, last,
+				" Exception:  %.8X\n"
+				" Location:   " PRINTF_LOC "\n",
+				(int)record->ExceptionCode,
+				(size_t)record->ExceptionAddress
+		);
+		if (record->ExceptionCode == 0xC0000005 && record->NumberParameters == 2) {
+			buffer += seprintf(buffer, last,
+					" Fault type: %u (%s)\n"
+					" Fault addr: " PRINTF_LOC "\n",
+					(uint) record->ExceptionInformation[0],
+					GetAccessViolationTypeString(record->ExceptionInformation[0]),
+					record->ExceptionInformation[1]
+			);
+		} else {
+			for (uint i = 0; i < (uint) record->NumberParameters; i++) {
+				buffer += seprintf(buffer, last,
+						" Info %u:     " PRINTF_LOC "\n",
+						i,
+						record->ExceptionInformation[i]
+				);
+			}
+		}
+	}
+	buffer += seprintf(buffer, last, " Message:    %s\n\n",
+			message == nullptr ? "<none>" : message);
+	return buffer;
 }
 
 struct DebugFileInfo {
@@ -154,12 +193,12 @@ static uint32 CalcCRC(byte *data, uint size, uint32 crc)
 	return crc;
 }
 
-static void GetFileInfo(DebugFileInfo *dfi, const TCHAR *filename)
+static void GetFileInfo(DebugFileInfo *dfi, const wchar_t *filename)
 {
 	HANDLE file;
 	memset(dfi, 0, sizeof(*dfi));
 
-	file = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, 0);
+	file = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, 0);
 	if (file != INVALID_HANDLE_VALUE) {
 		byte buffer[1024];
 		DWORD numread;
@@ -168,7 +207,7 @@ static void GetFileInfo(DebugFileInfo *dfi, const TCHAR *filename)
 		uint32 crc = (uint32)-1;
 
 		for (;;) {
-			if (ReadFile(file, buffer, sizeof(buffer), &numread, NULL) == 0 || numread == 0) {
+			if (ReadFile(file, buffer, sizeof(buffer), &numread, nullptr) == 0 || numread == 0) {
 				break;
 			}
 			filesize += numread;
@@ -177,7 +216,7 @@ static void GetFileInfo(DebugFileInfo *dfi, const TCHAR *filename)
 		dfi->size = filesize;
 		dfi->crc32 = crc ^ (uint32)-1;
 
-		if (GetFileTime(file, NULL, NULL, &write_time)) {
+		if (GetFileTime(file, nullptr, nullptr, &write_time)) {
 			FileTimeToSystemTime(&write_time, &dfi->file_time);
 		}
 		CloseHandle(file);
@@ -187,13 +226,13 @@ static void GetFileInfo(DebugFileInfo *dfi, const TCHAR *filename)
 
 static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
 {
-	TCHAR buffer[MAX_PATH];
+	wchar_t buffer[MAX_PATH];
 	DebugFileInfo dfi;
 
 	GetModuleFileName(mod, buffer, MAX_PATH);
 	GetFileInfo(&dfi, buffer);
 	output += seprintf(output, last, " %-20s handle: %p size: %d crc: %.8X date: %d-%.2d-%.2d %.2d:%.2d:%.2d\n",
-		FS2OTTD(buffer),
+		FS2OTTD(buffer).c_str(),
 		mod,
 		dfi.size,
 		dfi.crc32,
@@ -210,28 +249,22 @@ static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
 /* virtual */ char *CrashLogWindows::LogModules(char *output, const char *last) const
 {
 	MakeCRCTable(AllocaM(uint32, 256));
-	BOOL (WINAPI *EnumProcessModules)(HANDLE, HMODULE*, DWORD, LPDWORD);
-
 	output += seprintf(output, last, "Module information:\n");
 
-	if (LoadLibraryList((Function*)&EnumProcessModules, "psapi.dll\0EnumProcessModules\0\0")) {
+	HANDLE proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
+	if (proc != nullptr) {
 		HMODULE modules[100];
 		DWORD needed;
-		BOOL res;
+		BOOL res = EnumProcessModules(proc, modules, sizeof(modules), &needed);
+		CloseHandle(proc);
+		if (res) {
+			size_t count = std::min<DWORD>(needed / sizeof(HMODULE), lengthof(modules));
 
-		HANDLE proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
-		if (proc != NULL) {
-			res = EnumProcessModules(proc, modules, sizeof(modules), &needed);
-			CloseHandle(proc);
-			if (res) {
-				size_t count = min(needed / sizeof(HMODULE), lengthof(modules));
-
-				for (size_t i = 0; i != count; i++) output = PrintModuleInfo(output, last, modules[i]);
-				return output + seprintf(output, last, "\n");
-			}
+			for (size_t i = 0; i != count; i++) output = PrintModuleInfo(output, last, modules[i]);
+			return output + seprintf(output, last, "\n");
 		}
 	}
-	output = PrintModuleInfo(output, last, NULL);
+	output = PrintModuleInfo(output, last, nullptr);
 	return output + seprintf(output, last, "\n");
 }
 
@@ -264,7 +297,7 @@ static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
 		ep->ContextRecord->Rip,
 		ep->ContextRecord->EFlags
 	);
-#else
+#elif defined(_M_IX86)
 	buffer += seprintf(buffer, last,
 		" EAX: %.8X EBX: %.8X ECX: %.8X EDX: %.8X\n"
 		" ESI: %.8X EDI: %.8X EBP: %.8X ESP: %.8X\n"
@@ -280,13 +313,57 @@ static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
 		(int)ep->ContextRecord->Eip,
 		(int)ep->ContextRecord->EFlags
 	);
+#elif defined(_M_ARM64)
+	buffer += seprintf(buffer, last,
+		" X0:  %.16I64X X1:  %.16I64X X2:  %.16I64X X3:  %.16I64X\n"
+		" X4:  %.16I64X X5:  %.16I64X X6:  %.16I64X X7:  %.16I64X\n"
+		" X8:  %.16I64X X9:  %.16I64X X10: %.16I64X X11: %.16I64X\n"
+		" X12: %.16I64X X13: %.16I64X X14: %.16I64X X15: %.16I64X\n"
+		" X16: %.16I64X X17: %.16I64X X18: %.16I64X X19: %.16I64X\n"
+		" X20: %.16I64X X21: %.16I64X X22: %.16I64X X23: %.16I64X\n"
+		" X24: %.16I64X X25: %.16I64X X26: %.16I64X X27: %.16I64X\n"
+		" X28: %.16I64X Fp:  %.16I64X Lr:  %.16I64X\n",
+		ep->ContextRecord->X0,
+		ep->ContextRecord->X1,
+		ep->ContextRecord->X2,
+		ep->ContextRecord->X3,
+		ep->ContextRecord->X4,
+		ep->ContextRecord->X5,
+		ep->ContextRecord->X6,
+		ep->ContextRecord->X7,
+		ep->ContextRecord->X8,
+		ep->ContextRecord->X9,
+		ep->ContextRecord->X10,
+		ep->ContextRecord->X11,
+		ep->ContextRecord->X12,
+		ep->ContextRecord->X13,
+		ep->ContextRecord->X14,
+		ep->ContextRecord->X15,
+		ep->ContextRecord->X16,
+		ep->ContextRecord->X17,
+		ep->ContextRecord->X18,
+		ep->ContextRecord->X19,
+		ep->ContextRecord->X20,
+		ep->ContextRecord->X21,
+		ep->ContextRecord->X22,
+		ep->ContextRecord->X23,
+		ep->ContextRecord->X24,
+		ep->ContextRecord->X25,
+		ep->ContextRecord->X26,
+		ep->ContextRecord->X27,
+		ep->ContextRecord->X28,
+		ep->ContextRecord->Fp,
+		ep->ContextRecord->Lr
+	);
 #endif
 
 	buffer += seprintf(buffer, last, "\n Bytes at instruction pointer:\n");
 #ifdef _M_AMD64
 	byte *b = (byte*)ep->ContextRecord->Rip;
-#else
+#elif defined(_M_IX86)
 	byte *b = (byte*)ep->ContextRecord->Eip;
+#elif defined(_M_ARM64)
+	byte *b = (byte*)ep->ContextRecord->Pc;
 #endif
 	for (int i = 0; i != 24; i++) {
 		if (IsBadReadPtr(b, 1)) {
@@ -304,8 +381,10 @@ static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
 	buffer += seprintf(buffer, last, "Stack trace:\n");
 #ifdef _M_AMD64
 	uint32 *b = (uint32*)ep->ContextRecord->Rsp;
-#else
+#elif defined(_M_IX86)
 	uint32 *b = (uint32*)ep->ContextRecord->Esp;
+#elif defined(_M_ARM64)
+	uint32 *b = (uint32*)ep->ContextRecord->Sp;
 #endif
 	for (int j = 0; j != 24; j++) {
 		for (int i = 0; i != 8; i++) {
@@ -321,10 +400,16 @@ static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
 	return buffer + seprintf(buffer, last, "\n");
 }
 
+#if defined(_MSC_VER) || defined(WITH_DBGHELP)
+static const uint MAX_SYMBOL_LEN = 512;
+static const uint MAX_FRAMES     = 64;
 #if defined(_MSC_VER)
 #pragma warning(disable:4091)
+#endif
 #include <dbghelp.h>
+#if defined(_MSC_VER)
 #pragma warning(default:4091)
+#endif
 
 char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) const
 {
@@ -362,7 +447,7 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 	if (LoadLibraryList((Function*)&proc, dbg_import)) {
 		/* Initialize symbol handler. */
 		HANDLE hCur = GetCurrentProcess();
-		proc.pSymInitialize(hCur, NULL, TRUE);
+		proc.pSymInitialize(hCur, nullptr, TRUE);
 		/* Load symbols only when needed, fail silently on errors, demangle symbol names. */
 		proc.pSymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_UNDNAME);
 
@@ -373,10 +458,14 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 		frame.AddrPC.Offset = ep->ContextRecord->Rip;
 		frame.AddrFrame.Offset = ep->ContextRecord->Rbp;
 		frame.AddrStack.Offset = ep->ContextRecord->Rsp;
-#else
+#elif defined(_M_IX86)
 		frame.AddrPC.Offset = ep->ContextRecord->Eip;
 		frame.AddrFrame.Offset = ep->ContextRecord->Ebp;
 		frame.AddrStack.Offset = ep->ContextRecord->Esp;
+#elif defined(_M_ARM64)
+		frame.AddrPC.Offset = ep->ContextRecord->Pc;
+		frame.AddrFrame.Offset = ep->ContextRecord->Fp;
+		frame.AddrStack.Offset = ep->ContextRecord->Sp;
 #endif
 		frame.AddrPC.Mode = AddrModeFlat;
 		frame.AddrFrame.Mode = AddrModeFlat;
@@ -399,7 +488,7 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 #else
 				IMAGE_FILE_MACHINE_I386,
 #endif
-				hCur, GetCurrentThread(), &frame, &ctx, NULL, proc.pSymFunctionTableAccess64, proc.pSymGetModuleBase64, NULL)) break;
+				hCur, GetCurrentThread(), &frame, &ctx, nullptr, proc.pSymFunctionTableAccess64, proc.pSymGetModuleBase64, nullptr)) break;
 
 			if (frame.AddrPC.Offset == frame.AddrReturn.Offset) {
 				buffer += seprintf(buffer, last, " <infinite loop>\n");
@@ -408,15 +497,17 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 
 			/* Get module name. */
 			const char *mod_name = "???";
+			const char *image_name = nullptr;
 
 			IMAGEHLP_MODULE64 module;
 			module.SizeOfStruct = sizeof(module);
 			if (proc.pSymGetModuleInfo64(hCur, frame.AddrPC.Offset, &module)) {
 				mod_name = module.ModuleName;
+				image_name = module.ImageName;
 			}
 
 			/* Print module and instruction pointer. */
-			buffer += seprintf(buffer, last, "[%02d] %-20s " PRINTF_PTR, num, mod_name, frame.AddrPC.Offset);
+			buffer += seprintf(buffer, last, "[%02d] %-20s " PRINTF_PTR, num, mod_name, (uintptr_t) frame.AddrPC.Offset);
 
 			/* Get symbol name and line info if possible. */
 			DWORD64 offset;
@@ -427,8 +518,37 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 				IMAGEHLP_LINE64 line;
 				line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
 				if (proc.pSymGetLineFromAddr64(hCur, frame.AddrPC.Offset, &line_offs, &line)) {
-					buffer += seprintf(buffer, last, " (%s:%d)", line.FileName, line.LineNumber);
+					buffer += seprintf(buffer, last, " (%s:%u)", line.FileName, (uint) line.LineNumber);
 				}
+			} else if (image_name != nullptr) {
+#if defined (WITH_BFD)
+				/* subtract one to get the line before the return address, i.e. the function call line */
+				sym_info_bfd bfd_info(static_cast<bfd_vma>(frame.AddrPC.Offset) - 1);
+				lookup_addr_bfd(image_name, bfd_info);
+				if (bfd_info.function_name != nullptr) {
+					const char *func_name = bfd_info.function_name;
+#if defined(WITH_DEMANGLE)
+					int status = -1;
+					char *demangled = abi::__cxa_demangle(func_name, nullptr, 0, &status);
+					if (demangled != nullptr && status == 0) {
+						func_name = demangled;
+					}
+#endif
+					bool symbol_ok = strncmp(func_name, ".rdata$", 7) != 0 && strncmp(func_name, ".debug_loc", 10) != 0;
+					if (symbol_ok) {
+						buffer += seprintf(buffer, last, " %s", func_name);
+					}
+#if defined(WITH_DEMANGLE)
+					free(demangled);
+#endif
+					if (symbol_ok && bfd_info.function_addr) {
+						buffer += seprintf(buffer, last, " + %I64u", frame.AddrPC.Offset - static_cast<DWORD64>(bfd_info.function_addr));
+					}
+				}
+				if (bfd_info.file_name != nullptr) {
+					buffer += seprintf(buffer, last, " (%s:%d)", bfd_info.file_name, bfd_info.line);
+				}
+#endif
 			}
 			buffer += seprintf(buffer, last, "\n");
 		}
@@ -441,18 +561,20 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 
 /* virtual */ int CrashLogWindows::WriteCrashDump(char *filename, const char *filename_last) const
 {
+	if (_settings_client.gui.developer == 0) return 0;
+
 	int ret = 0;
-	HMODULE dbghelp = LoadLibrary(_T("dbghelp.dll"));
-	if (dbghelp != NULL) {
+	HMODULE dbghelp = LoadLibrary(L"dbghelp.dll");
+	if (dbghelp != nullptr) {
 		typedef BOOL (WINAPI *MiniDumpWriteDump_t)(HANDLE, DWORD, HANDLE,
 				MINIDUMP_TYPE,
 				CONST PMINIDUMP_EXCEPTION_INFORMATION,
 				CONST PMINIDUMP_USER_STREAM_INFORMATION,
 				CONST PMINIDUMP_CALLBACK_INFORMATION);
-		MiniDumpWriteDump_t funcMiniDumpWriteDump = (MiniDumpWriteDump_t)GetProcAddress(dbghelp, "MiniDumpWriteDump");
-		if (funcMiniDumpWriteDump != NULL) {
-			seprintf(filename, filename_last, "%scrash.dmp", _personal_dir);
-			HANDLE file  = CreateFile(OTTD2FS(filename), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, 0);
+		MiniDumpWriteDump_t funcMiniDumpWriteDump = GetProcAddressT<MiniDumpWriteDump_t>(dbghelp, "MiniDumpWriteDump");
+		if (funcMiniDumpWriteDump != nullptr) {
+			seprintf(filename, filename_last, "%scrash.dmp", _personal_dir.c_str());
+			HANDLE file  = CreateFile(OTTD2FS(filename).c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, 0);
 			HANDLE proc  = GetCurrentProcess();
 			DWORD procid = GetCurrentProcessId();
 			MINIDUMP_EXCEPTION_INFORMATION mdei;
@@ -460,7 +582,7 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 			MINIDUMP_USER_STREAM_INFORMATION musi;
 
 			userstream.Type        = LastReservedStream + 1;
-			userstream.Buffer      = (void*)this->crashlog;
+			userstream.Buffer      = const_cast<void *>(static_cast<const void*>(this->crashlog));
 			userstream.BufferSize  = (ULONG)strlen(this->crashlog) + 1;
 
 			musi.UserStreamCount   = 1;
@@ -470,7 +592,7 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 			mdei.ExceptionPointers  = ep;
 			mdei.ClientPointers     = false;
 
-			funcMiniDumpWriteDump(proc, procid, file, MiniDumpWithDataSegs, &mdei, &musi, NULL);
+			funcMiniDumpWriteDump(proc, procid, file, MiniDumpWithDataSegs, &mdei, &musi, nullptr);
 			ret = 1;
 		} else {
 			ret = -1;
@@ -479,7 +601,7 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 	}
 	return ret;
 }
-#endif /* _MSC_VER */
+#endif /* _MSC_VER  || WITH_DBGHELP */
 
 extern bool CloseConsoleLogIfActive();
 static void ShowCrashlogWindow();
@@ -488,50 +610,72 @@ static void ShowCrashlogWindow();
  * Stack pointer for use when 'starting' the crash handler.
  * Not static as gcc's inline assembly needs it that way.
  */
-void *_safe_esp = NULL;
+thread_local void *_safe_esp = nullptr;
 
 static LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS *ep)
 {
-	if (CrashLogWindows::current != NULL) {
+	/* Restore system timer resolution. */
+	timeEndPeriod(1);
+
+	/* Disable our event loop. */
+	SetWindowLongPtr(GetActiveWindow(), GWLP_WNDPROC, (LONG_PTR)&DefWindowProc);
+
+	if (CrashLogWindows::current != nullptr) {
 		CrashLog::AfterCrashLogCleanup();
 		ExitProcess(2);
 	}
 
-	if (GamelogTestEmergency()) {
-		static const TCHAR _emergency_crash[] =
-			_T("A serious fault condition occurred in the game. The game will shut down.\n")
-			_T("As you loaded an emergency savegame no crash information will be generated.\n");
-		MessageBox(NULL, _emergency_crash, _T("Fatal Application Failure"), MB_ICONERROR);
+	const char *abort_reason = CrashLog::GetAbortCrashlogReason();
+	if (abort_reason != nullptr) {
+		wchar_t _emergency_crash[512];
+		_snwprintf(_emergency_crash, lengthof(_emergency_crash),
+				L"A serious fault condition occurred in the game. The game will shut down. (%s)\n", OTTD2FS(abort_reason).c_str());
+		MessageBox(nullptr, _emergency_crash, L"Fatal Application Failure", MB_ICONERROR);
 		ExitProcess(3);
 	}
 
-	if (SaveloadCrashWithMissingNewGRFs()) {
-		static const TCHAR _saveload_crash[] =
-			_T("A serious fault condition occurred in the game. The game will shut down.\n")
-			_T("As you loaded an savegame for which you do not have the required NewGRFs\n")
-			_T("no crash information will be generated.\n");
-		MessageBox(NULL, _saveload_crash, _T("Fatal Application Failure"), MB_ICONERROR);
-		ExitProcess(3);
-	}
+	VideoDriver::EmergencyAcquireGameLock(1000, 5);
 
 	CrashLogWindows *log = new CrashLogWindows(ep);
 	CrashLogWindows::current = log;
 	char *buf = log->FillCrashLog(log->crashlog, lastof(log->crashlog));
+	char *name_buffer_date = log->name_buffer + seprintf(log->name_buffer, lastof(log->name_buffer), "crash-");
+	time_t cur_time = time(nullptr);
+	strftime(name_buffer_date, lastof(log->name_buffer) - name_buffer_date, "%Y%m%dT%H%M%SZ", gmtime(&cur_time));
 	log->WriteCrashDump(log->crashdump_filename, lastof(log->crashdump_filename));
 	log->AppendDecodedStacktrace(buf, lastof(log->crashlog));
-	log->WriteCrashLog(log->crashlog, log->crashlog_filename, lastof(log->crashlog_filename));
-	log->WriteScreenshot(log->screenshot_filename, lastof(log->screenshot_filename));
+	log->WriteCrashLog(log->crashlog, log->crashlog_filename, lastof(log->crashlog_filename), log->name_buffer);
+	SetScreenshotAuxiliaryText("Crash Log", log->crashlog);
+	log->WriteScreenshot(log->screenshot_filename, lastof(log->screenshot_filename), log->name_buffer);
 
 	/* Close any possible log files */
 	CloseConsoleLogIfActive();
 
-	if ((VideoDriver::GetInstance() == NULL || VideoDriver::GetInstance()->HasGUI()) && _safe_esp != NULL) {
+	void *crash_win_esp = _safe_esp;
+	if (crash_win_esp == nullptr) {
+		/* If _safe_esp is not set for the current thread,
+		 * try to read the stack base from the thread environment block instead. */
+#ifdef _M_AMD64
+		/* The stack pointer for AMD64 must always be 16-byte aligned inside a
+		 * function. As we are simulating a function call with the safe ESP value,
+		 * we need to subtract 8 for the imaginary return address otherwise stack
+		 * alignment would be wrong in the called function. */
+		crash_win_esp = (void *)(__readgsqword(8) - 8);
+#elif defined(_M_IX86)
+		crash_win_esp = (void *)__readfsdword(4);
+#endif
+	}
+
+	if ((VideoDriver::GetInstance() == nullptr || VideoDriver::GetInstance()->HasGUI()) && crash_win_esp != nullptr) {
 #ifdef _M_AMD64
 		ep->ContextRecord->Rip = (DWORD64)ShowCrashlogWindow;
-		ep->ContextRecord->Rsp = (DWORD64)_safe_esp;
-#else
+		ep->ContextRecord->Rsp = (DWORD64)crash_win_esp;
+#elif defined(_M_IX86)
 		ep->ContextRecord->Eip = (DWORD)ShowCrashlogWindow;
-		ep->ContextRecord->Esp = (DWORD)_safe_esp;
+		ep->ContextRecord->Esp = (DWORD)crash_win_esp;
+#elif defined(_M_ARM64)
+		ep->ContextRecord->Pc = (DWORD64)ShowCrashlogWindow;
+		ep->ContextRecord->Sp = (DWORD64)crash_win_esp;
 #endif
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
@@ -540,31 +684,25 @@ static LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS *ep)
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
+static LONG WINAPI VectoredExceptionHandler(EXCEPTION_POINTERS *ep)
+{
+	if (ep->ExceptionRecord->ExceptionCode == 0xC0000374 /* heap corruption */) {
+		return ExceptionHandler(ep);
+	}
+	if (ep->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW) {
+		return ExceptionHandler(ep);
+	}
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
 static void CDECL CustomAbort(int signal)
 {
-	RaiseException(0xE1212012, 0, 0, NULL);
+	RaiseException(0xE1212012, 0, 0, nullptr);
 }
 
 /* static */ void CrashLog::InitialiseCrashLog()
 {
-#ifdef _M_AMD64
-	CONTEXT ctx;
-	RtlCaptureContext(&ctx);
-
-	/* The stack pointer for AMD64 must always be 16-byte aligned inside a
-	 * function. As we are simulating a function call with the safe ESP value,
-	 * we need to subtract 8 for the imaginary return address otherwise stack
-	 * alignment would be wrong in the called function. */
-	_safe_esp = (void *)(ctx.Rsp - 8);
-#else
-#if defined(_MSC_VER)
-	_asm {
-		mov _safe_esp, esp
-	}
-#else
-	asm("movl %esp, __safe_esp");
-#endif
-#endif
+	CrashLog::InitThread();
 
 	/* SIGABRT is not an unhandled exception, so we need to intercept it. */
 	signal(SIGABRT, CustomAbort);
@@ -573,6 +711,58 @@ static void CDECL CustomAbort(int signal)
 	_set_abort_behavior(0, _WRITE_ABORT_MSG);
 #endif
 	SetUnhandledExceptionFilter(ExceptionHandler);
+
+	using VEX_HANDLER_TYPE = LONG WINAPI (EXCEPTION_POINTERS *);
+	void* (WINAPI *AddVectoredExceptionHandler)(ULONG, VEX_HANDLER_TYPE*);
+	if (LoadLibraryList((Function*)&AddVectoredExceptionHandler, "kernel32.dll\0AddVectoredExceptionHandler\0\0")) {
+		AddVectoredExceptionHandler(1, VectoredExceptionHandler);
+	}
+}
+
+/* static */ void CrashLog::InitThread()
+{
+#if defined(_M_AMD64) || defined(_M_ARM64)
+	CONTEXT ctx;
+	RtlCaptureContext(&ctx);
+
+	/* The stack pointer for AMD64 must always be 16-byte aligned inside a
+	 * function. As we are simulating a function call with the safe ESP value,
+	 * we need to subtract 8 for the imaginary return address otherwise stack
+	 * alignment would be wrong in the called function. */
+#	if defined(_M_ARM64)
+	_safe_esp = (void *)(ctx.Sp - 8);
+#	else
+	_safe_esp = (void *)(ctx.Rsp - 8);
+#	endif
+#else
+	void *safe_esp = nullptr;
+#	if defined(_MSC_VER)
+	_asm {
+		mov safe_esp, esp
+	}
+#	else
+	asm("movl %%esp, %0" : "=rm" (safe_esp));
+#	endif
+	_safe_esp = safe_esp;
+#endif
+}
+
+/* static */ void CrashLog::DesyncCrashLog(const std::string *log_in, std::string *log_out, const DesyncExtraInfo &info)
+{
+	CrashLogWindows log(nullptr);
+	log.MakeDesyncCrashLog(log_in, log_out, info);
+}
+
+/* static */ void CrashLog::InconsistencyLog(const InconsistencyExtraInfo &info)
+{
+	CrashLogWindows log(nullptr);
+	log.MakeInconsistencyLog(info);
+}
+
+/* static */ void CrashLog::VersionInfoLog()
+{
+	CrashLogWindows log(nullptr);
+	log.MakeVersionInfoLog();
 }
 
 /* The crash log GUI */
@@ -580,19 +770,20 @@ static void CDECL CustomAbort(int signal)
 static bool _expanded;
 
 static const TCHAR _crash_desc[] =
-	_T("A serious fault condition occurred in the game. The game will shut down.\n")
-	_T("Please send the crash information and the crash.dmp file (if any) to the developers.\n")
-	_T("This will greatly help debugging. The correct place to do this is http://bugs.openttd.org. ")
-	_T("The information contained in the report is displayed below.\n")
-	_T("Press \"Emergency save\" to attempt saving the game. Generated file(s):\n")
-	_T("%s");
+	L"A serious fault condition occurred in the game. The game will shut down.\n"
+	L"Please send the crash information (log files and crash saves, if any) to the patchpack developer.\n"
+	L"This will greatly help debugging. The correct place to do this is https://www.tt-forums.net/viewtopic.php?f=33&t=73469"
+	L" or https://github.com/JGRennison/OpenTTD-patches\n"
+	L"The information contained in the report is displayed below.\n"
+	L"Press \"Emergency save\" to attempt saving the game. Generated file(s):\n"
+	L"%s";
 
-static const TCHAR _save_succeeded[] =
-	_T("Emergency save succeeded.\nIts location is '%s'.\n")
-	_T("Be aware that critical parts of the internal game state may have become ")
-	_T("corrupted. The saved game is not guaranteed to work.");
+static const wchar_t _save_succeeded[] =
+	L"Emergency save succeeded.\nIts location is '%s'.\n"
+	L"Be aware that critical parts of the internal game state may have become "
+	L"corrupted. The saved game is not guaranteed to work.";
 
-static const TCHAR * const _expand_texts[] = {_T("S&how report >>"), _T("&Hide report <<") };
+static const wchar_t * const _expand_texts[] = {L"S&how report >>", L"&Hide report <<" };
 
 static void SetWndSize(HWND wnd, int mode)
 {
@@ -615,17 +806,14 @@ static void SetWndSize(HWND wnd, int mode)
 	}
 }
 
-/* When TCHAR is char, then _sntprintf becomes snprintf. When TCHAR is wchar it doesn't. Likewise for strcat. */
-#undef snprintf
-#undef strcat
-
 static INT_PTR CALLBACK CrashDialogFunc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg) {
 		case WM_INITDIALOG: {
 			/* We need to put the crash-log in a separate buffer because the default
 			 * buffer in MB_TO_WIDE is not large enough (512 chars) */
-			TCHAR crash_msgW[lengthof(CrashLogWindows::current->crashlog)];
+			wchar_t filenamebuf[MAX_PATH * 2];
+			wchar_t crash_msgW[lengthof(CrashLogWindows::current->crashlog)];
 			/* Convert unix -> dos newlines because the edit box only supports that properly :( */
 			const char *unix_nl = CrashLogWindows::current->crashlog;
 			char dos_nl[lengthof(CrashLogWindows::current->crashlog)];
@@ -638,20 +826,24 @@ static INT_PTR CALLBACK CrashDialogFunc(HWND wnd, UINT msg, WPARAM wParam, LPARA
 			*p = '\0';
 
 			/* Add path to crash.log and crash.dmp (if any) to the crash window text */
-			size_t len = _tcslen(_crash_desc) + 2;
-			len += _tcslen(OTTD2FS(CrashLogWindows::current->crashlog_filename)) + 2;
-			len += _tcslen(OTTD2FS(CrashLogWindows::current->crashdump_filename)) + 2;
-			len += _tcslen(OTTD2FS(CrashLogWindows::current->screenshot_filename)) + 1;
+			size_t len = wcslen(_crash_desc) + 2;
+			len += wcslen(convert_to_fs(CrashLogWindows::current->crashlog_filename, filenamebuf, lengthof(filenamebuf))) + 2;
+			len += wcslen(convert_to_fs(CrashLogWindows::current->crashdump_filename, filenamebuf, lengthof(filenamebuf))) + 2;
+			len += wcslen(convert_to_fs(CrashLogWindows::current->screenshot_filename, filenamebuf, lengthof(filenamebuf))) + 1;
 
-			TCHAR *text = AllocaM(TCHAR, len);
-			_sntprintf(text, len, _crash_desc, OTTD2FS(CrashLogWindows::current->crashlog_filename));
-			if (OTTD2FS(CrashLogWindows::current->crashdump_filename)[0] != _T('\0')) {
-				_tcscat(text, _T("\n"));
-				_tcscat(text, OTTD2FS(CrashLogWindows::current->crashdump_filename));
+			wchar_t *text = AllocaM(wchar_t, len);
+			int printed = _snwprintf(text, len, _crash_desc, convert_to_fs(CrashLogWindows::current->crashlog_filename, filenamebuf, lengthof(filenamebuf)));
+			if (printed < 0 || (size_t)printed > len) {
+				MessageBox(wnd, L"Catastrophic failure trying to display crash message. Could not perform text formatting.", L"OpenTTD", MB_ICONERROR);
+				return FALSE;
 			}
-			if (OTTD2FS(CrashLogWindows::current->screenshot_filename)[0] != _T('\0')) {
-				_tcscat(text, _T("\n"));
-				_tcscat(text, OTTD2FS(CrashLogWindows::current->screenshot_filename));
+			if (_settings_client.gui.developer > 0 && convert_to_fs(CrashLogWindows::current->crashdump_filename, filenamebuf, lengthof(filenamebuf))[0] != L'\0') {
+				wcscat(text, L"\n");
+				wcscat(text, filenamebuf);
+			}
+			if (convert_to_fs(CrashLogWindows::current->screenshot_filename, filenamebuf, lengthof(filenamebuf))[0] != L'\0') {
+				wcscat(text, L"\n");
+				wcscat(text, filenamebuf);
 			}
 
 			SetDlgItemText(wnd, 10, text);
@@ -665,18 +857,24 @@ static INT_PTR CALLBACK CrashDialogFunc(HWND wnd, UINT msg, WPARAM wParam, LPARA
 					CrashLog::AfterCrashLogCleanup();
 					ExitProcess(2);
 				case 13: // Emergency save
+					_savegame_DBGL_data = CrashLogWindows::current->crashlog;
+					_save_DBGC_data = true;
+					wchar_t filenamebuf[MAX_PATH * 2];
 					char filename[MAX_PATH];
-					if (CrashLogWindows::current->WriteSavegame(filename, lastof(filename))) {
-						size_t len = _tcslen(_save_succeeded) + _tcslen(OTTD2FS(filename)) + 1;
-						TCHAR *text = AllocaM(TCHAR, len);
-						_sntprintf(text, len, _save_succeeded, OTTD2FS(filename));
-						MessageBox(wnd, text, _T("Save successful"), MB_ICONINFORMATION);
+					if (CrashLogWindows::current->WriteSavegame(filename, lastof(filename), CrashLogWindows::current->name_buffer)) {
+						convert_to_fs(filename, filenamebuf, lengthof(filenamebuf));
+						size_t len = lengthof(_save_succeeded) + wcslen(filenamebuf) + 1;
+						wchar_t *text = AllocaM(wchar_t, len);
+						_snwprintf(text, len, _save_succeeded, filenamebuf);
+						MessageBox(wnd, text, L"Save successful", MB_ICONINFORMATION);
 					} else {
-						MessageBox(wnd, _T("Save failed"), _T("Save failed"), MB_ICONINFORMATION);
+						MessageBox(wnd, L"Save failed", L"Save failed", MB_ICONINFORMATION);
 					}
+					_savegame_DBGL_data = nullptr;
+					_save_DBGC_data = false;
 					break;
 				case 15: // Expand window to show crash-message
-					_expanded ^= 1;
+					_expanded = !_expanded;
 					SetWndSize(wnd, _expanded);
 					break;
 			}
@@ -693,5 +891,5 @@ static void ShowCrashlogWindow()
 {
 	ShowCursor(TRUE);
 	ShowWindow(GetActiveWindow(), FALSE);
-	DialogBox(GetModuleHandle(NULL), MAKEINTRESOURCE(100), NULL, CrashDialogFunc);
+	DialogBox(GetModuleHandle(nullptr), MAKEINTRESOURCE(100), nullptr, CrashDialogFunc);
 }

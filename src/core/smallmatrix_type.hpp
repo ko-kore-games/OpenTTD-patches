@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -46,13 +44,13 @@ protected:
 
 public:
 
-	SmallMatrix() : data(NULL), width(0), height(0), capacity(0) {}
+	SmallMatrix() : data(nullptr), width(0), height(0), capacity(0) {}
 
 	/**
 	 * Copy constructor.
 	 * @param other The other matrix to copy.
 	 */
-	SmallMatrix(const SmallMatrix &other) : data(NULL), width(0), height(0), capacity(0)
+	SmallMatrix(const SmallMatrix &other) : data(nullptr), width(0), height(0), capacity(0)
 	{
 		this->Assign(other);
 	}
@@ -112,7 +110,7 @@ public:
 		this->width = 0;
 		this->capacity = 0;
 		free(this->data);
-		this->data = NULL;
+		this->data = nullptr;
 	}
 
 	/**
@@ -216,8 +214,8 @@ public:
 	inline void Resize(uint new_width, uint new_height)
 	{
 		uint new_capacity = new_width * new_height;
-		T *new_data = NULL;
-		void (*copy)(T *dest, const T *src, size_t count) = NULL;
+		T *new_data = nullptr;
+		void (*copy)(T *dest, const T *src, size_t count) = nullptr;
 		if (new_capacity > this->capacity) {
 			/* If the data doesn't fit into current capacity, resize and copy ... */
 			new_data = MallocT<T>(new_capacity);
@@ -236,7 +234,7 @@ public:
 						if (x * new_height > new_capacity) continue;
 						(*copy)(new_data + (x - 1) * new_height,
 								this->data + (x - 1) * this->height,
-								min(this->height, new_height));
+								std::min(this->height, new_height));
 					}
 				} else {
 					/* If matrix is shrinking copy from the front. */
@@ -244,7 +242,7 @@ public:
 						if ((x + 1) * new_height > new_capacity) break;
 						(*copy)(new_data + x * new_height,
 								this->data + x * this->height,
-								min(this->height, new_height));
+								std::min(this->height, new_height));
 					}
 				}
 			}

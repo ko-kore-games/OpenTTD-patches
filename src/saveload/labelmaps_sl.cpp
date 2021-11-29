@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,10 +12,11 @@
 #include "../tunnelbridge_map.h"
 
 #include "saveload.h"
+#include "saveload_internal.h"
 
 #include "../safeguards.h"
 
-static SmallVector<RailTypeLabel, RAILTYPE_END> _railtype_list;
+std::vector<RailTypeLabel> _railtype_list;
 
 /**
  * Test if any saved rail type labels are different to the currently loaded
@@ -26,7 +25,7 @@ static SmallVector<RailTypeLabel, RAILTYPE_END> _railtype_list;
  */
 static bool NeedRailTypeConversion()
 {
-	for (uint i = 0; i < _railtype_list.Length(); i++) {
+	for (uint i = 0; i < _railtype_list.size(); i++) {
 		if ((RailType)i < RAILTYPE_END) {
 			const RailtypeInfo *rti = GetRailTypeInfo((RailType)i);
 			if (rti->label != _railtype_list[i]) return true;
@@ -42,36 +41,45 @@ static bool NeedRailTypeConversion()
 void AfterLoadLabelMaps()
 {
 	if (NeedRailTypeConversion()) {
-		SmallVector<RailType, RAILTYPE_END> railtype_conversion_map;
+		RailType railtype_conversion_map[RAILTYPE_END];
 
-		for (uint i = 0; i < _railtype_list.Length(); i++) {
+		for (uint i = 0; i < _railtype_list.size(); i++) {
 			RailType r = GetRailTypeByLabel(_railtype_list[i]);
 			if (r == INVALID_RAILTYPE) r = RAILTYPE_BEGIN;
 
-			*railtype_conversion_map.Append() = r;
+			railtype_conversion_map[i] = r;
 		}
+		for (uint i = (uint)_railtype_list.size(); i < RAILTYPE_END; i++) {
+			railtype_conversion_map[i] = RAILTYPE_RAIL;
+		}
+
+		auto convert = [&](TileIndex t) {
+			SetRailType(t, railtype_conversion_map[GetRailType(t)]);
+			RailType secondary = GetTileSecondaryRailTypeIfValid(t);
+			if (secondary != INVALID_RAILTYPE) SetSecondaryRailType(t, railtype_conversion_map[secondary]);
+		};
 
 		for (TileIndex t = 0; t < MapSize(); t++) {
 			switch (GetTileType(t)) {
 				case MP_RAILWAY:
-					SetRailType(t, railtype_conversion_map[GetRailType(t)]);
+					convert(t);
 					break;
 
 				case MP_ROAD:
 					if (IsLevelCrossing(t)) {
-						SetRailType(t, railtype_conversion_map[GetRailType(t)]);
+						convert(t);
 					}
 					break;
 
 				case MP_STATION:
 					if (HasStationRail(t)) {
-						SetRailType(t, railtype_conversion_map[GetRailType(t)]);
+						convert(t);
 					}
 					break;
 
 				case MP_TUNNELBRIDGE:
 					if (GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL) {
-						SetRailType(t, railtype_conversion_map[GetRailType(t)]);
+						convert(t);
 					}
 					break;
 
@@ -81,7 +89,12 @@ void AfterLoadLabelMaps()
 		}
 	}
 
-	_railtype_list.Clear();
+	ResetLabelMaps();
+}
+
+void ResetLabelMaps()
+{
+	_railtype_list.clear();
 }
 
 /** Container for a label for SaveLoad system */
@@ -91,7 +104,6 @@ struct LabelObject {
 
 static const SaveLoad _label_object_desc[] = {
 	SLE_VAR(LabelObject, label, SLE_UINT32),
-	SLE_END(),
 };
 
 static void Save_RAIL()
@@ -108,17 +120,19 @@ static void Save_RAIL()
 
 static void Load_RAIL()
 {
-	_railtype_list.Clear();
+	ResetLabelMaps();
 
 	LabelObject lo;
 
 	while (SlIterateArray() != -1) {
 		SlObject(&lo, _label_object_desc);
-		*_railtype_list.Append() = (RailTypeLabel)lo.label;
+		_railtype_list.push_back((RailTypeLabel)lo.label);
 	}
 }
 
-extern const ChunkHandler _labelmaps_chunk_handlers[] = {
-	{ 'RAIL', Save_RAIL, Load_RAIL, NULL, NULL, CH_ARRAY | CH_LAST},
+static const ChunkHandler labelmaps_chunk_handlers[] = {
+	{ 'RAIL', Save_RAIL, Load_RAIL, nullptr, nullptr, CH_ARRAY },
 };
+
+extern const ChunkHandlerTable _labelmaps_chunk_handlers(labelmaps_chunk_handlers);
 

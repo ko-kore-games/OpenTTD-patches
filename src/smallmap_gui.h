@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -21,8 +19,32 @@
 #include "widgets/smallmap_widget.h"
 #include "guitimer_func.h"
 
+static const int NUM_NO_COMPANY_ENTRIES = 4; ///< Number of entries in the owner legend that are not companies.
+
+/** Mapping of tile type to importance of the tile (higher number means more interesting to show). */
+static const byte _tiletype_importance[] = {
+	2, // MP_CLEAR
+	8, // MP_RAILWAY
+	7, // MP_ROAD
+	5, // MP_HOUSE
+	2, // MP_TREES
+	9, // MP_STATION
+	2, // MP_WATER
+	1, // MP_VOID
+	6, // MP_INDUSTRY
+	8, // MP_TUNNELBRIDGE
+	2, // MP_OBJECT
+	0,
+};
+
 /* set up the cargos to be displayed in the smallmap's route legend */
 void BuildLinkStatsLegend();
+
+struct TunnelBridgeToMap {
+	TileIndex from_tile;
+	TileIndex to_tile;
+};
+typedef std::vector<TunnelBridgeToMap> TunnelBridgeToMapVector;
 
 void BuildIndustriesLegend();
 void ShowSmallMap();
@@ -64,16 +86,18 @@ protected:
 
 	static SmallMapType map_type; ///< Currently displayed legends.
 	static bool show_towns;       ///< Display town names in the smallmap.
-	static int max_heightlevel;   ///< Currently used/cached maximum heightlevel.
+	static int map_height_limit;  ///< Currently used/cached map height limit.
 
-	static const uint LEGEND_BLOB_WIDTH = 8;              ///< Width of the coloured blob in front of a line text in the #WID_SM_LEGEND widget.
 	static const uint INDUSTRY_MIN_NUMBER_OF_COLUMNS = 2; ///< Minimal number of columns in the #WID_SM_LEGEND widget for the #SMT_INDUSTRY legend.
-	static const uint FORCE_REFRESH_PERIOD = 930; ///< map is redrawn after that many milliseconds.
-	static const uint BLINK_PERIOD         = 450; ///< highlight blinking interval in milliseconds.
+	static const uint FORCE_REFRESH_PERIOD = 930;             ///< map is redrawn after that many milliseconds (default).
+	static const uint FORCE_REFRESH_PERIOD_VEH = 240;         ///< map is redrawn after that many milliseconds (modes with vehicles).
+	static const uint FORCE_REFRESH_PERIOD_LINK_GRAPH = 2850; ///< map is redrawn after that many milliseconds (link graph mode).
+	static const uint BLINK_PERIOD         = 450;             ///< highlight blinking interval in milliseconds.
 
 	uint min_number_of_columns;    ///< Minimal number of columns in legends.
 	uint min_number_of_fixed_rows; ///< Minimal number of rows in the legends for the fixed layouts only (all except #SMT_INDUSTRY).
 	uint column_width;             ///< Width of a column in the #WID_SM_LEGEND widget.
+	uint legend_width;             ///< Width of legend 'blob'.
 
 	int32 scroll_x;  ///< Horizontal world coordinate of the base tile left of the top-left corner of the smallmap display.
 	int32 scroll_y;  ///< Vertical world coordinate of the base tile left of the top-left corner of the smallmap display.
@@ -149,17 +173,18 @@ protected:
 		return Company::IsValidID(_local_company) ? 1U << _local_company : 0xffffffff;
 	}
 
-	void RebuildColourIndexIfNecessary();
 	uint GetNumberRowsLegend(uint columns) const;
 	void SelectLegendItem(int click_pos, LegendAndColour *legend, int end_legend_item, int begin_legend_item = 0);
 	void SwitchMapType(SmallMapType map_type);
 	void SetNewScroll(int sx, int sy, int sub);
+	uint GetRefreshPeriod() const;
+	uint PausedAdjustRefreshTimeDelta(uint delta_ms) const;
 
 	void DrawMapIndicators() const;
 	void DrawSmallMapColumn(void *dst, uint xc, uint yc, int pitch, int reps, int start_pos, int end_pos, Blitter *blitter) const;
 	void DrawVehicles(const DrawPixelInfo *dpi, Blitter *blitter) const;
 	void DrawTowns(const DrawPixelInfo *dpi) const;
-	void DrawSmallMap(DrawPixelInfo *dpi) const;
+	void DrawSmallMap(DrawPixelInfo *dpi, bool draw_indicators = true) const;
 
 	Point RemapTile(int tile_x, int tile_y) const;
 	Point PixelToTile(int px, int py, int *sub, bool add_sub = true) const;
@@ -177,20 +202,25 @@ public:
 	SmallMapWindow(WindowDesc *desc, int window_number);
 	virtual ~SmallMapWindow();
 
+	static void RebuildColourIndexIfNecessary();
+
 	void SmallMapCenterOnCurrentPos();
 	Point GetStationMiddle(const Station *st) const;
 
-	virtual void SetStringParameters(int widget) const;
-	virtual void OnInit();
-	virtual void OnPaint();
-	virtual void DrawWidget(const Rect &r, int widget) const;
-	virtual void OnClick(Point pt, int widget, int click_count);
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true);
-	virtual bool OnRightClick(Point pt, int widget);
-	virtual void OnMouseWheel(int wheel);
-	virtual void OnRealtimeTick(uint delta_ms);
-	virtual void OnScroll(Point delta);
-	virtual void OnMouseOver(Point pt, int widget);
+	void SetStringParameters(int widget) const override;
+	void OnInit() override;
+	void OnPaint() override;
+	void DrawWidget(const Rect &r, int widget) const override;
+	void OnClick(Point pt, int widget, int click_count) override;
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override;
+	bool OnRightClick(Point pt, int widget) override;
+	void OnMouseWheel(int wheel) override;
+	void OnRealtimeTick(uint delta_ms) override;
+	void OnScroll(Point delta) override;
+	void OnMouseOver(Point pt, int widget) override;
+
+	void TakeScreenshot();
+	void ScreenshotCallbackHandler(void *buf, uint y, uint pitch, uint n);
 };
 
 #endif /* SMALLMAP_GUI_H */

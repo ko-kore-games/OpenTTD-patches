@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -39,8 +37,8 @@ struct CargoPayment : CargoPaymentPool::PoolItem<&_cargo_payment_pool> {
 	CargoPayment(Vehicle *front);
 	~CargoPayment();
 
-	Money PayTransfer(const CargoPacket *cp, uint count);
-	void PayFinalDelivery(const CargoPacket *cp, uint count);
+	Money PayTransfer(CargoPacket *cp, uint count);
+	void PayFinalDelivery(CargoPacket *cp, uint count);
 
 	/**
 	 * Sets the currently handled cargo type.
@@ -48,18 +46,5 @@ struct CargoPayment : CargoPaymentPool::PoolItem<&_cargo_payment_pool> {
 	 */
 	void SetCargo(CargoID ct) { this->ct = ct; }
 };
-
-/**
- * Iterate over all cargo payments from a given start position.
- * @param var The variable used for iterating.
- * @param start The start of the iteration.
- */
-#define FOR_ALL_CARGO_PAYMENTS_FROM(var, start) FOR_ALL_ITEMS_FROM(CargoPayment, cargo_payment_index, var, start)
-
-/**
- * Iterate over all cargo payments.
- * @param var The variable used for iterating.
- */
-#define FOR_ALL_CARGO_PAYMENTS(var) FOR_ALL_CARGO_PAYMENTS_FROM(var, 0)
 
 #endif /* ECONOMY_BASE_H */

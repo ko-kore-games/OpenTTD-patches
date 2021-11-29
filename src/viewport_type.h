@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,13 +14,32 @@
 #include "strings_type.h"
 #include "table/strings.h"
 
+#include <vector>
+
 class LinkGraphOverlay;
+
+enum ViewportMapType {
+	VPMT_BEGIN = 0,
+	VPMT_VEGETATION = 0,
+	VPMT_OWNER,
+	VPMT_ROUTES,
+	VPMT_INDUSTRY,
+	VPMT_END,
+
+	VPMT_MIN = VPMT_VEGETATION,
+	VPMT_MAX = VPMT_INDUSTRY,
+};
+
+struct ViewPortMapDrawVehiclesCache {
+	uint64 done_hash_bits[64];
+	std::vector<bool> vehicle_pixels;
+};
 
 /**
  * Data structure for viewport, display of a part of the world
  */
-struct ViewPort {
-	int left;    ///< Screen coordinate left egde of the viewport
+struct Viewport {
+	int left;    ///< Screen coordinate left edge of the viewport
 	int top;     ///< Screen coordinate top edge of the viewport
 	int width;   ///< Screen width of the viewport
 	int height;  ///< Screen height of the viewport
@@ -32,8 +49,43 @@ struct ViewPort {
 	int virtual_width;   ///< width << zoom
 	int virtual_height;  ///< height << zoom
 
-	ZoomLevel zoom; ///< The zoom level of the viewport.
+	ZoomLevel zoom;      ///< The zoom level of the viewport.
+	ViewportMapType map_type;  ///< Rendering type
+
 	LinkGraphOverlay *overlay;
+
+	std::vector<bool> dirty_blocks;
+	uint dirty_blocks_per_column;
+	uint dirty_blocks_per_row;
+	uint8 dirty_block_left_margin;
+	bool is_dirty = false;
+	bool is_drawn = false;
+	bool update_vehicles = false;
+	ViewPortMapDrawVehiclesCache map_draw_vehicles_cache;
+	std::vector<byte> land_pixel_cache;
+
+	uint GetDirtyBlockWidthShift() const { return this->GetDirtyBlockShift(); }
+	uint GetDirtyBlockHeightShift() const { return this->GetDirtyBlockShift(); }
+	uint GetDirtyBlockWidth() const { return 1 << this->GetDirtyBlockWidthShift(); }
+	uint GetDirtyBlockHeight() const { return 1 << this->GetDirtyBlockHeightShift(); }
+
+	void ClearDirty()
+	{
+		if (this->is_dirty) {
+			this->dirty_blocks.assign(this->dirty_blocks.size(), false);
+			this->is_dirty = false;
+		}
+		this->is_drawn = false;
+		this->update_vehicles = false;
+	}
+
+private:
+	uint GetDirtyBlockShift() const
+	{
+		if (this->zoom >= ZOOM_LVL_DRAW_MAP) return 3;
+		if (this->zoom >= ZOOM_LVL_OUT_8X) return 4;
+		return 7 - this->zoom;
+	}
 };
 
 /** Margins for the viewport sign */
@@ -51,8 +103,28 @@ struct ViewportSign {
 	uint16 width_normal; ///< The width when not zoomed out (normal font)
 	uint16 width_small;  ///< The width when zoomed out (small font)
 
-	void UpdatePosition(int center, int top, StringID str, StringID str_small = STR_NULL);
-	void MarkDirty(ZoomLevel maxzoom = ZOOM_LVL_MAX) const;
+	void UpdatePosition(ZoomLevel maxzoom, int center, int top, StringID str, StringID str_small = STR_NULL);
+	void MarkDirty(ZoomLevel maxzoom) const;
+};
+
+/** Specialised ViewportSign that tracks whether it is valid for entering into a Kdtree */
+struct TrackedViewportSign : ViewportSign {
+	bool kdtree_valid; ///< Are the sign data valid for use with the _viewport_sign_kdtree?
+
+	/**
+	 * Update the position of the viewport sign.
+	 * Note that this function hides the base class function.
+	 */
+	void UpdatePosition(ZoomLevel maxzoom, int center, int top, StringID str, StringID str_small = STR_NULL)
+	{
+		this->kdtree_valid = true;
+		this->ViewportSign::UpdatePosition(maxzoom, center, top, str, str_small);
+	}
+
+
+	TrackedViewportSign() : kdtree_valid{ false }
+	{
+	}
 };
 
 /**
@@ -85,6 +157,7 @@ enum ViewportPlaceMethod {
 	VPM_FIX_VERTICAL    =    6, ///< drag only in vertical direction
 	VPM_X_LIMITED       =    7, ///< Drag only in X axis with limited size
 	VPM_Y_LIMITED       =    8, ///< Drag only in Y axis with limited size
+	VPM_A_B_LINE        =    9, ///< Drag a line from tile A to tile B
 	VPM_RAILDIRS        = 0x40, ///< all rail directions
 	VPM_SIGNALDIRS      = 0x80, ///< similar to VMP_RAILDIRS, but with different cursor
 };
@@ -105,6 +178,10 @@ enum ViewportDragDropSelectionProcess {
 	DDSP_CREATE_RIVER,         ///< Create rivers
 	DDSP_PLANT_TREES,          ///< Plant trees
 	DDSP_BUILD_BRIDGE,         ///< Bridge placement
+	DDSP_MEASURE,              ///< Measurement tool
+	DDSP_DRAW_PLANLINE,        ///< Draw a line for a plan
+	DDSP_BUY_LAND,             ///< Purchase land
+	DDSP_BUILD_OBJECT,         ///< Build object
 
 	/* Rail specific actions */
 	DDSP_PLACE_RAIL,           ///< Rail placement
@@ -121,6 +198,7 @@ enum ViewportDragDropSelectionProcess {
 	DDSP_BUILD_TRUCKSTOP,      ///< Road stop placement (trucks)
 	DDSP_REMOVE_BUSSTOP,       ///< Road stop removal (buses)
 	DDSP_REMOVE_TRUCKSTOP,     ///< Road stop removal (trucks)
+	DDSP_CONVERT_ROAD,         ///< Road conversion
 };
 
 
@@ -132,5 +210,20 @@ enum ViewportScrollTarget {
 	VST_COMPANY,  ///< All players in specific company
 	VST_CLIENT,   ///< Single player
 };
+
+/** Enumeration of multi-part foundations */
+enum FoundationPart {
+	FOUNDATION_PART_NONE     = 0xFF,  ///< Neither foundation nor groundsprite drawn yet.
+	FOUNDATION_PART_NORMAL   = 0,     ///< First part (normal foundation or no foundation)
+	FOUNDATION_PART_HALFTILE = 1,     ///< Second part (halftile foundation)
+	FOUNDATION_PART_END
+};
+
+enum ViewportMarkDirtyFlags : byte {
+	VMDF_NONE                = 0,
+	VMDF_NOT_MAP_MODE        = 0x1,
+	VMDF_NOT_LANDSCAPE       = 0x2,
+};
+DECLARE_ENUM_AS_BIT_SET(ViewportMarkDirtyFlags)
 
 #endif /* VIEWPORT_TYPE_H */

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -82,12 +80,13 @@ void Blitter_8bppOptimized::Draw(Blitter::BlitterParams *bp, BlitterMode mode, Z
 			dst += trans;
 			width -= trans;
 			if (width <= 0 || pixels == 0) continue;
-			pixels = min<uint>(pixels, (uint)width);
+			pixels = std::min<uint>(pixels, width);
 			width -= pixels;
 
 			switch (mode) {
 				case BM_COLOUR_REMAP:
-				case BM_CRASH_REMAP: {
+				case BM_CRASH_REMAP:
+				case BM_COLOUR_REMAP_WITH_BRIGHTNESS: {
 					const uint8 *remap = bp->remap;
 					do {
 						uint m = remap[*src];
@@ -134,8 +133,8 @@ Sprite *Blitter_8bppOptimized::Encode(const SpriteLoader::Sprite *sprite, Alloca
 		zoom_max = ZOOM_LVL_NORMAL;
 	} else {
 		zoom_min = _settings_client.gui.zoom_min;
-		zoom_max = _settings_client.gui.zoom_max;
-		if (zoom_max == zoom_min) zoom_max = ZOOM_LVL_MAX;
+		zoom_max = (ZoomLevel) std::min(_settings_client.gui.zoom_max, ZOOM_LVL_DRAW_SPR);
+		if (zoom_max == zoom_min) zoom_max = ZOOM_LVL_DRAW_SPR;
 	}
 
 	for (ZoomLevel i = zoom_min; i <= zoom_max; i++) {
@@ -167,7 +166,7 @@ Sprite *Blitter_8bppOptimized::Encode(const SpriteLoader::Sprite *sprite, Alloca
 			uint trans = 0;
 			uint pixels = 0;
 			uint last_colour = 0;
-			byte *count_dst = NULL;
+			byte *count_dst = nullptr;
 
 			/* Store the scaled image */
 			const SpriteLoader::CommonPixel *src = &sprite[i].data[y * sprite[i].width];
@@ -176,11 +175,11 @@ Sprite *Blitter_8bppOptimized::Encode(const SpriteLoader::Sprite *sprite, Alloca
 				uint colour = src++->m;
 
 				if (last_colour == 0 || colour == 0 || pixels == 255) {
-					if (count_dst != NULL) {
+					if (count_dst != nullptr) {
 						/* Write how many non-transparent bytes we get */
 						*count_dst = pixels;
 						pixels = 0;
-						count_dst = NULL;
+						count_dst = nullptr;
 					}
 					/* As long as we find transparency bytes, keep counting */
 					if (colour == 0 && trans != 255) {
@@ -206,7 +205,7 @@ Sprite *Blitter_8bppOptimized::Encode(const SpriteLoader::Sprite *sprite, Alloca
 				}
 			}
 
-			if (count_dst != NULL) *count_dst = pixels;
+			if (count_dst != nullptr) *count_dst = pixels;
 
 			/* Write line-ending */
 			*dst = 0; dst++;

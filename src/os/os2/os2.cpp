@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,6 +16,7 @@
 #include "../../core/random_func.hpp"
 #include "../../string_func.h"
 #include "../../textbuf_gui.h"
+#include "../../thread.h"
 
 #include "table/strings.h"
 
@@ -27,7 +26,7 @@
 #include <stdlib.h>
 #include <time.h>
 #ifndef __INNOTEK_LIBC__
-	#include <dos.h>
+#	include <dos.h>
 #endif
 
 #include "../../safeguards.h"
@@ -37,7 +36,7 @@
 
 #include <os2.h>
 #ifndef __INNOTEK_LIBC__
-	#include <i86.h>
+#	include <i86.h>
 #endif
 
 bool FiosIsRoot(const char *file)
@@ -101,7 +100,7 @@ bool FiosGetDiskFreeSpace(const char *path, uint64 *tot)
 	struct diskfree_t free;
 	char drive = path[0] - 'A' + 1;
 
-	if (tot != NULL && _getdiskfree(drive, &free) == 0) {
+	if (tot != nullptr && _getdiskfree(drive, &free) == 0) {
 		*tot = free.avail_clusters * free.sectors_per_cluster * free.bytes_per_sector;
 		return true;
 	}
@@ -118,7 +117,7 @@ bool FiosGetDiskFreeSpace(const char *path, uint64 *tot)
 		free = (uint64)s.f_frsize * s.f_bavail;
 	}
 #endif
-	if (tot != NULL) *tot = free;
+	if (tot != nullptr) *tot = free;
 	return true;
 #endif
 }
@@ -172,10 +171,10 @@ void ShowOSErrorBox(const char *buf, bool system)
 
 int CDECL main(int argc, char *argv[])
 {
-	SetRandomSeed(time(NULL));
+	SetRandomSeed(time(nullptr));
 
 	/* Make sure our arguments contain only valid UTF-8 characters. */
-	for (int i = 0; i < argc; i++) ValidateString(argv[i]);
+	for (int i = 0; i < argc; i++) StrMakeValidInPlace(argv[i]);
 
 	return openttd_main(argc, argv);
 }
@@ -190,7 +189,7 @@ bool GetClipboardContents(char *buffer, const char *last)
 	{
 		const char *text = (const char*)WinQueryClipbrdData(hab, CF_TEXT);
 
-		if (text != NULL)
+		if (text != nullptr)
 		{
 			strecpy(buffer, text, last);
 			WinCloseClipbrd(hab);
@@ -204,25 +203,24 @@ bool GetClipboardContents(char *buffer, const char *last)
 }
 
 
-void CSleep(int milliseconds)
-{
-#ifndef __INNOTEK_LIBC__
-	delay(milliseconds);
-#else
-	usleep(milliseconds * 1000);
-#endif
-}
-
-const char *FS2OTTD(const char *name) {return name;}
-const char *OTTD2FS(const char *name) {return name;}
-
-uint GetCPUCoreCount()
-{
-	return 1;
-}
-
 void OSOpenBrowser(const char *url)
 {
 	// stub only
 	DEBUG(misc, 0, "Failed to open url: %s", url);
 }
+
+void SetCurrentThreadName(const char *)
+{
+}
+
+int GetCurrentThreadName(char *str, const char *last) { return 0; }
+
+void SetSelfAsMainThread() { }
+void SetSelfAsGameThread() { }
+void PerThreadSetup() { }
+void PerThreadSetupInit() { }
+
+bool IsMainThread() { return false; }
+bool IsNonMainThread() { return false; }
+bool IsGameThread() { return false; }
+bool IsNonGameThread() { return false; }

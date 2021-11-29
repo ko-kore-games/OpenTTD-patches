@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,21 +16,20 @@
 
 static const SaveLoad _subsidies_desc[] = {
 	    SLE_VAR(Subsidy, cargo_type, SLE_UINT8),
-	    SLE_VAR(Subsidy, remaining,  SLE_UINT8),
-	SLE_CONDVAR(Subsidy, awarded,    SLE_UINT8,                 SLV_125, SL_MAX_VERSION),
-	SLE_CONDVAR(Subsidy, src_type,   SLE_UINT8,                 SLV_125, SL_MAX_VERSION),
-	SLE_CONDVAR(Subsidy, dst_type,   SLE_UINT8,                 SLV_125, SL_MAX_VERSION),
-	SLE_CONDVAR(Subsidy, src,        SLE_FILE_U8 | SLE_VAR_U16,   SL_MIN_VERSION, SLV_5),
-	SLE_CONDVAR(Subsidy, src,        SLE_UINT16,                  SLV_5, SL_MAX_VERSION),
-	SLE_CONDVAR(Subsidy, dst,        SLE_FILE_U8 | SLE_VAR_U16,   SL_MIN_VERSION, SLV_5),
-	SLE_CONDVAR(Subsidy, dst,        SLE_UINT16,                  SLV_5, SL_MAX_VERSION),
-	SLE_END()
+	SLE_CONDVAR(Subsidy, remaining,  SLE_FILE_U8 | SLE_VAR_U16, SL_MIN_VERSION, SLV_CUSTOM_SUBSIDY_DURATION),
+	SLE_CONDVAR(Subsidy, remaining,  SLE_UINT16,                SLV_CUSTOM_SUBSIDY_DURATION, SL_MAX_VERSION),
+	SLE_CONDVAR(Subsidy, awarded,    SLE_UINT8,                                     SLV_125, SL_MAX_VERSION),
+	SLE_CONDVAR(Subsidy, src_type,   SLE_UINT8,                                     SLV_125, SL_MAX_VERSION),
+	SLE_CONDVAR(Subsidy, dst_type,   SLE_UINT8,                                     SLV_125, SL_MAX_VERSION),
+	SLE_CONDVAR(Subsidy, src,        SLE_FILE_U8 | SLE_VAR_U16,                       SL_MIN_VERSION, SLV_5),
+	SLE_CONDVAR(Subsidy, src,        SLE_UINT16,                                      SLV_5, SL_MAX_VERSION),
+	SLE_CONDVAR(Subsidy, dst,        SLE_FILE_U8 | SLE_VAR_U16,                       SL_MIN_VERSION, SLV_5),
+	SLE_CONDVAR(Subsidy, dst,        SLE_UINT16,                                      SLV_5, SL_MAX_VERSION),
 };
 
 static void Save_SUBS()
 {
-	Subsidy *s;
-	FOR_ALL_SUBSIDIES(s) {
+	for (Subsidy *s : Subsidy::Iterate()) {
 		SlSetArrayIndex(s->index);
 		SlObject(s, _subsidies_desc);
 	}
@@ -47,6 +44,8 @@ static void Load_SUBS()
 	}
 }
 
-extern const ChunkHandler _subsidy_chunk_handlers[] = {
-	{ 'SUBS', Save_SUBS, Load_SUBS, NULL, NULL, CH_ARRAY | CH_LAST},
+static const ChunkHandler subsidy_chunk_handlers[] = {
+	{ 'SUBS', Save_SUBS, Load_SUBS, nullptr, nullptr, CH_ARRAY },
 };
+
+extern const ChunkHandlerTable _subsidy_chunk_handlers(subsidy_chunk_handlers);

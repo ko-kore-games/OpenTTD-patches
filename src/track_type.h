@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,7 +16,7 @@
  * These are used to specify a single track.
  * Can be translated to a trackbit with TrackToTrackbit
  */
-enum Track {
+enum Track : byte {
 	TRACK_BEGIN = 0,        ///< Used for iterations
 	TRACK_X     = 0,        ///< Track along the x-axis (north-east to south-west)
 	TRACK_Y     = 1,        ///< Track along the y-axis (north-west to south-east)
@@ -34,11 +32,10 @@ enum Track {
 DECLARE_POSTFIX_INCREMENT(Track)
 /** Define basic enum properties */
 template <> struct EnumPropsT<Track> : MakeEnumPropsT<Track, byte, TRACK_BEGIN, TRACK_END, INVALID_TRACK, 3> {};
-typedef TinyEnumT<Track> TrackByte;
 
 
 /** Bitfield corresponding to Track */
-enum TrackBits {
+enum TrackBits : byte {
 	TRACK_BIT_NONE    = 0U,                                                 ///< No track
 	TRACK_BIT_X       = 1U << TRACK_X,                                      ///< X-axis track
 	TRACK_BIT_Y       = 1U << TRACK_Y,                                      ///< Y-axis track
@@ -54,13 +51,14 @@ enum TrackBits {
 	TRACK_BIT_3WAY_SW = TRACK_BIT_X     | TRACK_BIT_LOWER | TRACK_BIT_LEFT, ///< "Arrow" to the south-west
 	TRACK_BIT_3WAY_NW = TRACK_BIT_Y     | TRACK_BIT_UPPER | TRACK_BIT_LEFT, ///< "Arrow" to the north-west
 	TRACK_BIT_ALL     = TRACK_BIT_CROSS | TRACK_BIT_HORZ  | TRACK_BIT_VERT, ///< All possible tracks
+	TRACK_BIT_RT_1    = TRACK_BIT_UPPER | TRACK_BIT_LEFT,                   ///< Track bits using the primary rail type, if the total track bits are TRACK_BIT_HORZ or TRACK_BIT_VERT
+	TRACK_BIT_RT_2    = TRACK_BIT_LOWER | TRACK_BIT_RIGHT,                  ///< Track bits using the secondary rail type, if the total track bits are TRACK_BIT_HORZ or TRACK_BIT_VERT
 	TRACK_BIT_MASK    = 0x3FU,                                              ///< Bitmask for the first 6 bits
 	TRACK_BIT_WORMHOLE = 0x40U,                                             ///< Bitflag for a wormhole (used for tunnels)
 	TRACK_BIT_DEPOT   = 0x80U,                                              ///< Bitflag for a depot
 	INVALID_TRACK_BIT = 0xFF,                                               ///< Flag for an invalid trackbits value
 };
 DECLARE_ENUM_AS_BIT_SET(TrackBits)
-typedef SimpleTinyEnumT<TrackBits, byte> TrackBitsByte;
 
 /**
  * Enumeration for tracks and directions.
@@ -71,7 +69,7 @@ typedef SimpleTinyEnumT<TrackBits, byte> TrackBitsByte;
  * reversing track dirs are not considered to be 'valid' except in a small
  * corner in the road vehicle controller.
  */
-enum Trackdir {
+enum Trackdir : byte {
 	TRACKDIR_BEGIN    =  0,         ///< Used for iterations
 	TRACKDIR_X_NE     =  0,         ///< X-axis and direction to north-east
 	TRACKDIR_Y_SE     =  1,         ///< Y-axis and direction to south-east
@@ -95,7 +93,6 @@ enum Trackdir {
 
 /** Define basic enum properties */
 template <> struct EnumPropsT<Trackdir> : MakeEnumPropsT<Trackdir, byte, TRACKDIR_BEGIN, TRACKDIR_END, INVALID_TRACKDIR, 4> {};
-typedef TinyEnumT<Trackdir> TrackdirByte;
 
 /**
  * Enumeration of bitmasks for the TrackDirs
@@ -103,7 +100,7 @@ typedef TinyEnumT<Trackdir> TrackdirByte;
  * These are a combination of tracks and directions. Values are 0-5 in one
  * direction (corresponding to the Track enum) and 8-13 in the other direction.
  */
-enum TrackdirBits {
+enum TrackdirBits : uint16 {
 	TRACKDIR_BIT_NONE     = 0U,                     ///< No track build
 	TRACKDIR_BIT_X_NE     = 1U << TRACKDIR_X_NE,    ///< Track x-axis, direction north-east
 	TRACKDIR_BIT_Y_SE     = 1U << TRACKDIR_Y_SE,    ///< Track y-axis, direction south-east
@@ -122,7 +119,6 @@ enum TrackdirBits {
 	INVALID_TRACKDIR_BIT  = 0xFFFF,                 ///< Flag for an invalid trackdirbit value
 };
 DECLARE_ENUM_AS_BIT_SET(TrackdirBits)
-typedef SimpleTinyEnumT<TrackdirBits, uint16> TrackdirBitsShort;
 
 typedef uint32 TrackStatus;
 

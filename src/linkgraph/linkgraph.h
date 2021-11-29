@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -15,12 +13,14 @@
 #include "../core/pool_type.hpp"
 #include "../core/smallmap_type.hpp"
 #include "../core/smallmatrix_type.hpp"
+#include "../core/bitmath_func.hpp"
 #include "../station_base.h"
 #include "../cargotype.h"
 #include "../date_func.h"
+#include "../saveload/saveload_common.h"
 #include "linkgraph_type.h"
+#include <utility>
 
-struct SaveLoad;
 class LinkGraph;
 
 /**
@@ -30,6 +30,13 @@ class LinkGraph;
 typedef Pool<LinkGraph, LinkGraphID, 32, 0xFFFF> LinkGraphPool;
 /** The actual pool with link graphs. */
 extern LinkGraphPool _link_graph_pool;
+
+namespace upstream_sl {
+	SaveLoadTable GetLinkGraphDesc();
+	SaveLoadTable GetLinkGraphJobDesc();
+	class SlLinkgraphNode;
+	class SlLinkgraphEdge;
+}
 
 /**
  * A connected component of a link graph. Contains a complete set of stations
@@ -114,7 +121,7 @@ public:
 		 * Get the date of the last update to any part of the edge's capacity.
 		 * @return Last update.
 		 */
-		Date LastUpdate() const { return max(this->edge.last_unrestricted_update, this->edge.last_restricted_update); }
+		Date LastUpdate() const { return std::max(this->edge.last_unrestricted_update, this->edge.last_restricted_update); }
 	};
 
 	/**
@@ -190,20 +197,20 @@ public:
 		 * to return something that implements operator->, but isn't a pointer
 		 * from operator->. A fake pointer.
 		 */
-		class FakePointer : public SmallPair<NodeID, Tedge_wrapper> {
+		class FakePointer : public std::pair<NodeID, Tedge_wrapper> {
 		public:
 
 			/**
 			 * Construct a fake pointer from a pair of NodeID and edge.
 			 * @param pair Pair to be "pointed" to (in fact shallow-copied).
 			 */
-			FakePointer(const SmallPair<NodeID, Tedge_wrapper> &pair) : SmallPair<NodeID, Tedge_wrapper>(pair) {}
+			FakePointer(const std::pair<NodeID, Tedge_wrapper> &pair) : std::pair<NodeID, Tedge_wrapper>(pair) {}
 
 			/**
 			 * Retrieve the pair by operator->.
 			 * @return Pair being "pointed" to.
 			 */
-			SmallPair<NodeID, Tedge_wrapper> *operator->() { return this; }
+			std::pair<NodeID, Tedge_wrapper> *operator->() { return this; }
 		};
 
 	public:
@@ -268,9 +275,9 @@ public:
 		 * Dereference with operator*.
 		 * @return Pair of current target NodeID and edge object.
 		 */
-		SmallPair<NodeID, Tedge_wrapper> operator*() const
+		std::pair<NodeID, Tedge_wrapper> operator*() const
 		{
-			return SmallPair<NodeID, Tedge_wrapper>(this->current, Tedge_wrapper(this->base[this->current]));
+			return std::pair<NodeID, Tedge_wrapper>(this->current, Tedge_wrapper(this->base[this->current]));
 		}
 
 		/**
@@ -435,11 +442,14 @@ public:
 		void RemoveEdge(NodeID to);
 	};
 
-	typedef SmallVector<BaseNode, 16> NodeVector;
+	typedef std::vector<BaseNode> NodeVector;
 	typedef SmallMatrix<BaseEdge> EdgeMatrix;
 
 	/** Minimum effective distance for timeout calculation. */
 	static const uint MIN_TIMEOUT_DISTANCE = 32;
+
+	/** Number of days before deleting links served only by vehicles stopped in depot. */
+	static const uint STALE_LINK_DEPOT_TIMEOUT = 1024;
 
 	/** Minimum number of days between subsequent compressions of a LG. */
 	static const uint COMPRESSION_INTERVAL = 256;
@@ -454,7 +464,7 @@ public:
 	 */
 	inline static uint Scale(uint val, uint target_age, uint orig_age)
 	{
-		return val > 0 ? max(1U, val * target_age / orig_age) : 0;
+		return val > 0 ? std::max(1U, val * target_age / orig_age) : 0;
 	}
 
 	/** Bare constructor, only for save/load. */
@@ -496,7 +506,7 @@ public:
 	 * Get the current size of the component.
 	 * @return Size.
 	 */
-	inline uint Size() const { return this->nodes.Length(); }
+	inline NodeID Size() const { return (NodeID)this->nodes.size(); }
 
 	/**
 	 * Get date of last compression.
@@ -523,19 +533,28 @@ public:
 	NodeID AddNode(const Station *st);
 	void RemoveNode(NodeID id);
 
+	inline uint64 CalculateCostEstimate() const {
+		uint64 size_squared = this->Size() * this->Size();
+		return size_squared * FindLastBit(size_squared * size_squared); // N^2 * 4log_2(N)
+	}
+
 protected:
 	friend class LinkGraph::ConstNode;
 	friend class LinkGraph::Node;
-	friend const SaveLoad *GetLinkGraphDesc();
-	friend const SaveLoad *GetLinkGraphJobDesc();
-	friend void SaveLoad_LinkGraph(LinkGraph &lg);
+	friend SaveLoadTable GetLinkGraphDesc();
+	friend SaveLoadTable GetLinkGraphJobDesc();
+	friend void Save_LinkGraph(LinkGraph &lg);
+	friend void Load_LinkGraph(LinkGraph &lg);
+
+	friend upstream_sl::SaveLoadTable upstream_sl::GetLinkGraphDesc();
+	friend upstream_sl::SaveLoadTable upstream_sl::GetLinkGraphJobDesc();
+	friend upstream_sl::SlLinkgraphNode;
+	friend upstream_sl::SlLinkgraphEdge;
 
 	CargoID cargo;         ///< Cargo of this component's link graph.
 	Date last_compression; ///< Last time the capacities and supplies were compressed.
 	NodeVector nodes;      ///< Nodes in the component.
 	EdgeMatrix edges;      ///< Edges in the component.
 };
-
-#define FOR_ALL_LINK_GRAPHS(var) FOR_ALL_ITEMS_FROM(LinkGraph, link_graph_index, var, 0)
 
 #endif /* LINKGRAPH_H */

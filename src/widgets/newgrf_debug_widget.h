@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -21,6 +19,10 @@ enum NewGRFInspectWidgets {
 	WID_NGRFI_VEH_CHAIN, ///< Display for vehicle chain.
 	WID_NGRFI_MAINPANEL, ///< Panel widget containing the actual data.
 	WID_NGRFI_SCROLLBAR, ///< Scrollbar.
+	WID_NGRFI_REFRESH,   ///< Refresh toggle.
+	WID_NGRFI_LOG_CONSOLE, ///< Log to console
+	WID_NGRFI_SPRITE_DUMP, ///< Dump current sprite group
+	WID_NGRFI_SPRITE_DUMP_SEL, ///< Selection widget for WID_NGRFI_SPRITE_DUMP
 };
 
 /** Widgets of the #SpriteAlignerWindow class. */

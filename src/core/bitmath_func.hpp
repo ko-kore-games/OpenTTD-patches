@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,6 +9,8 @@
 
 #ifndef BITMATH_FUNC_HPP
 #define BITMATH_FUNC_HPP
+
+#include <type_traits>
 
 /**
  * Fetch \a n bits from \a x, started at bit \a s.
@@ -185,6 +185,11 @@ static inline T ToggleBit(T &x, const uint8 y)
 	return x = (T)(x ^ ((T)1U << y));
 }
 
+#ifdef WITH_BITMATH_BUILTINS
+
+#define FIND_FIRST_BIT(x) FindFirstBit<uint>(x)
+
+#else
 
 /** Lookup table to check which bit is set in a 6 bit variable */
 extern const uint8 _ffb_64[64];
@@ -199,17 +204,49 @@ extern const uint8 _ffb_64[64];
  * @param x The 6-bit value to check the first zero-bit
  * @return The first position of a bit started from the LSB or 0 if x is 0.
  */
-#define FIND_FIRST_BIT(x) _ffb_64[(x)]
+#define FIND_FIRST_BIT(x) _ffb_64[(x) & 0x3F]
+
+#endif
+
+/**
+ * Search the first set bit in an integer variable.
+ *
+ * @param value The value to search
+ * @return The position of the first bit set, or 0 when value is 0
+ */
+template <typename T>
+static inline uint8 FindFirstBit(T value)
+{
+	static_assert(sizeof(T) <= sizeof(unsigned long long));
+#ifdef WITH_BITMATH_BUILTINS
+	if (value == 0) return 0;
+	typename std::make_unsigned<T>::type unsigned_value = value;
+	if (sizeof(T) <= sizeof(unsigned int)) {
+		return __builtin_ctz(unsigned_value);
+	} else if (sizeof(T) == sizeof(unsigned long)) {
+		return __builtin_ctzl(unsigned_value);
+	} else {
+		return __builtin_ctzll(unsigned_value);
+	}
+#else
+	if (sizeof(T) <= sizeof(uint32)) {
+		extern uint8 FindFirstBit32(uint32 x);
+		return FindFirstBit32(value);
+	} else {
+		extern uint8 FindFirstBit64(uint64 x);
+		return FindFirstBit64(value);
+	}
+#endif
+}
+
+uint8 FindLastBit(uint64 x);
 
 /**
  * Finds the position of the first non-zero bit in an integer.
  *
  * This function returns the position of the first bit set in the
  * integer. It does only check the bits of the bitmask
- * 0x3F3F (0011111100111111) and checks only the
- * bits of the bitmask 0x3F00 if and only if the
- * lower part 0x00FF is 0. This results the bits at 0x00C0 must
- * be also zero to check the bits at 0x3F00.
+ * 0x3F3F (0011111100111111).
  *
  * @param value The value to check the first bits
  * @return The position of the first bit which is set
@@ -217,15 +254,17 @@ extern const uint8 _ffb_64[64];
  */
 static inline uint8 FindFirstBit2x64(const int value)
 {
-	if ((value & 0xFF) == 0) {
+#ifdef WITH_BITMATH_BUILTINS
+	return FindFirstBit(value & 0x3F3F);
+#else
+	if (value == 0) return 0;
+	if ((value & 0x3F) == 0) {
 		return FIND_FIRST_BIT((value >> 8) & 0x3F) + 8;
 	} else {
 		return FIND_FIRST_BIT(value & 0x3F);
 	}
+#endif
 }
-
-uint8 FindFirstBit(uint32 x);
-uint8 FindLastBit(uint64 x);
 
 /**
  * Clear the first bit in an integer.
@@ -252,6 +291,17 @@ static inline T KillFirstBit(T value)
 template <typename T>
 static inline uint CountBits(T value)
 {
+	static_assert(sizeof(T) <= sizeof(unsigned long long));
+#ifdef WITH_BITMATH_BUILTINS
+	typename std::make_unsigned<T>::type unsigned_value = value;
+	if (sizeof(T) <= sizeof(unsigned int)) {
+		return __builtin_popcount(unsigned_value);
+	} else if (sizeof(T) == sizeof(unsigned long)) {
+		return __builtin_popcountl(unsigned_value);
+	} else {
+		return __builtin_popcountll(unsigned_value);
+	}
+#else
 	uint num;
 
 	/* This loop is only called once for every bit set by clearing the lowest
@@ -264,6 +314,7 @@ static inline uint CountBits(T value)
 	}
 
 	return num;
+#endif
 }
 
 /**
@@ -322,58 +373,108 @@ static inline T ROR(const T x, const uint8 n)
 	return (T)(x >> n | x << (sizeof(x) * 8 - n));
 }
 
-/**
- * Do an operation for each set bit in a value.
- *
- * This macros is used to do an operation for each set
- * bit in a variable. The second parameter is a
- * variable that is used as the bit position counter.
- * The fourth parameter is an expression of the bits
- * we need to iterate over. This expression will be
- * evaluated once.
- *
- * @param Tbitpos_type Type of the position counter variable.
- * @param bitpos_var   The position counter variable.
- * @param Tbitset_type Type of the bitset value.
- * @param bitset_value The bitset value which we check for bits.
- *
- * @see FOR_EACH_SET_BIT
- */
-#define FOR_EACH_SET_BIT_EX(Tbitpos_type, bitpos_var, Tbitset_type, bitset_value) \
-	for (                                                                           \
-		Tbitset_type ___FESBE_bits = (bitpos_var = (Tbitpos_type)0, bitset_value);    \
-		___FESBE_bits != (Tbitset_type)0;                                             \
-		___FESBE_bits = (Tbitset_type)(___FESBE_bits >> 1), bitpos_var++              \
-	)                                                                               \
-		if ((___FESBE_bits & 1) != 0)
+ /**
+ * Iterable ensemble of each set bit in a value.
+ * @tparam Tbitpos Type of the position variable.
+ * @tparam Tbitset Type of the bitset value.
+*/
+template <typename Tbitpos = uint, typename Tbitset = uint>
+struct SetBitIterator {
+	struct Iterator {
+		typedef Tbitpos value_type;
+		typedef value_type *pointer;
+		typedef value_type &reference;
+		typedef size_t difference_type;
+		typedef std::forward_iterator_tag iterator_category;
 
-/**
- * Do an operation for each set set bit in a value.
- *
- * This macros is used to do an operation for each set
- * bit in a variable. The first parameter is a variable
- * that is used as the bit position counter.
- * The second parameter is an expression of the bits
- * we need to iterate over. This expression will be
- * evaluated once.
- *
- * @param bitpos_var   The position counter variable.
- * @param bitset_value The value which we check for set bits.
- */
-#define FOR_EACH_SET_BIT(bitpos_var, bitset_value) FOR_EACH_SET_BIT_EX(uint, bitpos_var, uint, bitset_value)
+		explicit Iterator(Tbitset bitset) : bitset(bitset), bitpos(static_cast<Tbitpos>(0))
+		{
+			this->Validate();
+		}
+
+		bool operator==(const Iterator &other) const
+		{
+#ifdef WITH_BITMATH_BUILTINS
+			return this->bitset == other.bitset;
+#else
+			return this->bitset == other.bitset && (this->bitset == 0 || this->bitpos == other.bitpos);
+#endif
+		}
+		bool operator!=(const Iterator &other) const { return !(*this == other); }
+		Tbitpos operator*() const { return this->bitpos; }
+		Iterator & operator++() { this->Next(); this->Validate(); return *this; }
+
+	private:
+		Tbitset bitset;
+		Tbitpos bitpos;
+		void Validate()
+		{
+#ifdef WITH_BITMATH_BUILTINS
+			if (this->bitset != 0) {
+				typename std::make_unsigned<Tbitset>::type unsigned_value = this->bitset;
+				if (sizeof(Tbitset) <= sizeof(unsigned int)) {
+					bitpos = static_cast<Tbitpos>(__builtin_ctz(unsigned_value));
+				} else if (sizeof(Tbitset) == sizeof(unsigned long)) {
+					bitpos = static_cast<Tbitpos>(__builtin_ctzl(unsigned_value));
+				} else {
+					bitpos = static_cast<Tbitpos>(__builtin_ctzll(unsigned_value));
+				}
+			}
+#else
+			while (this->bitset != 0 && (this->bitset & 1) == 0) this->Next();
+#endif
+		}
+		void Next()
+		{
+#ifdef WITH_BITMATH_BUILTINS
+			this->bitset = static_cast<Tbitset>(this->bitset ^ (this->bitset & -this->bitset));
+#else
+			this->bitset = static_cast<Tbitset>(this->bitset >> 1);
+			this->bitpos++;
+#endif
+		}
+	};
+
+	SetBitIterator(Tbitset bitset) : bitset(bitset) {}
+	Iterator begin() { return Iterator(this->bitset); }
+	Iterator end() { return Iterator(static_cast<Tbitset>(0)); }
+	bool empty() { return this->begin() == this->end(); }
+
+private:
+	Tbitset bitset;
+};
 
 #if defined(__APPLE__)
 	/* Make endian swapping use Apple's macros to increase speed
 	 * (since it will use hardware swapping if available).
 	 * Even though they should return uint16 and uint32, we get
 	 * warnings if we don't cast those (why?) */
-	#define BSWAP32(x) ((uint32)CFSwapInt32(x))
-	#define BSWAP16(x) ((uint16)CFSwapInt16(x))
+	#define BSWAP64(x) ((uint64)CFSwapInt64((uint64)(x)))
+	#define BSWAP32(x) ((uint32)CFSwapInt32((uint32)(x)))
+	#define BSWAP16(x) ((uint16)CFSwapInt16((uint16)(x)))
 #elif defined(_MSC_VER)
 	/* MSVC has intrinsics for swapping, resulting in faster code */
-	#define BSWAP32(x) (_byteswap_ulong(x))
-	#define BSWAP16(x) (_byteswap_ushort(x))
+	#define BSWAP64(x) ((uint64)_byteswap_uint64((uint64)(x)))
+	#define BSWAP32(x) ((uint32)_byteswap_ulong((uint32)(x)))
+	#define BSWAP16(x) ((uint16)_byteswap_ushort((uint16)(x)))
 #else
+	/**
+	 * Perform a 64 bits endianness bitswap on x.
+	 * @param x the variable to bitswap
+	 * @return the bitswapped value.
+	 */
+	static inline uint64 BSWAP64(uint64 x)
+	{
+#if !defined(__ICC) && (defined(__GNUC__) || defined(__clang__))
+		/* GCC >= 4.3 provides a builtin, resulting in faster code */
+		return (uint64)__builtin_bswap64((uint64)x);
+#else
+		return ((x >> 56) & 0xFFULL) | ((x >> 40) & 0xFF00ULL) | ((x >> 24) & 0xFF0000ULL) | ((x >> 8) & 0xFF000000ULL) |
+				((x << 8) & 0xFF00000000ULL) | ((x << 24) & 0xFF0000000000ULL) | ((x << 40) & 0xFF000000000000ULL) | ((x << 56) & 0xFF00000000000000ULL);
+				;
+#endif /* __GNUC__ || __clang__ */
+	}
+
 	/**
 	 * Perform a 32 bits endianness bitswap on x.
 	 * @param x the variable to bitswap
@@ -381,12 +482,12 @@ static inline T ROR(const T x, const uint8 n)
 	 */
 	static inline uint32 BSWAP32(uint32 x)
 	{
-#if !defined(__ICC) && defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4)  && __GNUC_MINOR__ >= 3))
+#if !defined(__ICC) && (defined(__GNUC__) || defined(__clang__))
 		/* GCC >= 4.3 provides a builtin, resulting in faster code */
-		return (uint32)__builtin_bswap32((int32)x);
+		return (uint32)__builtin_bswap32((uint32)x);
 #else
 		return ((x >> 24) & 0xFF) | ((x >> 8) & 0xFF00) | ((x << 8) & 0xFF0000) | ((x << 24) & 0xFF000000);
-#endif /* defined(__GNUC__) */
+#endif /* __GNUC__ || __clang__ */
 	}
 
 	/**
@@ -396,7 +497,12 @@ static inline T ROR(const T x, const uint8 n)
 	 */
 	static inline uint16 BSWAP16(uint16 x)
 	{
+#if !defined(__ICC) && (defined(__GNUC__) || defined(__clang__))
+		/* GCC >= 4.3 provides a builtin, resulting in faster code */
+		return (uint16)__builtin_bswap16((uint16)x);
+#else
 		return (x >> 8) | (x << 8);
+#endif /* __GNUC__ || __clang__ */
 	}
 #endif /* __APPLE__ */
 

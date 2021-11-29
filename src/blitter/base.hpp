@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,6 +12,9 @@
 
 #include "../spritecache.h"
 #include "../spriteloader/spriteloader.hpp"
+#include "../core/math_func.hpp"
+
+#include <utility>
 
 /** The modes of blitting we can do. */
 enum BlitterMode {
@@ -22,17 +23,33 @@ enum BlitterMode {
 	BM_TRANSPARENT,  ///< Perform transparency colour remapping.
 	BM_CRASH_REMAP,  ///< Perform a crash remapping.
 	BM_BLACK_REMAP,  ///< Perform remapping to a completely blackened sprite
+	BM_NORMAL_WITH_BRIGHTNESS,       ///< Perform a simple blitting with brightness adjustment
+	BM_COLOUR_REMAP_WITH_BRIGHTNESS, ///< Perform a colour remapping with brightness adjustment
 };
+
+/** Helper for using specialised functions designed to prevent whenever it's possible things like:
+ *  - IO (reading video buffer),
+ *  - calculations (alpha blending),
+ *  - heavy branching (remap lookups and animation buffer handling).
+ */
+enum BlitterSpriteFlags {
+	BSF_NONE        = 0,
+	BSF_TRANSLUCENT = 1 << 1, ///< The sprite has at least 1 translucent pixel.
+	BSF_NO_REMAP    = 1 << 2, ///< The sprite has no remappable colour pixel.
+	BSF_NO_ANIM     = 1 << 3, ///< The sprite has no palette animated pixel.
+};
+DECLARE_ENUM_AS_BIT_SET(BlitterSpriteFlags);
 
 /**
  * How all blitters should look like. Extend this class to make your own.
  */
-class Blitter {
+class Blitter : public SpriteEncoder {
 public:
 	/** Parameters related to blitting. */
 	struct BlitterParams {
 		const void *sprite; ///< Pointer to the sprite how ever the encoder stored it
 		const byte *remap;  ///< XXX -- Temporary storage for remap array
+		int brightness_adjust; ///< Brightness adjustment
 
 		int skip_left;      ///< How much pixels of the source to skip on the left (based on zoom of dst)
 		int skip_top;       ///< How much pixels of the source to skip on the top (based on zoom of dst)
@@ -60,6 +77,11 @@ public:
 	 */
 	virtual uint8 GetScreenDepth() = 0;
 
+	bool Is32BppSupported() override
+	{
+		return this->GetScreenDepth() > 8;
+	}
+
 	/**
 	 * Draw an image to the screen, given an amount of params defined above.
 	 */
@@ -75,11 +97,6 @@ public:
 	 * @param pal the palette to use.
 	 */
 	virtual void DrawColourMappingRect(void *dst, int width, int height, PaletteID pal) = 0;
-
-	/**
-	 * Convert a sprite from the loader to our own format.
-	 */
-	virtual Sprite *Encode(const SpriteLoader::Sprite *sprite, AllocatorProc *allocator) = 0;
 
 	/**
 	 * Move the destination pointer the requested amount x and y, keeping in mind
@@ -99,6 +116,30 @@ public:
 	 * @param colour A 8bpp mapping colour.
 	 */
 	virtual void SetPixel(void *video, int x, int y, uint8 colour) = 0;
+
+	/**
+	 * Draw a rectangle of pixels on the video-buffer.
+	 * @param video The destination pointer (video-buffer).
+	 * @param x The x position within video-buffer.
+	 * @param y The y position within video-buffer.
+	 * @param colours A 8bpp colour mapping buffer.
+	 * @param lines The number of lines.
+	 * @param width The length of the lines.
+	 * @param pitch The pitch of the colours buffer
+	 */
+	virtual void SetRect(void *video, int x, int y, const uint8 *colours, uint lines, uint width, uint pitch) = 0;
+
+	/**
+	 * Draw a rectangle of pixels on the video-buffer (no LookupColourInPalette).
+	 * @param video The destination pointer (video-buffer).
+	 * @param x The x position within video-buffer.
+	 * @param y The y position within video-buffer.
+	 * @param colours A 32bpp colour buffer.
+	 * @param lines The number of lines.
+	 * @param width The length of the lines.
+	 * @param pitch The pitch of the colours buffer.
+	 */
+	virtual void SetRect32(void *video, int x, int y, const uint32 *colours, uint lines, uint width, uint pitch) { NOT_REACHED(); };
 
 	/**
 	 * Make a single horizontal line in a single colour on the video-buffer.
@@ -164,7 +205,7 @@ public:
 	 * @param scroll_x How much to scroll in X.
 	 * @param scroll_y How much to scroll in Y.
 	 */
-	virtual void ScrollBuffer(void *video, int &left, int &top, int &width, int &height, int scroll_x, int scroll_y) = 0;
+	virtual void ScrollBuffer(void *video, int left, int top, int width, int height, int scroll_x, int scroll_y) = 0;
 
 	/**
 	 * Calculate how much memory there is needed for an image of this size in the video-buffer.
@@ -186,6 +227,14 @@ public:
 	 * @return True if it uses palette animation.
 	 */
 	virtual Blitter::PaletteAnimation UsePaletteAnimation() = 0;
+
+	/**
+	 * Does this blitter require a separate animation buffer from the video backend?
+	 */
+	virtual bool NeedsAnimationBuffer()
+	{
+		return false;
+	}
 
 	/**
 	 * Get the name of the blitter, the same as the Factory-instance returns.

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -74,7 +72,7 @@ enum TreeGround {
  */
 static inline TreeType GetTreeType(TileIndex t)
 {
-	assert(IsTileType(t, MP_TREES));
+	assert_tile(IsTileType(t, MP_TREES), t);
 	return (TreeType)_m[t].m3;
 }
 
@@ -89,7 +87,7 @@ static inline TreeType GetTreeType(TileIndex t)
  */
 static inline TreeGround GetTreeGround(TileIndex t)
 {
-	assert(IsTileType(t, MP_TREES));
+	assert_tile(IsTileType(t, MP_TREES), t);
 	return (TreeGround)GB(_m[t].m2, 6, 3);
 }
 
@@ -100,8 +98,8 @@ static inline TreeGround GetTreeGround(TileIndex t)
  * that this value doesn't count the number of trees on a tile, use
  * #GetTreeCount instead. This function instead returns some kind of
  * groundtype of the tile. As the map-array is finite in size and
- * the informations about the trees must be saved somehow other
- * informations about a tile must be saved somewhere encoded in the
+ * the information about the trees must be saved somehow other
+ * information about a tile must be saved somewhere encoded in the
  * tile. So this function returns the density of a tile for sub arctic
  * and sub tropical games. This means for sub arctic the type of snowline
  * (0 to 3 for all 4 types of snowtiles) and for sub tropical the value
@@ -114,7 +112,7 @@ static inline TreeGround GetTreeGround(TileIndex t)
  */
 static inline uint GetTreeDensity(TileIndex t)
 {
-	assert(IsTileType(t, MP_TREES));
+	assert_tile(IsTileType(t, MP_TREES), t);
 	return GB(_m[t].m2, 4, 2);
 }
 
@@ -131,7 +129,7 @@ static inline uint GetTreeDensity(TileIndex t)
  */
 static inline void SetTreeGroundDensity(TileIndex t, TreeGround g, uint d)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
+	assert_tile(IsTileType(t, MP_TREES), t); // XXX incomplete
 	SB(_m[t].m2, 4, 2, d);
 	SB(_m[t].m2, 6, 3, g);
 	SetWaterClass(t, g == TREE_GROUND_SHORE ? WATER_CLASS_SEA : WATER_CLASS_INVALID);
@@ -150,7 +148,7 @@ static inline void SetTreeGroundDensity(TileIndex t, TreeGround g, uint d)
  */
 static inline uint GetTreeCount(TileIndex t)
 {
-	assert(IsTileType(t, MP_TREES));
+	assert_tile(IsTileType(t, MP_TREES), t);
 	return GB(_m[t].m5, 6, 2) + 1;
 }
 
@@ -167,8 +165,8 @@ static inline uint GetTreeCount(TileIndex t)
  */
 static inline void AddTreeCount(TileIndex t, int c)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
-	_m[t].m5 += c << 6;
+	assert_tile(IsTileType(t, MP_TREES), t); // XXX incomplete
+	_m[t].m5 += ((uint) c) << 6;
 }
 
 /**
@@ -182,7 +180,7 @@ static inline void AddTreeCount(TileIndex t, int c)
  */
 static inline uint GetTreeGrowth(TileIndex t)
 {
-	assert(IsTileType(t, MP_TREES));
+	assert_tile(IsTileType(t, MP_TREES), t);
 	return GB(_m[t].m5, 0, 3);
 }
 
@@ -197,7 +195,7 @@ static inline uint GetTreeGrowth(TileIndex t)
  */
 static inline void AddTreeGrowth(TileIndex t, int a)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
+	assert_tile(IsTileType(t, MP_TREES), t); // XXX incomplete
 	_m[t].m5 += a;
 }
 
@@ -213,7 +211,7 @@ static inline void AddTreeGrowth(TileIndex t, int a)
  */
 static inline void SetTreeGrowth(TileIndex t, uint g)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
+	assert_tile(IsTileType(t, MP_TREES), t); // XXX incomplete
 	SB(_m[t].m5, 0, 3, g);
 }
 
@@ -227,7 +225,7 @@ static inline void SetTreeGrowth(TileIndex t, uint g)
  */
 static inline uint GetTreeCounter(TileIndex t)
 {
-	assert(IsTileType(t, MP_TREES));
+	assert_tile(IsTileType(t, MP_TREES), t);
 	return GB(_m[t].m2, 0, 4);
 }
 
@@ -242,7 +240,7 @@ static inline uint GetTreeCounter(TileIndex t)
  */
 static inline void AddTreeCounter(TileIndex t, int a)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
+	assert_tile(IsTileType(t, MP_TREES), t); // XXX incomplete
 	_m[t].m2 += a;
 }
 
@@ -257,14 +255,14 @@ static inline void AddTreeCounter(TileIndex t, int a)
  */
 static inline void SetTreeCounter(TileIndex t, uint c)
 {
-	assert(IsTileType(t, MP_TREES)); // XXX incomplete
+	assert_tile(IsTileType(t, MP_TREES), t); // XXX incomplete
 	SB(_m[t].m2, 0, 4, c);
 }
 
 /**
  * Make a tree-tile.
  *
- * This functions change the tile to a tile with trees and all informations which belongs to it.
+ * This functions change the tile to a tile with trees and all information which belongs to it.
  *
  * @param t The tile to make a tree-tile from
  * @param type The type of the tree

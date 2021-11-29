@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -19,23 +17,28 @@ class Blitter_32bppOptimized : public Blitter_32bppSimple {
 public:
 	/** Data stored about a (single) sprite. */
 	struct SpriteData {
+		BlitterSpriteFlags flags;
 		uint32 offset[ZOOM_LVL_COUNT][2]; ///< Offsets (from .data) to streams for different zoom levels, and the normal and remap image information.
 		byte data[];                      ///< Data, all zoomlevels.
 	};
 
-	/* virtual */ void Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom);
-	/* virtual */ Sprite *Encode(const SpriteLoader::Sprite *sprite, AllocatorProc *allocator);
+	void Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom) override;
+	Sprite *Encode(const SpriteLoader::Sprite *sprite, AllocatorProc *allocator) override;
 
-	/* virtual */ const char *GetName() { return "32bpp-optimized"; }
+	const char *GetName() override { return "32bpp-optimized"; }
 
-	template <BlitterMode mode> void Draw(const Blitter::BlitterParams *bp, ZoomLevel zoom);
+	template <BlitterMode mode, bool Tpal_to_rgb = false> void Draw(const Blitter::BlitterParams *bp, ZoomLevel zoom);
+
+protected:
+	template <bool Tpal_to_rgb> void Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomLevel zoom);
+	template <bool Tpal_to_rgb> Sprite *EncodeInternal(const SpriteLoader::Sprite *sprite, AllocatorProc *allocator);
 };
 
 /** Factory for the optimised 32 bpp blitter (without palette animation). */
 class FBlitter_32bppOptimized : public BlitterFactory {
 public:
 	FBlitter_32bppOptimized() : BlitterFactory("32bpp-optimized", "32bpp Optimized Blitter (no palette animation)") {}
-	/* virtual */ Blitter *CreateInstance() { return new Blitter_32bppOptimized(); }
+	Blitter *CreateInstance() override { return new Blitter_32bppOptimized(); }
 };
 
 #endif /* BLITTER_32BPP_OPTIMIZED_HPP */

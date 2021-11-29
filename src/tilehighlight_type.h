@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -28,7 +26,11 @@ enum HighLightStyle {
 	HT_RAIL      = 0x080, ///< autorail (one piece), lower bits: direction
 	HT_VEHICLE   = 0x100, ///< vehicle is accepted as target as well (bitmask)
 	HT_DIAGONAL  = 0x200, ///< Also allow 'diagonal rectangles'. Only usable in combination with #HT_RECT or #HT_POINT.
+	HT_POLY      = 0x400, ///< polyline mode; connect highlighted track with previous one
+	HT_NEW_POLY  = 0xC00, ///< start completly new polyline; implies #HT_POLY
 	HT_DRAG_MASK = 0x0F8, ///< Mask for the tile drag-type modes.
+	HT_TUNNEL    = 0x1000,///< tunnel highlight hint
+	HT_MAP       = 0x2000,///< Allow in viewport map mode
 
 	/* lower bits (used with HT_LINE and HT_RAIL):
 	 * (see ASCII art in table/autorail.h for a visual interpretation) */
@@ -52,13 +54,19 @@ struct TileHighlightData {
 	Point outersize;     ///< Size, in tile "units", of the blue coverage area excluding the side of the selected area.
 	bool diagonal;       ///< Whether the dragged area is a 45 degrees rotated rectangle.
 
+	bool freeze;         ///< Freeze highlight in place.
+
 	Point new_pos;       ///< New value for \a pos; used to determine whether to redraw the selection.
 	Point new_size;      ///< New value for \a size; used to determine whether to redraw the selection.
+	Point new_offs;      ///< New value for \a offs; used to determine whether to redraw the selection.
 	Point new_outersize; ///< New value for \a outersize; used to determine whether to redraw the selection.
 	byte dirty;          ///< Whether the build station window needs to redraw due to the changed selection.
 
 	Point selstart;      ///< The location where the dragging started.
 	Point selend;        ///< The location where the drag currently ends.
+	Point selstart2;     ///< The location where the second segment of a polyline track starts.
+	Point selend2;       ///< The location where the second segment of a polyline track ends.
+	HighLightStyle dir2; ///< Direction of the second segment of a polyline track, HT_DIR_END if second segment is not selected. HT_LINE drawstyle.
 	byte sizelimit;      ///< Whether the selection is limited in length, and what the maximum length is.
 
 	HighLightStyle drawstyle;      ///< Lower bits 0-3 are reserved for detailed highlight information.

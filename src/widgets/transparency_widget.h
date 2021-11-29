@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -25,6 +23,7 @@ enum TransparencyToolbarWidgets {
 	WID_TT_STRUCTURES,               ///< Object structure transparency toggle button.
 	WID_TT_CATENARY,                 ///< Catenary transparency toggle button.
 	WID_TT_LOADING,                  ///< Loading indicators transparency toggle button.
+	WIT_TT_TUNNELS,                  ///< Vehicles in tunnels toggle button.
 	WID_TT_END,                      ///< End of toggle buttons.
 
 	/* Panel with buttons for invisibility */

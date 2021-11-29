@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -26,6 +24,15 @@
 #include "signal_func.h"
 #include "core/backup_type.hpp"
 #include "object_base.h"
+#include "newgrf_text.h"
+#include "string_func.h"
+#include "scope_info.h"
+#include "core/random_func.hpp"
+#include "settings_func.h"
+#include "signal_func.h"
+#include "debug_settings.h"
+#include "debug_desync.h"
+#include <array>
 
 #include "table/strings.h"
 
@@ -50,6 +57,9 @@ CommandProc CmdRemoveSingleSignal;
 CommandProc CmdTerraformLand;
 
 CommandProc CmdBuildObject;
+CommandProc CmdPurchaseLandArea;
+CommandProc CmdBuildObjectArea;
+CommandProc CmdBuildHouse;
 CommandProc CmdSellLandArea;
 
 CommandProc CmdBuildTunnel;
@@ -67,6 +77,8 @@ CommandProc CmdRemoveLongRoad;
 CommandProc CmdBuildRoad;
 
 CommandProc CmdBuildRoadDepot;
+
+CommandProc CmdConvertRoad;
 
 CommandProc CmdBuildAirport;
 
@@ -90,13 +102,15 @@ CommandProc CmdForceTrainProceed;
 CommandProc CmdReverseTrainDirection;
 
 CommandProc CmdClearOrderBackup;
-CommandProc CmdModifyOrder;
+CommandProcEx CmdModifyOrder;
 CommandProc CmdSkipToOrder;
 CommandProc CmdDeleteOrder;
-CommandProc CmdInsertOrder;
+CommandProcEx CmdInsertOrder;
+CommandProc CmdMassChangeOrder;
 CommandProc CmdChangeServiceInt;
 
 CommandProc CmdBuildIndustry;
+CommandProc CmdIndustryCtrl;
 
 CommandProc CmdSetCompanyManagerFace;
 CommandProc CmdSetCompanyColour;
@@ -105,6 +119,9 @@ CommandProc CmdIncreaseLoan;
 CommandProc CmdDecreaseLoan;
 
 CommandProc CmdWantEnginePreview;
+CommandProc CmdEngineCtrl;
+
+CommandProc CmdSetVehicleUnitNumber;
 
 CommandProc CmdRenameVehicle;
 CommandProc CmdRenameEngine;
@@ -114,6 +131,8 @@ CommandProc CmdRenamePresident;
 
 CommandProc CmdRenameStation;
 CommandProc CmdRenameDepot;
+
+CommandProc CmdSetStationCargoAllowedSupply;
 
 CommandProc CmdPlaceSign;
 CommandProc CmdRenameSign;
@@ -125,11 +144,14 @@ CommandProc CmdPause;
 CommandProc CmdBuyShareInCompany;
 CommandProc CmdSellShareInCompany;
 CommandProc CmdBuyCompany;
+CommandProc CmdDeclineBuyCompany;
 
 CommandProc CmdFoundTown;
 CommandProc CmdRenameTown;
+CommandProc CmdRenameTownNonAdmin;
 CommandProc CmdDoTownAction;
 CommandProc CmdTownGrowthRate;
+CommandProc CmdTownRating;
 CommandProc CmdTownCargoGoal;
 CommandProc CmdTownSetText;
 CommandProc CmdExpandTown;
@@ -145,7 +167,9 @@ CommandProc CmdClearArea;
 
 CommandProc CmdGiveMoney;
 CommandProc CmdMoneyCheat;
+CommandProc CmdMoneyCheatAdmin;
 CommandProc CmdChangeBankBalance;
+CommandProc CmdCheatSetting;
 CommandProc CmdBuildCanal;
 CommandProc CmdBuildLock;
 
@@ -168,6 +192,7 @@ CommandProc CmdShowStoryPage;
 CommandProc CmdRemoveStoryPage;
 CommandProc CmdRemoveStoryPageElement;
 CommandProc CmdScrollViewport;
+CommandProc CmdStoryPageButton;
 
 CommandProc CmdLevelLand;
 
@@ -176,31 +201,88 @@ CommandProc CmdRemoveSignalTrack;
 
 CommandProc CmdSetAutoReplace;
 
+CommandProc CmdToggleReuseDepotVehicles;
+CommandProc CmdToggleKeepRemainingVehicles;
+CommandProc CmdToggleRefitAsTemplate;
+CommandProc CmdToggleTemplateReplaceOldOnly;
+
+CommandProc CmdVirtualTrainFromTemplateVehicle;
+CommandProc CmdVirtualTrainFromTrain;
+CommandProc CmdDeleteVirtualTrain;
+CommandProc CmdBuildVirtualRailVehicle;
+CommandProc CmdReplaceTemplateVehicle;
+
+CommandProc CmdTemplateVehicleFromTrain;
+CommandProc CmdDeleteTemplateVehicle;
+
+CommandProc CmdIssueTemplateReplacement;
+CommandProc CmdDeleteTemplateReplacement;
+
 CommandProc CmdCloneVehicle;
+CommandProc CmdCloneVehicleFromTemplate;
 CommandProc CmdStartStopVehicle;
 CommandProc CmdMassStartStopVehicle;
 CommandProc CmdAutoreplaceVehicle;
+CommandProc CmdTemplateReplaceVehicle;
 CommandProc CmdDepotSellAllVehicles;
 CommandProc CmdDepotMassAutoReplace;
 
 CommandProc CmdCreateGroup;
 CommandProc CmdAlterGroup;
 CommandProc CmdDeleteGroup;
+CommandProc CmdCreateGroupFromList;
 CommandProc CmdAddVehicleGroup;
 CommandProc CmdAddSharedVehicleGroup;
 CommandProc CmdRemoveAllVehiclesGroup;
-CommandProc CmdSetGroupReplaceProtection;
+CommandProc CmdSetGroupFlag;
 CommandProc CmdSetGroupLivery;
 
 CommandProc CmdMoveOrder;
-CommandProc CmdChangeTimetable;
+CommandProc CmdReverseOrderList;
+CommandProcEx CmdChangeTimetable;
+CommandProc CmdBulkChangeTimetable;
 CommandProc CmdSetVehicleOnTime;
 CommandProc CmdAutofillTimetable;
+CommandProc CmdAutomateTimetable;
+CommandProc CmdTimetableSeparation;
 CommandProc CmdSetTimetableStart;
 
 CommandProc CmdOpenCloseAirport;
 
-#define DEF_CMD(proc, flags, type) {proc, #proc, (CommandFlags)flags, type}
+CommandProc CmdProgramSignalTraceRestrict;
+CommandProc CmdCreateTraceRestrictSlot;
+CommandProc CmdAlterTraceRestrictSlot;
+CommandProc CmdDeleteTraceRestrictSlot;
+CommandProc CmdAddVehicleTraceRestrictSlot;
+CommandProc CmdRemoveVehicleTraceRestrictSlot;
+CommandProc CmdCreateTraceRestrictCounter;
+CommandProc CmdAlterTraceRestrictCounter;
+CommandProc CmdDeleteTraceRestrictCounter;
+
+CommandProc CmdInsertSignalInstruction;
+CommandProc CmdModifySignalInstruction;
+CommandProc CmdRemoveSignalInstruction;
+CommandProc CmdSignalProgramMgmt;
+
+CommandProc CmdScheduledDispatch;
+CommandProc CmdScheduledDispatchAdd;
+CommandProc CmdScheduledDispatchRemove;
+CommandProc CmdScheduledDispatchSetDuration;
+CommandProc CmdScheduledDispatchSetStartDate;
+CommandProc CmdScheduledDispatchSetDelay;
+CommandProc CmdScheduledDispatchResetLastDispatch;
+
+CommandProc CmdAddPlan;
+CommandProcEx CmdAddPlanLine;
+CommandProc CmdRemovePlan;
+CommandProc CmdRemovePlanLine;
+CommandProc CmdChangePlanVisibility;
+CommandProc CmdChangePlanColour;
+CommandProc CmdRenamePlan;
+
+CommandProc CmdDesyncCheck;
+
+#define DEF_CMD(proc, flags, type) Command(proc, #proc, (CommandFlags)flags, type)
 
 /**
  * The master command table
@@ -214,17 +296,20 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdRemoveRailroadTrack,                     CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_RAILROAD_TRACK
 	DEF_CMD(CmdBuildSingleRail,          CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_SINGLE_RAIL
 	DEF_CMD(CmdRemoveSingleRail,                        CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_SINGLE_RAIL
-	DEF_CMD(CmdLandscapeClear,                                 0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_LANDSCAPE_CLEAR
+	DEF_CMD(CmdLandscapeClear,                         CMD_DEITY, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_LANDSCAPE_CLEAR
 	DEF_CMD(CmdBuildBridge,  CMD_DEITY | CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_BRIDGE
 	DEF_CMD(CmdBuildRailStation,         CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_RAIL_STATION
 	DEF_CMD(CmdBuildTrainDepot,          CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_TRAIN_DEPOT
 	DEF_CMD(CmdBuildSingleSignal,                       CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_SIGNALS
 	DEF_CMD(CmdRemoveSingleSignal,                      CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_SIGNALS
 	DEF_CMD(CmdTerraformLand,           CMD_ALL_TILES | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_TERRAFORM_LAND
-	DEF_CMD(CmdBuildObject,              CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_OBJECT
+	DEF_CMD(CmdBuildObject,  CMD_DEITY | CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_OBJECT
+	DEF_CMD(CmdPurchaseLandArea, CMD_NO_WATER | CMD_AUTO | CMD_NO_TEST, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_PURCHASE_LAND_AREA
+	DEF_CMD(CmdBuildObjectArea,  CMD_NO_WATER | CMD_AUTO | CMD_NO_TEST, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_OBJECT_AREA
+	DEF_CMD(CmdBuildHouse,   CMD_DEITY | CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_HOUSE
 	DEF_CMD(CmdBuildTunnel,                 CMD_DEITY | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_TUNNEL
 	DEF_CMD(CmdRemoveFromRailStation,                          0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_FROM_RAIL_STATION
-	DEF_CMD(CmdConvertRail,                                    0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_CONVERT_RAILD
+	DEF_CMD(CmdConvertRail,                                    0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_CONVERT_RAIL
 	DEF_CMD(CmdBuildRailWaypoint,                              0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_RAIL_WAYPOINT
 	DEF_CMD(CmdRenameWaypoint,                                 0, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_WAYPOINT
 	DEF_CMD(CmdRemoveFromRailWaypoint,                         0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_FROM_RAIL_WAYPOINT
@@ -235,6 +320,7 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdRemoveLongRoad,            CMD_NO_TEST | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_LONG_ROAD; towns may disallow removing road bits (as they are connected) in test, but in exec they're removed and thus removing is allowed.
 	DEF_CMD(CmdBuildRoad,    CMD_DEITY | CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_ROAD
 	DEF_CMD(CmdBuildRoadDepot,           CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_ROAD_DEPOT
+	DEF_CMD(CmdConvertRoad,                                    0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_CONVERT_ROAD
 
 	DEF_CMD(CmdBuildAirport,             CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_AIRPORT
 	DEF_CMD(CmdBuildDock,                               CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_DOCK
@@ -257,10 +343,13 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdSkipToOrder,                                    0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SKIP_TO_ORDER
 	DEF_CMD(CmdDeleteOrder,                                    0, CMDT_ROUTE_MANAGEMENT      ), // CMD_DELETE_ORDER
 	DEF_CMD(CmdInsertOrder,                                    0, CMDT_ROUTE_MANAGEMENT      ), // CMD_INSERT_ORDER
+	DEF_CMD(CmdMassChangeOrder,                                0, CMDT_ROUTE_MANAGEMENT      ), // CMD_MASS_CHANGE_ORDER
 
 	DEF_CMD(CmdChangeServiceInt,                               0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_CHANGE_SERVICE_INT
 
 	DEF_CMD(CmdBuildIndustry,                          CMD_DEITY, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_INDUSTRY
+	DEF_CMD(CmdIndustryCtrl,            CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_INDUSTRY_CTRL
+
 	DEF_CMD(CmdSetCompanyManagerFace,                          0, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_COMPANY_MANAGER_FACE
 	DEF_CMD(CmdSetCompanyColour,                               0, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_COMPANY_COLOUR
 
@@ -268,6 +357,9 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdDecreaseLoan,                                   0, CMDT_MONEY_MANAGEMENT      ), // CMD_DECREASE_LOAN
 
 	DEF_CMD(CmdWantEnginePreview,                              0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_WANT_ENGINE_PREVIEW
+	DEF_CMD(CmdEngineCtrl,                             CMD_DEITY, CMDT_VEHICLE_MANAGEMENT    ), // CMD_ENGINE_CTRL
+
+	DEF_CMD(CmdSetVehicleUnitNumber,                           0, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_VEHICLE_UNIT_NUMBER
 
 	DEF_CMD(CmdRenameVehicle,                                  0, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_VEHICLE
 	DEF_CMD(CmdRenameEngine,                          CMD_SERVER, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_ENGINE
@@ -278,8 +370,10 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdRenameStation,                                  0, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_STATION
 	DEF_CMD(CmdRenameDepot,                                    0, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_DEPOT
 
-	DEF_CMD(CmdPlaceSign,                              CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_PLACE_SIGN
-	DEF_CMD(CmdRenameSign,                             CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_SIGN
+	DEF_CMD(CmdSetStationCargoAllowedSupply,                   0, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_STATION_CARGO_ALLOWED_SUPPLY
+
+	DEF_CMD(CmdPlaceSign,                CMD_LOG_AUX | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_PLACE_SIGN
+	DEF_CMD(CmdRenameSign,               CMD_LOG_AUX | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_SIGN
 
 	DEF_CMD(CmdTurnRoadVeh,                                    0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_TURN_ROADVEH
 
@@ -287,14 +381,17 @@ static const Command _command_proc_table[] = {
 
 	DEF_CMD(CmdBuyShareInCompany,                              0, CMDT_MONEY_MANAGEMENT      ), // CMD_BUY_SHARE_IN_COMPANY
 	DEF_CMD(CmdSellShareInCompany,                             0, CMDT_MONEY_MANAGEMENT      ), // CMD_SELL_SHARE_IN_COMPANY
-	DEF_CMD(CmdBuyCompany,                                     0, CMDT_MONEY_MANAGEMENT      ), // CMD_BUY_COMANY
+	DEF_CMD(CmdBuyCompany,                                     0, CMDT_MONEY_MANAGEMENT      ), // CMD_BUY_COMPANY
+	DEF_CMD(CmdDeclineBuyCompany,                              0, CMDT_MONEY_MANAGEMENT      ), // CMD_DECLINE_BUY_COMPANY
 
 	DEF_CMD(CmdFoundTown,                CMD_DEITY | CMD_NO_TEST, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_FOUND_TOWN; founding random town can fail only in exec run
 	DEF_CMD(CmdRenameTown,                CMD_DEITY | CMD_SERVER, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_TOWN
+	DEF_CMD(CmdRenameTownNonAdmin,                             0, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_TOWN_NON_ADMIN
 	DEF_CMD(CmdDoTownAction,                                   0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_DO_TOWN_ACTION
-	DEF_CMD(CmdTownCargoGoal,                          CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_CARGO_GOAL
-	DEF_CMD(CmdTownGrowthRate,                         CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_GROWTH_RATE
-	DEF_CMD(CmdTownSetText,             CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_SET_TEXT
+	DEF_CMD(CmdTownCargoGoal,            CMD_LOG_AUX | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_CARGO_GOAL
+	DEF_CMD(CmdTownGrowthRate,           CMD_LOG_AUX | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_GROWTH_RATE
+	DEF_CMD(CmdTownRating,               CMD_LOG_AUX | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_RATING
+	DEF_CMD(CmdTownSetText,    CMD_LOG_AUX | CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT ), // CMD_TOWN_SET_TEXT
 	DEF_CMD(CmdExpandTown,                             CMD_DEITY, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_EXPAND_TOWN
 	DEF_CMD(CmdDeleteTown,                           CMD_OFFLINE, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_DELETE_TOWN
 
@@ -303,28 +400,31 @@ static const Command _command_proc_table[] = {
 
 	DEF_CMD(CmdClearArea,                            CMD_NO_TEST, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_CLEAR_AREA; destroying multi-tile houses makes town rating differ between test and execution
 
-	DEF_CMD(CmdMoneyCheat,                           CMD_OFFLINE, CMDT_CHEAT                 ), // CMD_MONEY_CHEAT
+	DEF_CMD(CmdMoneyCheat,                                     0, CMDT_CHEAT                 ), // CMD_MONEY_CHEAT
+	DEF_CMD(CmdMoneyCheatAdmin,                    CMD_SERVER_NS, CMDT_CHEAT                 ), // CMD_MONEY_CHEAT_ADMIN
 	DEF_CMD(CmdChangeBankBalance,                      CMD_DEITY, CMDT_MONEY_MANAGEMENT      ), // CMD_CHANGE_BANK_BALANCE
-	DEF_CMD(CmdBuildCanal,                              CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_CANAL
+	DEF_CMD(CmdCheatSetting,                          CMD_SERVER, CMDT_CHEAT                 ), // CMD_CHEAT_SETTING
+	DEF_CMD(CmdBuildCanal,                  CMD_DEITY | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_CANAL
 	DEF_CMD(CmdCreateSubsidy,                          CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_SUBSIDY
-	DEF_CMD(CmdCompanyCtrl,        CMD_SPECTATOR | CMD_CLIENT_ID, CMDT_SERVER_SETTING        ), // CMD_COMPANY_CTRL
-	DEF_CMD(CmdCustomNewsItem,          CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_CUSTOM_NEWS_ITEM
-	DEF_CMD(CmdCreateGoal,              CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_GOAL
-	DEF_CMD(CmdRemoveGoal,                             CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_GOAL
-	DEF_CMD(CmdSetGoalText,             CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_GOAL_TEXT
-	DEF_CMD(CmdSetGoalProgress,         CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_GOAL_PROGRESS
-	DEF_CMD(CmdSetGoalCompleted,        CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_GOAL_COMPLETED
-	DEF_CMD(CmdGoalQuestion,            CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_GOAL_QUESTION
-	DEF_CMD(CmdGoalQuestionAnswer,                     CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_GOAL_QUESTION_ANSWER
-	DEF_CMD(CmdCreateStoryPage,         CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_STORY_PAGE
-	DEF_CMD(CmdCreateStoryPageElement,  CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_STORY_PAGE_ELEMENT
-	DEF_CMD(CmdUpdateStoryPageElement,  CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_UPDATE_STORY_PAGE_ELEMENT
-	DEF_CMD(CmdSetStoryPageTitle,       CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_STORY_PAGE_TITLE
-	DEF_CMD(CmdSetStoryPageDate,                       CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_STORY_PAGE_DATE
-	DEF_CMD(CmdShowStoryPage,                          CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SHOW_STORY_PAGE
-	DEF_CMD(CmdRemoveStoryPage,                        CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_STORY_PAGE
-	DEF_CMD(CmdRemoveStoryPageElement,                 CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_STORY_ELEMENT_PAGE
-	DEF_CMD(CmdScrollViewport,                         CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SCROLL_VIEWPORT
+	DEF_CMD(CmdCompanyCtrl, CMD_SPECTATOR | CMD_CLIENT_ID | CMD_NO_EST, CMDT_SERVER_SETTING  ), // CMD_COMPANY_CTRL
+	DEF_CMD(CmdCustomNewsItem,          CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_CUSTOM_NEWS_ITEM
+	DEF_CMD(CmdCreateGoal,              CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_GOAL
+	DEF_CMD(CmdRemoveGoal,                             CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_GOAL
+	DEF_CMD(CmdSetGoalText,             CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_GOAL_TEXT
+	DEF_CMD(CmdSetGoalProgress,         CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_GOAL_PROGRESS
+	DEF_CMD(CmdSetGoalCompleted,        CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_GOAL_COMPLETED
+	DEF_CMD(CmdGoalQuestion,            CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_GOAL_QUESTION
+	DEF_CMD(CmdGoalQuestionAnswer,                     CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_GOAL_QUESTION_ANSWER
+	DEF_CMD(CmdCreateStoryPage,         CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_STORY_PAGE
+	DEF_CMD(CmdCreateStoryPageElement,  CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_STORY_PAGE_ELEMENT
+	DEF_CMD(CmdUpdateStoryPageElement,  CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_UPDATE_STORY_PAGE_ELEMENT
+	DEF_CMD(CmdSetStoryPageTitle,       CMD_STR_CTRL | CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_STORY_PAGE_TITLE
+	DEF_CMD(CmdSetStoryPageDate,                       CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_STORY_PAGE_DATE
+	DEF_CMD(CmdShowStoryPage,                          CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_SHOW_STORY_PAGE
+	DEF_CMD(CmdRemoveStoryPage,                        CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_STORY_PAGE
+	DEF_CMD(CmdRemoveStoryPageElement,                 CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_STORY_ELEMENT_PAGE
+	DEF_CMD(CmdScrollViewport,                         CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_SCROLL_VIEWPORT
+	DEF_CMD(CmdStoryPageButton,                        CMD_DEITY | CMD_LOG_AUX, CMDT_OTHER_MANAGEMENT      ), // CMD_STORY_PAGE_BUTTON
 
 	DEF_CMD(CmdLevelLand, CMD_ALL_TILES | CMD_NO_TEST | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_LEVEL_LAND; test run might clear tiles multiple times, in execution that only happens once
 
@@ -337,31 +437,204 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdChangeSetting,                         CMD_SERVER, CMDT_SERVER_SETTING        ), // CMD_CHANGE_SETTING
 	DEF_CMD(CmdChangeCompanySetting,                           0, CMDT_COMPANY_SETTING       ), // CMD_CHANGE_COMPANY_SETTING
 	DEF_CMD(CmdSetAutoReplace,                                 0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_SET_AUTOREPLACE
+
+	DEF_CMD(CmdToggleReuseDepotVehicles,           CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_TOGGLE_REUSE_DEPOT_VEHICLES
+	DEF_CMD(CmdToggleKeepRemainingVehicles,        CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_TOGGLE_KEEP_REMAINING_VEHICLES
+	DEF_CMD(CmdToggleRefitAsTemplate,              CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_TOGGLE_REFIT_AS_TEMPLATE
+	DEF_CMD(CmdToggleTemplateReplaceOldOnly,       CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_TOGGLE_TMPL_REPLACE_OLD_ONLY
+
+	DEF_CMD(CmdVirtualTrainFromTemplateVehicle,   CMD_CLIENT_ID | CMD_NO_TEST | CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT), // CMD_VIRTUAL_TRAIN_FROM_TEMPLATE_VEHICLE
+	DEF_CMD(CmdVirtualTrainFromTrain,             CMD_CLIENT_ID | CMD_NO_TEST | CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT), // CMD_VIRTUAL_TRAIN_FROM_TRAIN
+	DEF_CMD(CmdDeleteVirtualTrain,                                              CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT), // CMD_DELETE_VIRTUAL_TRAIN
+	DEF_CMD(CmdBuildVirtualRailVehicle,           CMD_CLIENT_ID | CMD_NO_TEST | CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT), // CMD_BUILD_VIRTUAL_RAIL_VEHICLE
+	DEF_CMD(CmdReplaceTemplateVehicle,                                          CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT), // CMD_REPLACE_TEMPLATE_VEHICLE
+
+	DEF_CMD(CmdTemplateVehicleFromTrain,           CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_CLONE_TEMPLATE_VEHICLE_FROM_TRAIN
+	DEF_CMD(CmdDeleteTemplateVehicle,              CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_DELETE_TEMPLATE_VEHICLE
+
+	DEF_CMD(CmdIssueTemplateReplacement,           CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_ISSUE_TEMPLATE_REPLACEMENT
+	DEF_CMD(CmdDeleteTemplateReplacement,          CMD_ALL_TILES, CMDT_VEHICLE_MANAGEMENT    ), // CMD_DELETE_TEMPLATE_REPLACEMENT
+
 	DEF_CMD(CmdCloneVehicle,                         CMD_NO_TEST, CMDT_VEHICLE_CONSTRUCTION  ), // CMD_CLONE_VEHICLE; NewGRF callbacks influence building and refitting making it impossible to correctly estimate the cost
+	DEF_CMD(CmdCloneVehicleFromTemplate,             CMD_NO_TEST, CMDT_VEHICLE_CONSTRUCTION  ), // CMD_CLONE_VEHICLE_FROM_TEMPLATE; NewGRF callbacks influence building and refitting making it impossible to correctly estimate the cost
 	DEF_CMD(CmdStartStopVehicle,                               0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_START_STOP_VEHICLE
 	DEF_CMD(CmdMassStartStopVehicle,                           0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_MASS_START_STOP
 	DEF_CMD(CmdAutoreplaceVehicle,                             0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_AUTOREPLACE_VEHICLE
+	DEF_CMD(CmdTemplateReplaceVehicle,                         0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_TEMPLATE_REPLACE_VEHICLE
 	DEF_CMD(CmdDepotSellAllVehicles,                           0, CMDT_VEHICLE_CONSTRUCTION  ), // CMD_DEPOT_SELL_ALL_VEHICLES
 	DEF_CMD(CmdDepotMassAutoReplace,                           0, CMDT_VEHICLE_CONSTRUCTION  ), // CMD_DEPOT_MASS_AUTOREPLACE
 	DEF_CMD(CmdCreateGroup,                                    0, CMDT_ROUTE_MANAGEMENT      ), // CMD_CREATE_GROUP
 	DEF_CMD(CmdDeleteGroup,                                    0, CMDT_ROUTE_MANAGEMENT      ), // CMD_DELETE_GROUP
 	DEF_CMD(CmdAlterGroup,                                     0, CMDT_OTHER_MANAGEMENT      ), // CMD_ALTER_GROUP
+	DEF_CMD(CmdCreateGroupFromList,                            0, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_GROUP_FROM_LIST
 	DEF_CMD(CmdAddVehicleGroup,                                0, CMDT_ROUTE_MANAGEMENT      ), // CMD_ADD_VEHICLE_GROUP
 	DEF_CMD(CmdAddSharedVehicleGroup,                          0, CMDT_ROUTE_MANAGEMENT      ), // CMD_ADD_SHARE_VEHICLE_GROUP
 	DEF_CMD(CmdRemoveAllVehiclesGroup,                         0, CMDT_ROUTE_MANAGEMENT      ), // CMD_REMOVE_ALL_VEHICLES_GROUP
-	DEF_CMD(CmdSetGroupReplaceProtection,                      0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_GROUP_REPLACE_PROTECTION
+	DEF_CMD(CmdSetGroupFlag,                                   0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_GROUP_FLAG
 	DEF_CMD(CmdSetGroupLivery,                                 0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_GROUP_LIVERY
 	DEF_CMD(CmdMoveOrder,                                      0, CMDT_ROUTE_MANAGEMENT      ), // CMD_MOVE_ORDER
+	DEF_CMD(CmdReverseOrderList,                               0, CMDT_ROUTE_MANAGEMENT      ), // CMD_REVERSE_ORDER_LIST
 	DEF_CMD(CmdChangeTimetable,                                0, CMDT_ROUTE_MANAGEMENT      ), // CMD_CHANGE_TIMETABLE
+	DEF_CMD(CmdBulkChangeTimetable,                            0, CMDT_ROUTE_MANAGEMENT      ), // CMD_BULK_CHANGE_TIMETABLE
 	DEF_CMD(CmdSetVehicleOnTime,                               0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_VEHICLE_ON_TIME
 	DEF_CMD(CmdAutofillTimetable,                              0, CMDT_ROUTE_MANAGEMENT      ), // CMD_AUTOFILL_TIMETABLE
+	DEF_CMD(CmdAutomateTimetable,                              0, CMDT_ROUTE_MANAGEMENT      ), // CMD_AUTOMATE_TIMETABLE
+	DEF_CMD(CmdTimetableSeparation,                            0, CMDT_ROUTE_MANAGEMENT      ), // CMD_TIMETABLE_SEPARATION
 	DEF_CMD(CmdSetTimetableStart,                              0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_TIMETABLE_START
 
 	DEF_CMD(CmdOpenCloseAirport,                               0, CMDT_ROUTE_MANAGEMENT      ), // CMD_OPEN_CLOSE_AIRPORT
+
+	DEF_CMD(CmdProgramSignalTraceRestrict,                     0, CMDT_OTHER_MANAGEMENT      ), // CMD_PROGRAM_TRACERESTRICT_SIGNAL
+	DEF_CMD(CmdCreateTraceRestrictSlot,                        0, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_TRACERESTRICT_SLOT
+	DEF_CMD(CmdAlterTraceRestrictSlot,                         0, CMDT_OTHER_MANAGEMENT      ), // CMD_ALTER_TRACERESTRICT_SLOT
+	DEF_CMD(CmdDeleteTraceRestrictSlot,                        0, CMDT_OTHER_MANAGEMENT      ), // CMD_DELETE_TRACERESTRICT_SLOT
+	DEF_CMD(CmdAddVehicleTraceRestrictSlot,                    0, CMDT_OTHER_MANAGEMENT      ), // CMD_ADD_VEHICLE_TRACERESTRICT_SLOT
+	DEF_CMD(CmdRemoveVehicleTraceRestrictSlot,                 0, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_VEHICLE_TRACERESTRICT_SLOT
+	DEF_CMD(CmdCreateTraceRestrictCounter,                     0, CMDT_OTHER_MANAGEMENT      ), // CMD_CREATE_TRACERESTRICT_COUNTER
+	DEF_CMD(CmdAlterTraceRestrictCounter,                      0, CMDT_OTHER_MANAGEMENT      ), // CMD_ALTER_TRACERESTRICT_COUNTER
+	DEF_CMD(CmdDeleteTraceRestrictCounter,                     0, CMDT_OTHER_MANAGEMENT      ), // CMD_DELETE_TRACERESTRICT_COUNTER
+
+	DEF_CMD(CmdInsertSignalInstruction,                        0, CMDT_OTHER_MANAGEMENT      ), // CMD_INSERT_SIGNAL_INSTRUCTION
+	DEF_CMD(CmdModifySignalInstruction,                        0, CMDT_OTHER_MANAGEMENT      ), // CMD_MODIFY_SIGNAL_INSTRUCTION
+	DEF_CMD(CmdRemoveSignalInstruction,                        0, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_SIGNAL_INSTRUCTION
+	DEF_CMD(CmdSignalProgramMgmt,                              0, CMDT_OTHER_MANAGEMENT      ), // CMD_SIGNAL_PROGRAM_MGMT
+
+	DEF_CMD(CmdScheduledDispatch,                              0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SCHEDULED_DISPATCH
+	DEF_CMD(CmdScheduledDispatchAdd,                           0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SCHEDULED_DISPATCH_ADD
+	DEF_CMD(CmdScheduledDispatchRemove,                        0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SCHEDULED_DISPATCH_REMOVE
+	DEF_CMD(CmdScheduledDispatchSetDuration,                   0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SCHEDULED_DISPATCH_SET_DURATION
+	DEF_CMD(CmdScheduledDispatchSetStartDate,                  0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SCHEDULED_DISPATCH_SET_START_DATE
+	DEF_CMD(CmdScheduledDispatchSetDelay,                      0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SCHEDULED_DISPATCH_SET_DELAY
+	DEF_CMD(CmdScheduledDispatchResetLastDispatch,             0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SCHEDULED_DISPATCH_RESET_LAST_DISPATCH
+
+	DEF_CMD(CmdAddPlan,                              CMD_NO_TEST, CMDT_OTHER_MANAGEMENT      ), // CMD_ADD_PLAN
+	DEF_CMD(CmdAddPlanLine,                          CMD_NO_TEST, CMDT_OTHER_MANAGEMENT      ), // CMD_ADD_PLAN_LINE
+	DEF_CMD(CmdRemovePlan,                           CMD_NO_TEST, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_PLAN
+	DEF_CMD(CmdRemovePlanLine,                       CMD_NO_TEST, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_PLAN_LINE
+	DEF_CMD(CmdChangePlanVisibility,                 CMD_NO_TEST, CMDT_OTHER_MANAGEMENT      ), // CMD_CHANGE_PLAN_VISIBILITY
+	DEF_CMD(CmdChangePlanColour,                     CMD_NO_TEST, CMDT_OTHER_MANAGEMENT      ), // CMD_CHANGE_PLAN_COLOUR
+	DEF_CMD(CmdRenamePlan,                           CMD_NO_TEST, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_PLAN
+
+	DEF_CMD(CmdDesyncCheck,                           CMD_SERVER, CMDT_SERVER_SETTING        ), // CMD_DESYNC_CHECK
 };
 
+
+/**
+ * List of flags for a command log entry
+ */
+enum CommandLogEntryFlag : uint16 {
+	CLEF_NONE                =  0x00, ///< no flag is set
+	CLEF_CMD_FAILED          =  0x01, ///< command failed
+	CLEF_GENERATING_WORLD    =  0x02, ///< generating world
+	CLEF_TEXT                =  0x04, ///< have command text
+	CLEF_ESTIMATE_ONLY       =  0x08, ///< estimate only
+	CLEF_ONLY_SENDING        =  0x10, ///< only sending
+	CLEF_MY_CMD              =  0x20, ///< locally generated command
+	CLEF_BINARY              =  0x40, ///< binary_length is > 0
+	CLEF_SCRIPT              =  0x80, ///< command run by AI/game script
+	CLEF_TWICE               = 0x100, ///< command logged twice (only sending and execution)
+	CLEF_RANDOM              = 0x200, ///< command changed random seed
+};
+DECLARE_ENUM_AS_BIT_SET(CommandLogEntryFlag)
+
+struct CommandLogEntry {
+	std::string text;
+	TileIndex tile;
+	uint32 p1;
+	uint32 p2;
+	uint32 cmd;
+	uint64 p3;
+	Date date;
+	DateFract date_fract;
+	uint8 tick_skip_counter;
+	CompanyID current_company;
+	CompanyID local_company;
+	CommandLogEntryFlag log_flags;
+
+	CommandLogEntry() { }
+
+	CommandLogEntry(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandLogEntryFlag log_flags, std::string text)
+			: text(text), tile(tile), p1(p1), p2(p2), cmd(cmd), p3(p3), date(_date), date_fract(_date_fract), tick_skip_counter(_tick_skip_counter),
+			current_company(_current_company), local_company(_local_company), log_flags(log_flags) { }
+};
+
+struct CommandLog {
+	std::array<CommandLogEntry, 256> log;
+	unsigned int count = 0;
+	unsigned int next = 0;
+
+	void Reset()
+	{
+		this->count = 0;
+		this->next = 0;
+	}
+};
+
+static CommandLog _command_log;
+static CommandLog _command_log_aux;
+
+void ClearCommandLog()
+{
+	_command_log.Reset();
+	_command_log_aux.Reset();
+}
+
+static void DumpSubCommandLog(char *&buffer, const char *last, const CommandLog &cmd_log, const unsigned int count)
+{
+	unsigned int log_index = cmd_log.next;
+	for (unsigned int i = 0 ; i < count; i++) {
+		if (log_index > 0) {
+			log_index--;
+		} else {
+			log_index = (uint)cmd_log.log.size() - 1;
+		}
+		const CommandLogEntry &entry = cmd_log.log[log_index];
+
+		auto fc = [&](CommandLogEntryFlag flag, char c) -> char {
+			return entry.log_flags & flag ? c : '-';
+		};
+
+		YearMonthDay ymd;
+		ConvertDateToYMD(entry.date, &ymd);
+		buffer += seprintf(buffer, last, " %3u | %4i-%02i-%02i, %2i, %3i | ", i, ymd.year, ymd.month + 1, ymd.day, entry.date_fract, entry.tick_skip_counter);
+		buffer += seprintf(buffer, last, "%c%c%c%c%c%c%c%c%c%c | ",
+				fc(CLEF_RANDOM, 'r'), fc(CLEF_TWICE, '2'), fc(CLEF_SCRIPT, 'a'), fc(CLEF_BINARY, 'b'), fc(CLEF_MY_CMD, 'm'), fc(CLEF_ONLY_SENDING, 's'),
+				fc(CLEF_ESTIMATE_ONLY, 'e'), fc(CLEF_TEXT, 't'), fc(CLEF_GENERATING_WORLD, 'g'), fc(CLEF_CMD_FAILED, 'f'));
+		buffer += seprintf(buffer, last, " %7d x %7d, p1: 0x%08X, p2: 0x%08X, ",
+				TileX(entry.tile), TileY(entry.tile), entry.p1, entry.p2);
+		if (entry.p3 != 0) {
+			buffer += seprintf(buffer, last, "p3: 0x" OTTD_PRINTFHEX64PAD ", ", entry.p3);
+		}
+		buffer += seprintf(buffer, last, "cc: %3u, lc: %3u, cmd: 0x%08X (%s)",
+				(uint) entry.current_company, (uint) entry.local_company, entry.cmd, GetCommandName(entry.cmd));
+
+		switch (entry.cmd & CMD_ID_MASK) {
+			case CMD_CHANGE_SETTING:
+			case CMD_CHANGE_COMPANY_SETTING:
+				buffer += seprintf(buffer, last, " [%s]", entry.text.c_str());
+				break;
+		}
+
+		buffer += seprintf(buffer, last, "\n");
+	}
+}
+
+char *DumpCommandLog(char *buffer, const char *last)
+{
+	const unsigned int count = std::min<unsigned int>(_command_log.count, 256);
+	buffer += seprintf(buffer, last, "Command Log:\n Showing most recent %u of %u commands\n", count, _command_log.count);
+	DumpSubCommandLog(buffer, last, _command_log, count);
+
+	if (_command_log_aux.count > 0) {
+		const unsigned int aux_count = std::min<unsigned int>(_command_log_aux.count, 32);
+		buffer += seprintf(buffer, last, "\n Showing most recent %u of %u commands (aux log)\n", aux_count, _command_log_aux.count);
+		DumpSubCommandLog(buffer, last, _command_log_aux, aux_count);
+	}
+	return buffer;
+}
+
 /*!
- * This function range-checks a cmd, and checks if the cmd is not NULL
+ * This function range-checks a cmd, and checks if the cmd is not nullptr
  *
  * @param cmd The integer value of a command
  * @return true if the command is valid (and got a CommandProc function)
@@ -370,7 +643,7 @@ bool IsValidCommand(uint32 cmd)
 {
 	cmd &= CMD_ID_MASK;
 
-	return cmd < lengthof(_command_proc_table) && _command_proc_table[cmd].proc != NULL;
+	return cmd < lengthof(_command_proc_table) && _command_proc_table[cmd].proc != nullptr;
 }
 
 /*!
@@ -420,7 +693,7 @@ bool IsCommandAllowedWhilePaused(uint32 cmd)
 		CMDPL_NO_ACTIONS,      ///< CMDT_SERVER_SETTING
 		CMDPL_NO_ACTIONS,      ///< CMDT_CHEAT
 	};
-	assert_compile(lengthof(command_type_lookup) == CMDT_END);
+	static_assert(lengthof(command_type_lookup) == CMDT_END);
 
 	assert(IsValidCommand(cmd));
 	return _game_mode == GM_EDITOR || command_type_lookup[_command_proc_table[cmd & CMD_ID_MASK].type] <= _settings_game.construction.command_pause_level;
@@ -429,18 +702,25 @@ bool IsCommandAllowedWhilePaused(uint32 cmd)
 
 static int _docommand_recursive = 0;
 
-/**
- * Shorthand for calling the long DoCommand with a container.
- *
- * @param container Container with (almost) all information
- * @param flags Flags for the command and how to execute the command
- * @see CommandProc
- * @return the cost
- */
-CommandCost DoCommand(const CommandContainer *container, DoCommandFlag flags)
-{
-	return DoCommand(container->tile, container->p1, container->p2, flags, container->cmd & CMD_ID_MASK, container->text);
-}
+struct cmd_text_info_dumper {
+	const char *CommandTextInfo(const char *text, uint32 binary_length)
+	{
+		char *b = this->buffer;
+		const char *last = lastof(this->buffer);
+		if (text) {
+			b += seprintf(b, last, ", text");
+		}
+		if (binary_length) {
+			b += seprintf(b, last, ", bin length: %u", binary_length);
+		} else if (text) {
+			b += seprintf(b, last, ", str length: %u", (uint) strlen(text));
+		}
+		return this->buffer;
+	}
+
+private:
+	char buffer[64];
+};
 
 /*!
  * This function executes a given command with the parameters from the #CommandProc parameter list.
@@ -452,26 +732,30 @@ CommandCost DoCommand(const CommandContainer *container, DoCommandFlag flags)
  * @param flags Flags for the command and how to execute the command
  * @param cmd The command-id to execute (a value of the CMD_* enums)
  * @param text The text to pass
+ * @param binary_length The length of binary data in text
  * @see CommandProc
  * @return the cost
  */
-CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags, uint32 cmd, const char *text)
+CommandCost DoCommandEx(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, DoCommandFlag flags, uint32 cmd, const char *text, uint32 binary_length)
 {
+	SCOPE_INFO_FMT([=], "DoCommand: tile: %X (%d x %d), p1: 0x%X, p2: 0x%X, p3: " OTTD_PRINTFHEX64 ", flags: 0x%X, company: %s, cmd: 0x%X (%s)%s",
+			tile, TileX(tile), TileY(tile), p1, p2, p3, flags, scope_dumper().CompanyInfo(_current_company), cmd, GetCommandName(cmd), cmd_text_info_dumper().CommandTextInfo(text, binary_length));
+
 	CommandCost res;
 
 	/* Do not even think about executing out-of-bounds tile-commands */
 	if (tile != 0 && (tile >= MapSize() || (!IsValidTile(tile) && (flags & DC_ALL_TILES) == 0))) return CMD_ERROR;
 
 	/* Chop of any CMD_MSG or other flags; we don't need those here */
-	CommandProc *proc = _command_proc_table[cmd & CMD_ID_MASK].proc;
+	const Command &command = _command_proc_table[cmd & CMD_ID_MASK];
 
 	_docommand_recursive++;
 
 	/* only execute the test call if it's toplevel, or we're not execing. */
 	if (_docommand_recursive == 1 || !(flags & DC_EXEC) ) {
-		if (_docommand_recursive == 1) _cleared_object_areas.Clear();
+		if (_docommand_recursive == 1) _cleared_object_areas.clear();
 		SetTownRatingTestMode(true);
-		res = proc(tile, flags & ~DC_EXEC, p1, p2, text);
+		res = command.Execute(tile, flags & ~DC_EXEC, p1, p2, p3, text, binary_length);
 		SetTownRatingTestMode(false);
 		if (res.Failed()) {
 			goto error;
@@ -492,8 +776,8 @@ CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags,
 
 	/* Execute the command here. All cost-relevant functions set the expenses type
 	 * themselves to the cost object at some point */
-	if (_docommand_recursive == 1) _cleared_object_areas.Clear();
-	res = proc(tile, flags, p1, p2, text);
+	if (_docommand_recursive == 1) _cleared_object_areas.clear();
+	res = command.Execute(tile, flags, p1, p2, p3, text, binary_length);
 	if (res.Failed()) {
 error:
 		_docommand_recursive--;
@@ -522,15 +806,36 @@ Money GetAvailableMoneyForCommand()
 	return Company::Get(company)->money;
 }
 
-/**
- * Shortcut for the long DoCommandP when having a container with the data.
- * @param container the container with information.
- * @param my_cmd indicator if the command is from a company or server (to display error messages for a user)
- * @return true if the command succeeded, else false
- */
-bool DoCommandP(const CommandContainer *container, bool my_cmd)
+static void AppendCommandLogEntry(const CommandCost &res, TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandLogEntryFlag log_flags, const char *text)
 {
-	return DoCommandP(container->tile, container->p1, container->p2, container->cmd, container->callback, container->text, my_cmd);
+	if (res.Failed()) log_flags |= CLEF_CMD_FAILED;
+	if (_generating_world) log_flags |= CLEF_GENERATING_WORLD;
+
+	CommandLog &cmd_log = (GetCommandFlags(cmd) & CMD_LOG_AUX) ? _command_log_aux : _command_log;
+
+	if (_networking && cmd_log.count > 0) {
+		CommandLogEntry &current = cmd_log.log[(cmd_log.next - 1) % cmd_log.log.size()];
+		if (current.log_flags & CLEF_ONLY_SENDING && ((current.log_flags ^ log_flags) & ~(CLEF_SCRIPT | CLEF_MY_CMD)) == CLEF_ONLY_SENDING &&
+				current.tile == tile && current.p1 == p1 && current.p2 == p2 && current.p3 == p3 && ((current.cmd ^ cmd) & ~CMD_NETWORK_COMMAND) == 0 && current.date == _date &&
+				current.date_fract == _date_fract && current.tick_skip_counter == _tick_skip_counter &&
+				current.current_company == _current_company && current.local_company == _local_company) {
+			current.log_flags |= log_flags | CLEF_TWICE;
+			current.log_flags &= ~CLEF_ONLY_SENDING;
+			return;
+		}
+	}
+
+	std::string str;
+	switch (cmd & CMD_ID_MASK) {
+		case CMD_CHANGE_SETTING:
+		case CMD_CHANGE_COMPANY_SETTING:
+			if (text != nullptr) str.assign(text);
+			break;
+	}
+
+	cmd_log.log[cmd_log.next] = CommandLogEntry(tile, p1, p2, p3, cmd, log_flags, std::move(str));
+	cmd_log.next = (cmd_log.next + 1) % cmd_log.log.size();
+	cmd_log.count++;
 }
 
 /*!
@@ -542,16 +847,21 @@ bool DoCommandP(const CommandContainer *container, bool my_cmd)
  * @param tile The tile to perform a command on (see #CommandProc)
  * @param p1 Additional data for the command (see #CommandProc)
  * @param p2 Additional data for the command (see #CommandProc)
+ * @param p3 Additional data for the command (see #CommandProc)
  * @param cmd The command to execute (a CMD_* value)
  * @param callback A callback function to call after the command is finished
  * @param text The text to pass
  * @param my_cmd indicator if the command is from a company or server (to display error messages for a user)
+ * @param binary_length The length of binary data in text
  * @return \c true if the command succeeded, else \c false.
  */
-bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd)
+bool DoCommandPEx(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandCallback *callback, const char *text, uint32 binary_length, bool my_cmd)
 {
+	SCOPE_INFO_FMT([=], "DoCommandP: tile: %X (%d x %d), p1: 0x%X, p2: 0x%X, p3: 0x" OTTD_PRINTFHEX64 ", company: %s, cmd: 0x%X (%s), my_cmd: %d%s",
+			tile, TileX(tile), TileY(tile), p1, p2, p3, scope_dumper().CompanyInfo(_current_company), cmd, GetCommandName(cmd), my_cmd, cmd_text_info_dumper().CommandTextInfo(text, binary_length));
+
 	/* Cost estimation is generally only done when the
-	 * local user presses shift while doing somthing.
+	 * local user presses shift while doing something.
 	 * However, in case of incoming network commands,
 	 * map generation or the pause button we do want
 	 * to execute. */
@@ -568,26 +878,43 @@ bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallbac
 	int x = TileX(tile) * TILE_SIZE;
 	int y = TileY(tile) * TILE_SIZE;
 
-	if (_pause_mode != PM_UNPAUSED && !IsCommandAllowedWhilePaused(cmd)) {
+	if (_pause_mode != PM_UNPAUSED && !IsCommandAllowedWhilePaused(cmd) && !estimate_only) {
 		ShowErrorMessage(GB(cmd, 16, 16), STR_ERROR_NOT_ALLOWED_WHILE_PAUSED, WL_INFO, x, y);
 		return false;
 	}
 
-#ifdef ENABLE_NETWORK
 	/* Only set p2 when the command does not come from the network. */
 	if (!(cmd & CMD_NETWORK_COMMAND) && GetCommandFlags(cmd) & CMD_CLIENT_ID && p2 == 0) p2 = CLIENT_ID_SERVER;
-#endif
 
-	CommandCost res = DoCommandPInternal(tile, p1, p2, cmd, callback, text, my_cmd, estimate_only);
+	GameRandomSeedChecker random_state;
+
+	CommandCost res = DoCommandPInternal(tile, p1, p2, p3, cmd, callback, text, my_cmd, estimate_only, binary_length);
+
+	CommandLogEntryFlag log_flags;
+	log_flags = CLEF_NONE;
+	if (binary_length == 0 && !StrEmpty(text)) log_flags |= CLEF_TEXT;
+	if (estimate_only) log_flags |= CLEF_ESTIMATE_ONLY;
+	if (only_sending) log_flags |= CLEF_ONLY_SENDING;
+	if (my_cmd) log_flags |= CLEF_MY_CMD;
+	if (binary_length > 0) log_flags |= CLEF_BINARY;
+	if (!random_state.Check()) log_flags |= CLEF_RANDOM;
+	AppendCommandLogEntry(res, tile, p1, p2, p3, cmd, log_flags, text);
+
+	if (unlikely(HasChickenBit(DCBF_DESYNC_CHECK_POST_COMMAND)) && !(GetCommandFlags(cmd) & CMD_LOG_AUX)) {
+		CheckCachesFlags flags = CHECK_CACHE_ALL | CHECK_CACHE_EMIT_LOG;
+		if (HasChickenBit(DCBF_DESYNC_CHECK_NO_GENERAL)) flags &= ~CHECK_CACHE_GENERAL;
+		CheckCaches(true, nullptr, flags);
+	}
+
 	if (res.Failed()) {
 		/* Only show the error when it's for us. */
 		StringID error_part1 = GB(cmd, 16, 16);
 		if (estimate_only || (IsLocalCompany() && error_part1 != 0 && my_cmd)) {
-			ShowErrorMessage(error_part1, res.GetErrorMessage(), WL_INFO, x, y, res.GetTextRefStackGRF(), res.GetTextRefStackSize(), res.GetTextRefStack());
+			ShowErrorMessage(error_part1, res.GetErrorMessage(), WL_INFO, x, y, res.GetTextRefStackGRF(), res.GetTextRefStackSize(), res.GetTextRefStack(), res.GetExtraErrorMessage());
 		}
 	} else if (estimate_only) {
 		ShowEstimatedCostOrIncome(res.GetCost(), x, y);
-	} else if (!only_sending && res.GetCost() != 0 && tile != 0 && IsLocalCompany() && _game_mode != GM_EDITOR) {
+	} else if (!only_sending && res.GetCost() != 0 && tile != 0 && IsLocalCompany() && _game_mode != GM_EDITOR && HasBit(_extra_display_opt, XDO_SHOW_MONEY_TEXT_EFFECTS)) {
 		/* Only show the cost animation when we did actually
 		 * execute the command, i.e. we're not sending it to
 		 * the server, when it has cost the local company
@@ -596,11 +923,36 @@ bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallbac
 		ShowCostOrIncomeAnimation(x, y, GetSlopePixelZ(x, y), res.GetCost());
 	}
 
-	if (!estimate_only && !only_sending && callback != NULL) {
-		callback(res, tile, p1, p2);
+	if (!estimate_only && !only_sending && callback != nullptr) {
+		callback(res, tile, p1, p2, p3, cmd);
 	}
 
 	return res.Succeeded();
+}
+
+CommandCost DoCommandPScript(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd, bool estimate_only, uint32 binary_length)
+{
+	GameRandomSeedChecker random_state;
+
+	CommandCost res = DoCommandPInternal(tile, p1, p2, p3, cmd, callback, text, my_cmd, estimate_only, binary_length);
+
+	CommandLogEntryFlag log_flags;
+	log_flags = CLEF_SCRIPT;
+	if (binary_length == 0 && !StrEmpty(text)) log_flags |= CLEF_TEXT;
+	if (estimate_only) log_flags |= CLEF_ESTIMATE_ONLY;
+	if (_networking && !(cmd & CMD_NETWORK_COMMAND)) log_flags |= CLEF_ONLY_SENDING;
+	if (my_cmd) log_flags |= CLEF_MY_CMD;
+	if (binary_length > 0) log_flags |= CLEF_BINARY;
+	if (!random_state.Check()) log_flags |= CLEF_RANDOM;
+	AppendCommandLogEntry(res, tile, p1, p2, p3, cmd, log_flags, text);
+
+	if (unlikely(HasChickenBit(DCBF_DESYNC_CHECK_POST_COMMAND)) && !(GetCommandFlags(cmd) & CMD_LOG_AUX)) {
+		CheckCachesFlags flags = CHECK_CACHE_ALL | CHECK_CACHE_EMIT_LOG;
+		if (HasChickenBit(DCBF_DESYNC_CHECK_NO_GENERAL)) flags &= ~CHECK_CACHE_GENERAL;
+		CheckCaches(true, nullptr, flags);
+	}
+
+	return res;
 }
 
 
@@ -616,6 +968,7 @@ bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallbac
  * @param tile The tile to perform a command on (see #CommandProc)
  * @param p1 Additional data for the command (see #CommandProc)
  * @param p2 Additional data for the command (see #CommandProc)
+ * @param p3 Additional data for the command (see #CommandProc)
  * @param cmd The command to execute (a CMD_* value)
  * @param callback A callback function to call after the command is finished
  * @param text The text to pass
@@ -623,7 +976,7 @@ bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallbac
  * @param estimate_only whether to give only the estimate or also execute the command
  * @return the command cost of this function.
  */
-CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd, bool estimate_only)
+CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd, bool estimate_only, uint32 binary_length)
 {
 	/* Prevent recursion; it gives a mess over the network */
 	assert(_docommand_recursive == 0);
@@ -636,20 +989,18 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 	byte cmd_id = cmd & CMD_ID_MASK;
 	assert(cmd_id < lengthof(_command_proc_table));
 
-	CommandProc *proc = _command_proc_table[cmd_id].proc;
+	const Command &command = _command_proc_table[cmd_id];
 	/* Shouldn't happen, but you never know when someone adds
 	 * NULLs to the _command_proc_table. */
-	assert(proc != NULL);
+	assert(command.proc != nullptr);
 
 	/* Command flags are used internally */
 	CommandFlags cmd_flags = GetCommandFlags(cmd);
 	/* Flags get send to the DoCommand */
 	DoCommandFlag flags = CommandFlagsToDCFlags(cmd_flags);
 
-#ifdef ENABLE_NETWORK
 	/* Make sure p2 is properly set to a ClientID. */
 	assert(!(cmd_flags & CMD_CLIENT_ID) || p2 != 0);
-#endif
 
 	/* Do not even think about executing out-of-bounds tile-commands */
 	if (tile != 0 && (tile >= MapSize() || (!IsValidTile(tile) && (cmd_flags & CMD_ALL_TILES) == 0))) return_dcpi(CMD_ERROR);
@@ -664,18 +1015,27 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 		return_dcpi(CMD_ERROR);
 	}
 
-	Backup<CompanyByte> cur_company(_current_company, FILE_LINE);
+	Backup<CompanyID> cur_company(_current_company, FILE_LINE);
 	if (exec_as_spectator) cur_company.Change(COMPANY_SPECTATOR);
 
 	bool test_and_exec_can_differ = (cmd_flags & CMD_NO_TEST) != 0;
 
+	GameRandomSeedChecker random_state;
+
 	/* Test the command. */
-	_cleared_object_areas.Clear();
+	_cleared_object_areas.clear();
 	SetTownRatingTestMode(true);
 	BasePersistentStorageArray::SwitchMode(PSM_ENTER_TESTMODE);
-	CommandCost res = proc(tile, flags, p1, p2, text);
+	CommandCost res = command.Execute(tile, flags, p1, p2, p3, text, binary_length);
 	BasePersistentStorageArray::SwitchMode(PSM_LEAVE_TESTMODE);
 	SetTownRatingTestMode(false);
+
+	if (!random_state.Check()) {
+		std::string msg = stdstr_fmt("Random seed changed in test command: company: %02x; tile: %06x (%u x %u); p1: %08x; p2: %08x; p3: " OTTD_PRINTFHEX64PAD "; cmd: %08x; \"%s\" %X (%s)",
+				(int)_current_company, tile, TileX(tile), TileY(tile), p1, p2, p3, cmd & ~CMD_NETWORK_COMMAND, text, binary_length, GetCommandName(cmd));
+		DEBUG(desync, 0, "msg: date{%08x; %02x; %02x}; %s", _date, _date_fract, _tick_skip_counter, msg.c_str());
+		LogDesyncMsg(std::move(msg));
+	}
 
 	/* Make sure we're not messing things up here. */
 	assert(exec_as_spectator ? _current_company == COMPANY_SPECTATOR : cur_company.Verify());
@@ -690,19 +1050,19 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 		if (!_networking || _generating_world || (cmd & CMD_NETWORK_COMMAND) != 0) {
 			/* Log the failed command as well. Just to be able to be find
 			 * causes of desyncs due to bad command test implementations. */
-			DEBUG(desync, 1, "cmdf: %08x; %02x; %02x; %06x; %08x; %08x; %08x; \"%s\" (%s)", _date, _date_fract, (int)_current_company, tile, p1, p2, cmd & ~CMD_NETWORK_COMMAND, text, GetCommandName(cmd));
+			DEBUG(desync, 1, "cmdf: date{%08x; %02x; %02x}; company: %02x; tile: %06x (%u x %u); p1: %08x; p2: %08x; p3: " OTTD_PRINTFHEX64PAD "; cmd: %08x; \"%s\" %X (%s)",
+					_date, _date_fract, _tick_skip_counter, (int)_current_company, tile, TileX(tile), TileY(tile), p1, p2, p3, cmd & ~CMD_NETWORK_COMMAND, text, binary_length, GetCommandName(cmd));
 		}
 		cur_company.Restore();
 		return_dcpi(res);
 	}
 
-#ifdef ENABLE_NETWORK
 	/*
 	 * If we are in network, and the command is not from the network
 	 * send it to the command-queue and abort execution
 	 */
 	if (_networking && !_generating_world && !(cmd & CMD_NETWORK_COMMAND)) {
-		NetworkSendCommand(tile, p1, p2, cmd & ~CMD_FLAGS_MASK, callback, text, _current_company);
+		NetworkSendCommand(tile, p1, p2, p3, cmd & ~CMD_FLAGS_MASK, callback, text, _current_company, binary_length);
 		cur_company.Restore();
 
 		/* Don't return anything special here; no error, no costs.
@@ -711,14 +1071,14 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 		 * reset the storages as we've not executed the command. */
 		return_dcpi(CommandCost());
 	}
-#endif /* ENABLE_NETWORK */
-	DEBUG(desync, 1, "cmd: %08x; %02x; %02x; %06x; %08x; %08x; %08x; \"%s\" (%s)", _date, _date_fract, (int)_current_company, tile, p1, p2, cmd & ~CMD_NETWORK_COMMAND, text, GetCommandName(cmd));
+	DEBUG(desync, 1, "cmd: date{%08x; %02x; %02x}; company: %02x; tile: %06x (%u x %u); p1: %08x; p2: %08x; p3: " OTTD_PRINTFHEX64PAD "; cmd: %08x; \"%s\" %X (%s)",
+			_date, _date_fract, _tick_skip_counter, (int)_current_company, tile, TileX(tile), TileY(tile), p1, p2, p3, cmd & ~CMD_NETWORK_COMMAND, text, binary_length, GetCommandName(cmd));
 
 	/* Actually try and execute the command. If no cost-type is given
 	 * use the construction one */
-	_cleared_object_areas.Clear();
+	_cleared_object_areas.clear();
 	BasePersistentStorageArray::SwitchMode(PSM_ENTER_COMMAND);
-	CommandCost res2 = proc(tile, flags | DC_EXEC, p1, p2, text);
+	CommandCost res2 = command.Execute(tile, flags | DC_EXEC, p1, p2, p3, text, binary_length);
 	BasePersistentStorageArray::SwitchMode(PSM_LEAVE_COMMAND);
 
 	if (cmd_id == CMD_COMPANY_CTRL) {
@@ -738,7 +1098,9 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 	 * test and execution have yielded the same result,
 	 * i.e. cost and error state are the same. */
 	if (!test_and_exec_can_differ) {
-		assert(res.GetCost() == res2.GetCost() && res.Failed() == res2.Failed()); // sanity check
+		assert_msg(res.GetCost() == res2.GetCost() && res.Failed() == res2.Failed(),
+				"Command: cmd: 0x%X (%s), Test: %s, Exec: %s", cmd, GetCommandName(cmd),
+				res.AllocSummaryMessage(GB(cmd, 16, 16)), res2.AllocSummaryMessage(GB(cmd, 16, 16))); // sanity check
 	} else if (res2.Failed()) {
 		return_dcpi(res2);
 	}
@@ -749,6 +1111,7 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 		/* It could happen we removed rail, thus gained money, and deleted something else.
 		 * So make sure the signal buffer is empty even in this case */
 		UpdateSignalsInBuffer();
+		if (_extra_aspects > 0) FlushDeferredAspectUpdates();
 		SetDParam(0, _additional_cash_required);
 		return_dcpi(CommandCost(STR_ERROR_NOT_ENOUGH_CASH_REQUIRES_CURRENCY));
 	}
@@ -756,13 +1119,14 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 	/* update last build coordinate of company. */
 	if (tile != 0) {
 		Company *c = Company::GetIfValid(_current_company);
-		if (c != NULL) c->last_build_coordinate = tile;
+		if (c != nullptr) c->last_build_coordinate = tile;
 	}
 
 	SubtractMoneyFromCompany(res2);
 
 	/* update signals if needed */
 	UpdateSignalsInBuffer();
+	if (_extra_aspects > 0) FlushDeferredAspectUpdates();
 
 	return_dcpi(res2);
 }
@@ -804,5 +1168,36 @@ void CommandCost::UseTextRefStack(const GRFFile *grffile, uint num_registers)
 	this->textref_stack_size = num_registers;
 	for (uint i = 0; i < num_registers; i++) {
 		textref_stack[i] = _temp_store.GetValue(0x100 + i);
+	}
+}
+
+char *CommandCost::AllocSummaryMessage(StringID cmd_msg) const
+{
+	char buf[DRAW_STRING_BUFFER];
+	this->WriteSummaryMessage(buf, lastof(buf), cmd_msg);
+	return stredup(buf, lastof(buf));
+}
+
+int CommandCost::WriteSummaryMessage(char *buf, char *last, StringID cmd_msg) const
+{
+	if (this->Succeeded()) {
+		return seprintf(buf, last, "Success: cost: " OTTD_PRINTF64, (int64) this->GetCost());
+	} else {
+		if (this->textref_stack_size > 0) StartTextRefStackUsage(this->textref_stack_grffile, this->textref_stack_size, textref_stack);
+
+		char *b = buf;
+		b += seprintf(b, last, "Failed: cost: " OTTD_PRINTF64, (int64) this->GetCost());
+		if (cmd_msg != 0) {
+			b += seprintf(b, last, " ");
+			b = GetString(b, cmd_msg, last);
+		}
+		if (this->message != INVALID_STRING_ID) {
+			b += seprintf(b, last, " ");
+			b = GetString(b, this->message, last);
+		}
+
+		if (this->textref_stack_size > 0) StopTextRefStackUsage();
+
+		return b - buf;
 	}
 }

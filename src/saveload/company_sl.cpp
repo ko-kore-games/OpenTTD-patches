@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,6 +14,7 @@
 #include "../tunnelbridge_map.h"
 #include "../tunnelbridge.h"
 #include "../station_base.h"
+#include "../settings_func.h"
 #include "../strings_func.h"
 
 #include "saveload.h"
@@ -63,7 +62,7 @@ CompanyManagerFace ConvertFromOldCompanyManagerFace(uint32 face)
 	uint lips = GB(face, 10, 4);
 	if (!HasBit(ge, GENDER_FEMALE) && lips < 4) {
 		SetCompanyManagerFaceBits(cmf, CMFV_HAS_MOUSTACHE, ge, true);
-		SetCompanyManagerFaceBits(cmf, CMFV_MOUSTACHE,     ge, max(lips, 1U) - 1);
+		SetCompanyManagerFaceBits(cmf, CMFV_MOUSTACHE,     ge, std::max(lips, 1U) - 1);
 	} else {
 		if (!HasBit(ge, GENDER_FEMALE)) {
 			lips = lips * 15 / 16;
@@ -96,27 +95,30 @@ CompanyManagerFace ConvertFromOldCompanyManagerFace(uint32 face)
 void AfterLoadCompanyStats()
 {
 	/* Reset infrastructure statistics to zero. */
-	Company *c;
-	FOR_ALL_COMPANIES(c) MemSetT(&c->infrastructure, 0);
+	for (Company *c : Company::Iterate()) MemSetT(&c->infrastructure, 0);
 
 	/* Collect airport count. */
-	Station *st;
-	FOR_ALL_STATIONS(st) {
+	for (const Station *st : Station::Iterate()) {
 		if ((st->facilities & FACIL_AIRPORT) && Company::IsValidID(st->owner)) {
 			Company::Get(st->owner)->infrastructure.airport++;
 		}
 	}
 
+	Company *c;
 	for (TileIndex tile = 0; tile < MapSize(); tile++) {
 		switch (GetTileType(tile)) {
 			case MP_RAILWAY:
 				c = Company::GetIfValid(GetTileOwner(tile));
-				if (c != NULL) {
+				if (c != nullptr) {
 					uint pieces = 1;
 					if (IsPlainRail(tile)) {
 						TrackBits bits = GetTrackBits(tile);
-						pieces = CountBits(bits);
-						if (TracksOverlap(bits)) pieces *= pieces;
+						if (bits == TRACK_BIT_HORZ || bits == TRACK_BIT_VERT) {
+							c->infrastructure.rail[GetSecondaryRailType(tile)]++;
+						} else {
+							pieces = CountBits(bits);
+							if (TracksOverlap(bits)) pieces *= pieces;
+						}
 					}
 					c->infrastructure.rail[GetRailType(tile)] += pieces;
 
@@ -127,36 +129,38 @@ void AfterLoadCompanyStats()
 			case MP_ROAD: {
 				if (IsLevelCrossing(tile)) {
 					c = Company::GetIfValid(GetTileOwner(tile));
-					if (c != NULL) c->infrastructure.rail[GetRailType(tile)] += LEVELCROSSING_TRACKBIT_FACTOR;
+					if (c != nullptr) c->infrastructure.rail[GetRailType(tile)] += LEVELCROSSING_TRACKBIT_FACTOR;
 				}
 
 				/* Iterate all present road types as each can have a different owner. */
-				RoadType rt;
-				FOR_EACH_SET_ROADTYPE(rt, GetRoadTypes(tile)) {
-					c = Company::GetIfValid(IsRoadDepot(tile) ? GetTileOwner(tile) : GetRoadOwner(tile, rt));
+				for (RoadTramType rtt : _roadtramtypes) {
+					RoadType rt = GetRoadType(tile, rtt);
+					if (rt == INVALID_ROADTYPE) continue;
+					c = Company::GetIfValid(IsRoadDepot(tile) ? GetTileOwner(tile) : GetRoadOwner(tile, rtt));
 					/* A level crossings and depots have two road bits. */
-					if (c != NULL) c->infrastructure.road[rt] += IsNormalRoad(tile) ? CountBits(GetRoadBits(tile, rt)) : 2;
+					if (c != nullptr) c->infrastructure.road[rt] += IsNormalRoad(tile) ? CountBits(GetRoadBits(tile, rtt)) : 2;
 				}
 				break;
 			}
 
 			case MP_STATION:
 				c = Company::GetIfValid(GetTileOwner(tile));
-				if (c != NULL && GetStationType(tile) != STATION_AIRPORT && !IsBuoy(tile)) c->infrastructure.station++;
+				if (c != nullptr && GetStationType(tile) != STATION_AIRPORT && !IsBuoy(tile)) c->infrastructure.station++;
 
 				switch (GetStationType(tile)) {
 					case STATION_RAIL:
 					case STATION_WAYPOINT:
-						if (c != NULL && !IsStationTileBlocked(tile)) c->infrastructure.rail[GetRailType(tile)]++;
+						if (c != nullptr && !IsStationTileBlocked(tile)) c->infrastructure.rail[GetRailType(tile)]++;
 						break;
 
 					case STATION_BUS:
 					case STATION_TRUCK: {
 						/* Iterate all present road types as each can have a different owner. */
-						RoadType rt;
-						FOR_EACH_SET_ROADTYPE(rt, GetRoadTypes(tile)) {
-							c = Company::GetIfValid(GetRoadOwner(tile, rt));
-							if (c != NULL) c->infrastructure.road[rt] += 2; // A road stop has two road bits.
+						for (RoadTramType rtt : _roadtramtypes) {
+							RoadType rt = GetRoadType(tile, rtt);
+							if (rt == INVALID_ROADTYPE) continue;
+							c = Company::GetIfValid(GetRoadOwner(tile, rtt));
+							if (c != nullptr) c->infrastructure.road[rt] += 2; // A road stop has two road bits.
 						}
 						break;
 					}
@@ -164,7 +168,7 @@ void AfterLoadCompanyStats()
 					case STATION_DOCK:
 					case STATION_BUOY:
 						if (GetWaterClass(tile) == WATER_CLASS_CANAL) {
-							if (c != NULL) c->infrastructure.water++;
+							if (c != nullptr) c->infrastructure.water++;
 						}
 						break;
 
@@ -176,7 +180,7 @@ void AfterLoadCompanyStats()
 			case MP_WATER:
 				if (IsShipDepot(tile) || IsLock(tile)) {
 					c = Company::GetIfValid(GetTileOwner(tile));
-					if (c != NULL) {
+					if (c != nullptr) {
 						if (IsShipDepot(tile)) c->infrastructure.water += LOCK_DEPOT_TILE_FACTOR;
 						if (IsLock(tile) && GetLockPart(tile) == LOCK_PART_MIDDLE) {
 							/* The middle tile specifies the owner of the lock. */
@@ -190,7 +194,7 @@ void AfterLoadCompanyStats()
 			case MP_OBJECT:
 				if (GetWaterClass(tile) == WATER_CLASS_CANAL) {
 					c = Company::GetIfValid(GetTileOwner(tile));
-					if (c != NULL) c->infrastructure.water++;
+					if (c != nullptr) c->infrastructure.water++;
 				}
 				break;
 
@@ -200,27 +204,21 @@ void AfterLoadCompanyStats()
 				if (tile < other_end) {
 					/* Count each tunnel/bridge TUNNELBRIDGE_TRACKBIT_FACTOR times to simulate
 					 * the higher structural maintenance needs, and don't forget the end tiles. */
-					uint len = (GetTunnelBridgeLength(tile, other_end) + 2) * TUNNELBRIDGE_TRACKBIT_FACTOR;
+					const uint middle_len = GetTunnelBridgeLength(tile, other_end) * TUNNELBRIDGE_TRACKBIT_FACTOR;
 
 					switch (GetTunnelBridgeTransportType(tile)) {
 						case TRANSPORT_RAIL:
-							c = Company::GetIfValid(GetTileOwner(tile));
-							if (c != NULL) c->infrastructure.rail[GetRailType(tile)] += len;
+							AddRailTunnelBridgeInfrastructure(tile, other_end);
 							break;
 
 						case TRANSPORT_ROAD: {
-							/* Iterate all present road types as each can have a different owner. */
-							RoadType rt;
-							FOR_EACH_SET_ROADTYPE(rt, GetRoadTypes(tile)) {
-								c = Company::GetIfValid(GetRoadOwner(tile, rt));
-								if (c != NULL) c->infrastructure.road[rt] += len * 2; // A full diagonal road has two road bits.
-							}
+							AddRoadTunnelBridgeInfrastructure(tile, other_end);
 							break;
 						}
 
 						case TRANSPORT_WATER:
 							c = Company::GetIfValid(GetTileOwner(tile));
-							if (c != NULL) c->infrastructure.water += len;
+							if (c != nullptr) c->infrastructure.water += middle_len + (2 * TUNNELBRIDGE_TRACKBIT_FACTOR);
 							break;
 
 						default:
@@ -242,11 +240,11 @@ void AfterLoadCompanyStats()
 static const SaveLoad _company_desc[] = {
 	    SLE_VAR(CompanyProperties, name_2,          SLE_UINT32),
 	    SLE_VAR(CompanyProperties, name_1,          SLE_STRINGID),
-	SLE_CONDSTR(CompanyProperties, name,            SLE_STR | SLF_ALLOW_CONTROL, 0, SLV_84, SL_MAX_VERSION),
+	SLE_CONDSSTR(CompanyProperties, name,            SLE_STR | SLF_ALLOW_CONTROL, SLV_84, SL_MAX_VERSION),
 
 	    SLE_VAR(CompanyProperties, president_name_1, SLE_STRINGID),
 	    SLE_VAR(CompanyProperties, president_name_2, SLE_UINT32),
-	SLE_CONDSTR(CompanyProperties, president_name,  SLE_STR | SLF_ALLOW_CONTROL, 0, SLV_84, SL_MAX_VERSION),
+	SLE_CONDSSTR(CompanyProperties, president_name,  SLE_STR | SLF_ALLOW_CONTROL, SLV_84, SL_MAX_VERSION),
 
 	    SLE_VAR(CompanyProperties, face,            SLE_UINT32),
 
@@ -276,6 +274,7 @@ static const SaveLoad _company_desc[] = {
 	    SLE_VAR(CompanyProperties, num_valid_stat_ent,    SLE_UINT8),
 
 	    SLE_VAR(CompanyProperties, months_of_bankruptcy,  SLE_UINT8),
+	SLE_CONDVAR_X(CompanyProperties, bankrupt_last_asked, SLE_UINT8,         SL_MIN_VERSION, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_BANKRUPTCY_EXTRA)),
 	SLE_CONDVAR(CompanyProperties, bankrupt_asked,        SLE_FILE_U8  | SLE_VAR_U16,  SL_MIN_VERSION, SLV_104),
 	SLE_CONDVAR(CompanyProperties, bankrupt_asked,        SLE_UINT16,                SLV_104, SL_MAX_VERSION),
 	    SLE_VAR(CompanyProperties, bankrupt_timeout,      SLE_INT16),
@@ -284,7 +283,8 @@ static const SaveLoad _company_desc[] = {
 
 	/* yearly expenses was changed to 64-bit in savegame version 2. */
 	SLE_CONDARR(CompanyProperties, yearly_expenses,       SLE_FILE_I32 | SLE_VAR_I64, 3 * 13, SL_MIN_VERSION, SLV_2),
-	SLE_CONDARR(CompanyProperties, yearly_expenses,       SLE_INT64, 3 * 13,                  SLV_2, SL_MAX_VERSION),
+	SLE_CONDARR_X(CompanyProperties, yearly_expenses,     SLE_INT64, 3 * 13,                  SLV_2, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_INFRA_SHARING, 0, 0)),
+	SLE_CONDARR_X(CompanyProperties, yearly_expenses,     SLE_INT64, 3 * 15,                  SLV_2, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_INFRA_SHARING)),
 
 	SLE_CONDVAR(CompanyProperties, is_ai,                 SLE_BOOL,                    SLV_2, SL_MAX_VERSION),
 	SLE_CONDNULL(1, SLV_107, SLV_112), ///< is_noai
@@ -293,8 +293,8 @@ static const SaveLoad _company_desc[] = {
 	SLE_CONDVAR(CompanyProperties, terraform_limit,       SLE_UINT32,                SLV_156, SL_MAX_VERSION),
 	SLE_CONDVAR(CompanyProperties, clear_limit,           SLE_UINT32,                SLV_156, SL_MAX_VERSION),
 	SLE_CONDVAR(CompanyProperties, tree_limit,            SLE_UINT32,                SLV_175, SL_MAX_VERSION),
-
-	SLE_END()
+	SLE_CONDVAR_X(CompanyProperties, purchase_land_limit, SLE_UINT32,         SL_MIN_VERSION, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_BUY_LAND_RATE_LIMIT)),
+	SLE_CONDVAR_X(CompanyProperties, build_object_limit,  SLE_UINT32,         SL_MIN_VERSION, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_BUILD_OBJECT_RATE_LIMIT)),
 };
 
 static const SaveLoad _company_settings_desc[] = {
@@ -312,10 +312,9 @@ static const SaveLoad _company_settings_desc[] = {
 	SLE_CONDVAR(Company, settings.vehicle.servint_roadveh,   SLE_UINT16,     SLV_120, SL_MAX_VERSION),
 	SLE_CONDVAR(Company, settings.vehicle.servint_aircraft,  SLE_UINT16,     SLV_120, SL_MAX_VERSION),
 	SLE_CONDVAR(Company, settings.vehicle.servint_ships,     SLE_UINT16,     SLV_120, SL_MAX_VERSION),
+	SLE_CONDVAR_X(Company, settings.vehicle.auto_timetable_by_default, SLE_BOOL, SL_MIN_VERSION, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_AUTO_TIMETABLE, 2, 2)),
 
 	SLE_CONDNULL(63, SLV_2, SLV_144), // old reserved space
-
-	SLE_END()
 };
 
 static const SaveLoad _company_settings_skip_desc[] = {
@@ -334,10 +333,9 @@ static const SaveLoad _company_settings_skip_desc[] = {
 	SLE_CONDNULL(2, SLV_120, SL_MAX_VERSION),    // settings.vehicle.servint_roadveh
 	SLE_CONDNULL(2, SLV_120, SL_MAX_VERSION),    // settings.vehicle.servint_aircraft
 	SLE_CONDNULL(2, SLV_120, SL_MAX_VERSION),    // settings.vehicle.servint_ships
+	SLE_CONDNULL_X(1, SL_MIN_VERSION, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_AUTO_TIMETABLE, 2, 2)), // settings.vehicle.auto_timetable_by_default
 
 	SLE_CONDNULL(63, SLV_2, SLV_144), // old reserved space
-
-	SLE_END()
 };
 
 static const SaveLoad _company_economy_desc[] = {
@@ -353,8 +351,6 @@ static const SaveLoad _company_economy_desc[] = {
 	SLE_CONDARR(CompanyEconomyEntry, delivered_cargo,     SLE_UINT32, 32,           SLV_170, SLV_EXTEND_CARGOTYPES),
 	SLE_CONDARR(CompanyEconomyEntry, delivered_cargo,     SLE_UINT32, NUM_CARGO,    SLV_EXTEND_CARGOTYPES, SL_MAX_VERSION),
 	    SLE_VAR(CompanyEconomyEntry, performance_history, SLE_INT32),
-
-	SLE_END()
 };
 
 /* We do need to read this single value, as the bigger it gets, the more data is stored */
@@ -390,7 +386,6 @@ static const SaveLoad _company_ai_desc[] = {
 	SLE_CONDNULL(32, SL_MIN_VERSION, SLV_107),
 
 	SLE_CONDNULL(64, SLV_2, SLV_107),
-	SLE_END()
 };
 
 static const SaveLoad _company_ai_build_rec_desc[] = {
@@ -399,14 +394,12 @@ static const SaveLoad _company_ai_build_rec_desc[] = {
 	SLE_CONDNULL(2, SL_MIN_VERSION, SLV_6),
 	SLE_CONDNULL(4, SLV_6, SLV_107),
 	SLE_CONDNULL(8, SL_MIN_VERSION, SLV_107),
-	SLE_END()
 };
 
 static const SaveLoad _company_livery_desc[] = {
 	SLE_CONDVAR(Livery, in_use,  SLE_UINT8, SLV_34, SL_MAX_VERSION),
 	SLE_CONDVAR(Livery, colour1, SLE_UINT8, SLV_34, SL_MAX_VERSION),
 	SLE_CONDVAR(Livery, colour2, SLE_UINT8, SLV_34, SL_MAX_VERSION),
-	SLE_END()
 };
 
 static void SaveLoad_PLYR_common(Company *c, CompanyProperties *cprops)
@@ -414,7 +407,7 @@ static void SaveLoad_PLYR_common(Company *c, CompanyProperties *cprops)
 	int i;
 
 	SlObject(cprops, _company_desc);
-	if (c != NULL) {
+	if (c != nullptr) {
 		SlObject(c, _company_settings_desc);
 	} else {
 		char nothing;
@@ -444,7 +437,7 @@ static void SaveLoad_PLYR_common(Company *c, CompanyProperties *cprops)
 	/* Write each livery entry. */
 	int num_liveries = IsSavegameVersionBefore(SLV_63) ? LS_END - 4 : (IsSavegameVersionBefore(SLV_85) ? LS_END - 2: LS_END);
 	bool update_in_use = IsSavegameVersionBefore(SLV_GROUP_LIVERIES);
-	if (c != NULL) {
+	if (c != nullptr) {
 		for (i = 0; i < num_liveries; i++) {
 			SlObject(&c->livery[i], _company_livery_desc);
 			if (update_in_use && i != LS_DEFAULT) {
@@ -485,8 +478,7 @@ static void SaveLoad_PLYR(Company *c)
 
 static void Save_PLYR()
 {
-	Company *c;
-	FOR_ALL_COMPANIES(c) {
+	for (Company *c : Company::Iterate()) {
 		SlSetArrayIndex(c->index);
 		SlAutolength((AutolengthProc*)SaveLoad_PLYR, c);
 	}
@@ -497,8 +489,17 @@ static void Load_PLYR()
 	int index;
 	while ((index = SlIterateArray()) != -1) {
 		Company *c = new (index) Company();
+		SetDefaultCompanySettings(c->index);
 		SaveLoad_PLYR(c);
 		_company_colours[index] = (Colours)c->colour;
+
+		// settings moved from game settings to company settings
+		if (SlXvIsFeaturePresent(XSLFI_AUTO_TIMETABLE, 1, 2)) {
+			c->settings.auto_timetable_separation_rate = _settings_game.order.old_timetable_separation_rate;
+		}
+		if (SlXvIsFeaturePresent(XSLFI_AUTO_TIMETABLE, 1, 3)) {
+			c->settings.vehicle.auto_separation_by_default = _settings_game.order.old_timetable_separation;
+		}
 	}
 }
 
@@ -507,7 +508,7 @@ static void Check_PLYR()
 	int index;
 	while ((index = SlIterateArray()) != -1) {
 		CompanyProperties *cprops = new CompanyProperties();
-		SaveLoad_PLYR_common(NULL, cprops);
+		SaveLoad_PLYR_common(nullptr, cprops);
 
 		/* We do not load old custom names */
 		if (IsSavegameVersionBefore(SLV_84)) {
@@ -520,7 +521,7 @@ static void Check_PLYR()
 			}
 		}
 
-		if (cprops->name == NULL && !IsInsideMM(cprops->name_1, SPECSTR_COMPANY_NAME_START, SPECSTR_COMPANY_NAME_LAST + 1) &&
+		if (cprops->name.empty() && !IsInsideMM(cprops->name_1, SPECSTR_COMPANY_NAME_START, SPECSTR_COMPANY_NAME_LAST + 1) &&
 				cprops->name_1 != STR_GAME_SAVELOAD_NOT_AVAILABLE && cprops->name_1 != STR_SV_UNNAMED &&
 				cprops->name_1 != SPECSTR_ANDCO_NAME && cprops->name_1 != SPECSTR_PRESIDENT_NAME &&
 				cprops->name_1 != SPECSTR_SILLY_NAME) {
@@ -533,13 +534,32 @@ static void Check_PLYR()
 
 static void Ptrs_PLYR()
 {
-	Company *c;
-	FOR_ALL_COMPANIES(c) {
+	for (Company *c : Company::Iterate()) {
 		SlObject(c, _company_settings_desc);
 	}
 }
 
+extern void LoadSettingsPlyx(bool skip);
+extern void SaveSettingsPlyx();
 
-extern const ChunkHandler _company_chunk_handlers[] = {
-	{ 'PLYR', Save_PLYR, Load_PLYR, Ptrs_PLYR, Check_PLYR, CH_ARRAY | CH_LAST},
+static void Load_PLYX()
+{
+	LoadSettingsPlyx(false);
+}
+
+static void Check_PLYX()
+{
+	LoadSettingsPlyx(true);
+}
+
+static void Save_PLYX()
+{
+	SaveSettingsPlyx();
+}
+
+static const ChunkHandler company_chunk_handlers[] = {
+	{ 'PLYR', Save_PLYR, Load_PLYR, Ptrs_PLYR, Check_PLYR, CH_ARRAY },
+	{ 'PLYX', Save_PLYX, Load_PLYX, nullptr,   Check_PLYX, CH_RIFF  },
 };
+
+extern const ChunkHandlerTable _company_chunk_handlers(company_chunk_handlers);

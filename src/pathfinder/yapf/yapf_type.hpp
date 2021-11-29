@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -12,10 +10,14 @@
 #ifndef YAPF_TYPE_HPP
 #define YAPF_TYPE_HPP
 
+#include <iomanip>
+#include <sstream>
+
 /* Enum used in PfCalcCost() to see why was the segment closed. */
 enum EndSegmentReason {
 	/* The following reasons can be saved into cached segment */
 	ESR_DEAD_END = 0,      ///< track ends here
+	ESR_DEAD_END_EOL,      ///< track ends here bit refers to the next tile, the last tile of the segment itself is usable
 	ESR_RAIL_TYPE,         ///< the next tile has a different rail type than our tiles
 	ESR_INFINITE_LOOP,     ///< infinite loop detected
 	ESR_SEGMENT_TOO_LONG,  ///< the segment is too long (possible infinite loop)
@@ -31,6 +33,7 @@ enum EndSegmentReason {
 	ESR_FIRST_TWO_WAY_RED, ///< first signal was 2-way and it was red
 	ESR_LOOK_AHEAD_END,    ///< we have just passed the last look-ahead signal
 	ESR_TARGET_REACHED,    ///< we have just reached the destination
+	ESR_REVERSE,           ///< we should reverse after this point
 
 	/* Special values */
 	ESR_NONE = 0xFF,          ///< no reason to end the segment here
@@ -40,6 +43,7 @@ enum EndSegmentReasonBits {
 	ESRB_NONE = 0,
 
 	ESRB_DEAD_END          = 1 << ESR_DEAD_END,
+	ESRB_DEAD_END_EOL      = 1 << ESR_DEAD_END_EOL,
 	ESRB_RAIL_TYPE         = 1 << ESR_RAIL_TYPE,
 	ESRB_INFINITE_LOOP     = 1 << ESR_INFINITE_LOOP,
 	ESRB_SEGMENT_TOO_LONG  = 1 << ESR_SEGMENT_TOO_LONG,
@@ -53,6 +57,7 @@ enum EndSegmentReasonBits {
 	ESRB_FIRST_TWO_WAY_RED = 1 << ESR_FIRST_TWO_WAY_RED,
 	ESRB_LOOK_AHEAD_END    = 1 << ESR_LOOK_AHEAD_END,
 	ESRB_TARGET_REACHED    = 1 << ESR_TARGET_REACHED,
+	ESRB_REVERSE           = 1 << ESR_REVERSE,
 
 	/* Additional (composite) values. */
 
@@ -60,25 +65,30 @@ enum EndSegmentReasonBits {
 	ESRB_POSSIBLE_TARGET = ESRB_DEPOT | ESRB_WAYPOINT | ESRB_STATION | ESRB_SAFE_TILE,
 
 	/* What reasons can be stored back into cached segment. */
-	ESRB_CACHED_MASK = ESRB_DEAD_END | ESRB_RAIL_TYPE | ESRB_INFINITE_LOOP | ESRB_SEGMENT_TOO_LONG | ESRB_CHOICE_FOLLOWS | ESRB_DEPOT | ESRB_WAYPOINT | ESRB_STATION | ESRB_SAFE_TILE,
+	ESRB_CACHED_MASK = ESRB_DEAD_END | ESRB_DEAD_END_EOL | ESRB_RAIL_TYPE | ESRB_INFINITE_LOOP | ESRB_SEGMENT_TOO_LONG | ESRB_CHOICE_FOLLOWS | ESRB_DEPOT | ESRB_WAYPOINT | ESRB_STATION | ESRB_SAFE_TILE | ESRB_REVERSE,
 
 	/* Reasons to abort pathfinding in this direction. */
 	ESRB_ABORT_PF_MASK = ESRB_DEAD_END | ESRB_PATH_TOO_LONG | ESRB_INFINITE_LOOP | ESRB_FIRST_TWO_WAY_RED,
+
+	/* Reasons to abort pathfinding in this direction, when reversing is pending. */
+	ESRB_ABORT_PF_MASK_PENDING_REVERSE = ESRB_ABORT_PF_MASK & ~ESRB_DEAD_END,
 };
 
 DECLARE_ENUM_AS_BIT_SET(EndSegmentReasonBits)
 
-inline CStrA ValueStr(EndSegmentReasonBits bits)
+inline std::string ValueStr(EndSegmentReasonBits bits)
 {
 	static const char * const end_segment_reason_names[] = {
-		"DEAD_END", "RAIL_TYPE", "INFINITE_LOOP", "SEGMENT_TOO_LONG", "CHOICE_FOLLOWS",
+		"DEAD_END", "DEAD_END_EOL", "RAIL_TYPE", "INFINITE_LOOP", "SEGMENT_TOO_LONG", "CHOICE_FOLLOWS",
 		"DEPOT", "WAYPOINT", "STATION", "SAFE_TILE",
-		"PATH_TOO_LONG", "FIRST_TWO_WAY_RED", "LOOK_AHEAD_END", "TARGET_REACHED"
+		"PATH_TOO_LONG", "FIRST_TWO_WAY_RED", "LOOK_AHEAD_END", "TARGET_REACHED",
+		"REVERSE"
 	};
 
-	CStrA out;
-	out.Format("0x%04X (%s)", bits, ComposeNameT(bits, end_segment_reason_names, "UNK", ESRB_NONE, "NONE").Data());
-	return out.Transfer();
+	std::stringstream ss;
+	ss << "0x" << std::setfill('0') << std::setw(4) << std::hex << bits; // 0x%04X
+	ss << " (" << ComposeNameT(bits, end_segment_reason_names, "UNK", ESRB_NONE, "NONE") << ")";
+	return ss.str();
 }
 
 #endif /* YAPF_TYPE_HPP */

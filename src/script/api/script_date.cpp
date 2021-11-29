@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -9,10 +7,14 @@
 
 /** @file script_date.cpp Implementation of ScriptDate. */
 
-#include <time.h>
 #include "../../stdafx.h"
 #include "script_date.hpp"
 #include "../../date_func.h"
+#include "../../settings_type.h"
+
+#include <time.h>
+
+#include <time.h>
 
 #include "../../safeguards.h"
 
@@ -24,6 +26,11 @@
 /* static */ ScriptDate::Date ScriptDate::GetCurrentDate()
 {
 	return (ScriptDate::Date)_date;
+}
+
+/* static */ int32 ScriptDate::GetDayLengthFactor()
+{
+	return _settings_game.economy.day_length_factor;
 }
 
 /* static */ int32 ScriptDate::GetYear(ScriptDate::Date date)
@@ -67,4 +74,31 @@
 	time_t t;
 	time(&t);
 	return t;
+}
+
+/* static */ bool ScriptDate::IsTimeShownInMinutes()
+{
+	return _settings_game.game_time.time_in_minutes;
+}
+
+/* static */ int32 ScriptDate::GetTicksPerMinute()
+{
+	return _settings_game.game_time.ticks_per_minute;
+}
+
+/* static */ DateTicksScaled ScriptDate::GetCurrentScaledDateTicks()
+{
+	return _scaled_date_ticks;
+}
+
+/* static */ int32 ScriptDate::GetHour(DateTicksScaled ticks)
+{
+	Minutes minutes = (ticks / _settings_game.game_time.ticks_per_minute) + _settings_game.game_time.clock_offset;
+	return MINUTES_HOUR(minutes);
+}
+
+/* static */ int32 ScriptDate::GetMinute(DateTicksScaled ticks)
+{
+	Minutes minutes = (ticks / _settings_game.game_time.ticks_per_minute) + _settings_game.game_time.clock_offset;
+	return MINUTES_MINUTE(minutes);
 }

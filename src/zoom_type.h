@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,11 +12,13 @@
 
 #include "core/enum_type.hpp"
 
-static int const ZOOM_LVL_SHIFT = 2;
+static uint const ZOOM_LVL_SHIFT = 2;
 static int const ZOOM_LVL_BASE  = 1 << ZOOM_LVL_SHIFT;
 
+static const int8 ZOOM_LVL_CFG_AUTO = -1;
+
 /** All zoom levels we know. */
-enum ZoomLevel {
+enum ZoomLevel : byte {
 	/* Our possible zoom-levels */
 	ZOOM_LVL_BEGIN  = 0, ///< Begin for iteration.
 	ZOOM_LVL_NORMAL = 0, ///< The normal zoom level.
@@ -27,6 +27,10 @@ enum ZoomLevel {
 	ZOOM_LVL_OUT_8X,     ///< Zoomed 8 times out.
 	ZOOM_LVL_OUT_16X,    ///< Zoomed 16 times out.
 	ZOOM_LVL_OUT_32X,    ///< Zoomed 32 times out.
+	ZOOM_LVL_OUT_64X,    ///< Zoomed 64 times out.
+	ZOOM_LVL_OUT_128X,   ///< Zoomed 128 times out.
+	ZOOM_LVL_OUT_256X,   ///< Zoomed 256 times out.
+	ZOOM_LVL_OUT_512X,   ///< Zoomed 512 times out.
 	ZOOM_LVL_END,        ///< End for iteration.
 
 	ZOOM_LVL_COUNT = ZOOM_LVL_END - ZOOM_LVL_BEGIN, ///< Number of zoom levels.
@@ -44,16 +48,18 @@ enum ZoomLevel {
 
 	ZOOM_LVL_DETAIL   = ZOOM_LVL_OUT_8X, ///< All zoomlevels below or equal to this, will result in details on the screen, like road-work, ...
 
-	ZOOM_LVL_MIN      = ZOOM_LVL_NORMAL, ///< Minimum zoom level.
-	ZOOM_LVL_MAX      = ZOOM_LVL_OUT_32X, ///< Maximum zoom level.
+	ZOOM_LVL_MIN      = ZOOM_LVL_NORMAL,       ///< Minimum zoom level.
+	ZOOM_LVL_MAX      = ZOOM_LVL_OUT_512X,     ///< Maximum zoom level.
+	ZOOM_LVL_DRAW_MAP = ZOOM_LVL_OUT_64X,      ///< All zoomlevels above or equal to this are rendered with map style
+	ZOOM_LVL_DRAW_SPR = ZOOM_LVL_DRAW_MAP - 1, ///< All zoomlevels below or equal to this are rendered with sprites
 };
 DECLARE_POSTFIX_INCREMENT(ZoomLevel)
 
-/** Type for storing the zoom level in a byte. */
-typedef SimpleTinyEnumT<ZoomLevel, byte> ZoomLevelByte;
+extern int8 _gui_zoom_cfg;
+extern int8 _font_zoom_cfg;
 
-extern ZoomLevelByte _gui_zoom;
-extern ZoomLevelByte _font_zoom;
+extern ZoomLevel _gui_zoom;
+extern ZoomLevel _font_zoom;
 #define ZOOM_LVL_GUI (_gui_zoom)
 #define ZOOM_LVL_FONT (_font_zoom)
 

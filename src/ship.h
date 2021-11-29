@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,20 +15,24 @@
 #include "vehicle_base.h"
 #include "water_map.h"
 
+extern const DiagDirection _ship_search_directions[TRACK_END][DIAGDIR_END];
+
 void GetShipSpriteSize(EngineID engine, uint &width, uint &height, int &xoffs, int &yoffs, EngineImageType image_type);
 WaterClass GetEffectiveWaterClass(TileIndex tile);
 
-typedef std::deque<TrackdirByte> ShipPathCache;
+typedef std::deque<Trackdir> ShipPathCache;
 
 /**
  * All ships have this type.
  */
 struct Ship FINAL : public SpecializedVehicle<Ship, VEH_SHIP> {
-	TrackBitsByte state;    ///< The "track" the ship is following.
-	ShipPathCache path;     ///< Cached path.
-	DirectionByte rotation; ///< Visible direction.
-	int16 rotation_x_pos;   ///< NOSAVE: X Position before rotation.
-	int16 rotation_y_pos;   ///< NOSAVE: Y Position before rotation.
+	TrackBits state;      ///< The "track" the ship is following.
+	ShipPathCache path;   ///< Cached path.
+	Direction rotation;   ///< Visible direction.
+	int16 rotation_x_pos; ///< NOSAVE: X Position before rotation.
+	int16 rotation_y_pos; ///< NOSAVE: Y Position before rotation.
+	uint8 lost_count;     ///< Count of number of failed pathfinder attempts
+	byte critical_breakdown_count; ///< Counter for the number of critical breakdowns since last service
 
 	/** We don't want GCC to zero our struct! It already is zeroed and has an index! */
 	Ship() : SpecializedVehicleBase() {}
@@ -43,9 +45,12 @@ struct Ship FINAL : public SpecializedVehicle<Ship, VEH_SHIP> {
 	void PlayLeaveStationSound() const;
 	bool IsPrimaryVehicle() const { return true; }
 	void GetImage(Direction direction, EngineImageType image_type, VehicleSpriteSeq *result) const;
+	Direction GetMapImageDirection() const { return this->rotation; }
 	int GetDisplaySpeed() const { return this->cur_speed / 2; }
 	int GetDisplayMaxSpeed() const { return this->vcache.cached_max_speed / 2; }
-	int GetCurrentMaxSpeed() const { return min(this->vcache.cached_max_speed, this->current_order.GetMaxSpeed() * 2); }
+	int GetEffectiveMaxSpeed() const;
+	int GetDisplayEffectiveMaxSpeed() const { return this->GetEffectiveMaxSpeed() / 2; }
+	int GetCurrentMaxSpeed() const { return std::min<int>(this->GetEffectiveMaxSpeed(), this->current_order.GetMaxSpeed() * 2); }
 	Money GetRunningCost() const;
 	bool IsInDepot() const { return this->state == TRACK_BIT_DEPOT; }
 	bool Tick();
@@ -57,12 +62,6 @@ struct Ship FINAL : public SpecializedVehicle<Ship, VEH_SHIP> {
 	void SetDestTile(TileIndex tile);
 };
 
-static const uint SHIP_MAX_ORDER_DISTANCE = 130;
-
-/**
- * Iterate over all ships.
- * @param var The variable used for iteration.
- */
-#define FOR_ALL_SHIPS(var) FOR_ALL_VEHICLES_OF_TYPE(Ship, var)
+bool IsShipDestinationTile(TileIndex tile, StationID station);
 
 #endif /* SHIP_H */

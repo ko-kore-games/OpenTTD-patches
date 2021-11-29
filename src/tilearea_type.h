@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -12,7 +10,12 @@
 #ifndef TILEAREA_TYPE_H
 #define TILEAREA_TYPE_H
 
+#include "stdafx.h"
+#include INCLUDE_FOR_PREFETCH_NTA
 #include "map_func.h"
+#include <tuple>
+
+class OrthogonalTileIterator;
 
 /** Represents the covered area of e.g. a rail station */
 struct OrthogonalTileArea {
@@ -48,6 +51,8 @@ struct OrthogonalTileArea {
 
 	bool Contains(TileIndex tile) const;
 
+	OrthogonalTileArea &Expand(int rad);
+
 	void ClampToMap();
 
 	/**
@@ -58,6 +63,15 @@ struct OrthogonalTileArea {
 	{
 		return TILE_ADDXY(this->tile, this->w / 2, this->h / 2);
 	}
+
+	inline bool operator==(const OrthogonalTileArea &other) const
+	{
+		return std::tie(tile, w, h) == std::tie(other.tile, other.w, other.h);
+	}
+
+	OrthogonalTileIterator begin() const;
+
+	OrthogonalTileIterator end() const;
 };
 
 /** Represents a diagonal tile area. */
@@ -124,6 +138,15 @@ public:
 	}
 
 	/**
+	 * Get the tile we are currently at.
+	 * @return The tile we are at, or INVALID_TILE when we're done.
+	 */
+	inline TileIndex operator *() const
+	{
+		return this->tile;
+	}
+
+	/**
 	 * Move ourselves to the next tile in the rectangle on the map.
 	 */
 	virtual TileIterator& operator ++() = 0;
@@ -184,6 +207,65 @@ public:
 	}
 };
 
+/** Iterator to iterate over a tile area (rectangle) of the map.
+ * It prefetches tiles once per row.
+ */
+class OrthogonalPrefetchTileIterator {
+private:
+	TileIndex tile; ///< The current tile we are at.
+	int w;          ///< The width of the iterated area.
+	int x;          ///< The current 'x' position in the rectangle.
+	int y;          ///< The current 'y' position in the rectangle.
+
+public:
+	/**
+	 * Construct the iterator.
+	 * @param ta Area, i.e. begin point and width/height of to-be-iterated area.
+	 */
+	OrthogonalPrefetchTileIterator(const TileArea &ta) : tile(ta.w == 0 || ta.h == 0 ? INVALID_TILE : ta.tile), w(ta.w), x(ta.w), y(ta.h)
+	{
+		PREFETCH_NTA(&_m[ta.tile]);
+	}
+
+	/** Some compilers really like this. */
+	virtual ~OrthogonalPrefetchTileIterator()
+	{
+	}
+
+	/**
+	 * Get the tile we are currently at.
+	 * @return The tile we are at, or INVALID_TILE when we're done.
+	 */
+	inline operator TileIndex () const
+	{
+		return this->tile;
+	}
+
+	/**
+	 * Move ourselves to the next tile in the rectangle on the map.
+	 */
+	inline OrthogonalPrefetchTileIterator& operator ++()
+	{
+		assert(this->tile != INVALID_TILE);
+
+		if (--this->x > 0) {
+			this->tile++;
+		} else if (--this->y > 0) {
+			this->x = this->w;
+			this->tile += TileDiffXY(1, 1) - this->w;
+			PREFETCH_NTA(&_m[tile]);
+		} else {
+			this->tile = INVALID_TILE;
+		}
+		return *this;
+	}
+
+	virtual OrthogonalPrefetchTileIterator *Clone() const
+	{
+		return new OrthogonalPrefetchTileIterator(*this);
+	}
+};
+
 /** Iterator to iterate over a diagonal area of the map. */
 class DiagonalTileIterator : public TileIterator {
 private:
@@ -222,13 +304,5 @@ public:
 		return new DiagonalTileIterator(*this);
 	}
 };
-
-/**
- * A loop which iterates over the tiles of a TileArea.
- * @param var The name of the variable which contains the current tile.
- *            This variable will be allocated in this \c for of this loop.
- * @param ta  The tile area to search over.
- */
-#define TILE_AREA_LOOP(var, ta) for (OrthogonalTileIterator var(ta); var != INVALID_TILE; ++var)
 
 #endif /* TILEAREA_TYPE_H */

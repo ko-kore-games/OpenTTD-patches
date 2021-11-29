@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -26,7 +24,6 @@ struct TempStorage {
 static const SaveLoad _cargomonitor_pair_desc[] = {
 	SLE_VAR(TempStorage, number, SLE_UINT32),
 	SLE_VAR(TempStorage, amount, SLE_UINT32),
-	SLE_END()
 };
 
 static CargoMonitorID FixupCargoMonitor(CargoMonitorID number)
@@ -120,7 +117,9 @@ static void LoadPickup()
 }
 
 /** Chunk definition of the cargomonitoring maps. */
-extern const ChunkHandler _cargomonitor_chunk_handlers[] = {
-	{ 'CMDL', SaveDelivery, LoadDelivery, NULL, NULL, CH_ARRAY},
-	{ 'CMPU', SavePickup,   LoadPickup,   NULL, NULL, CH_ARRAY | CH_LAST},
+static const ChunkHandler cargomonitor_chunk_handlers[] = {
+	{ 'CMDL', SaveDelivery, LoadDelivery, nullptr, nullptr, CH_ARRAY },
+	{ 'CMPU', SavePickup,   LoadPickup,   nullptr, nullptr, CH_ARRAY },
 };
+
+extern const ChunkHandlerTable _cargomonitor_chunk_handlers(cargomonitor_chunk_handlers);

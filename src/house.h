@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -28,7 +26,7 @@ static const HouseID NUM_HOUSES_PER_GRF = 255;    ///< Number of supported house
 
 static const uint HOUSE_NO_CLASS      = 0;
 static const HouseID NEW_HOUSE_OFFSET = 110;    ///< Offset for new houses.
-static const HouseID NUM_HOUSES       = 512;    ///< Total number of houses.
+static const HouseID NUM_HOUSES       = 1024;    ///< Total number of houses.
 static const HouseID INVALID_HOUSE_ID = 0xFFFF;
 
 static const uint HOUSE_NUM_ACCEPTS = 16; ///< Max number of cargoes accepted by a tile
@@ -66,7 +64,7 @@ enum HouseZonesBits {
 	HZB_TOWN_CENTRE,
 	HZB_END,
 };
-assert_compile(HZB_END == 5);
+static_assert(HZB_END == 5);
 
 DECLARE_POSTFIX_INCREMENT(HouseZonesBits)
 
@@ -144,5 +142,10 @@ static inline HouseID GetTranslatedHouseID(HouseID hid)
 	const HouseSpec *hs = HouseSpec::Get(hid);
 	return hs->grf_prop.override == INVALID_HOUSE_ID ? hid : hs->grf_prop.override;
 }
+
+StringID GetHouseName(HouseID house, TileIndex tile = INVALID_TILE);
+void DrawHouseImage(HouseID house_id, int left, int top, int right, int bottom);
+void AddProducedHouseCargo(HouseID house_id, TileIndex tile, CargoArray &produced);
+void AddAcceptedHouseCargo(HouseID house_id, TileIndex tile, CargoArray &acceptance, CargoTypes *always_accepted = nullptr);
 
 #endif /* HOUSE_H */

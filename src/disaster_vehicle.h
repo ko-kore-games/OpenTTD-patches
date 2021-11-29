@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -42,21 +40,15 @@ struct DisasterVehicle FINAL : public SpecializedVehicle<DisasterVehicle, VEH_DI
 	byte flags;                         ///< Flags about the state of the vehicle, @see AirVehicleFlags
 
 	/** For use by saveload. */
-	DisasterVehicle() : SpecializedVehicleBase() {}
+	DisasterVehicle();
 	DisasterVehicle(int x, int y, Direction direction, DisasterSubType subtype, VehicleID big_ufo_destroyer_target = VEH_INVALID);
 	/** We want to 'destruct' the right class. */
-	virtual ~DisasterVehicle() {}
+	virtual ~DisasterVehicle();
 
 	void UpdatePosition(int x, int y, int z);
 	void UpdateDeltaXY();
 	void UpdateImage();
 	bool Tick();
 };
-
-/**
- * Iterate over disaster vehicles.
- * @param var The variable used to iterate over.
- */
-#define FOR_ALL_DISASTERVEHICLES(var) FOR_ALL_VEHICLES_OF_TYPE(DisasterVehicle, var)
 
 #endif /* DISASTER_VEHICLE_H */

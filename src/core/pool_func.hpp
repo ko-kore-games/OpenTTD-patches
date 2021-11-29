@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -15,6 +13,8 @@
 #include "alloc_func.hpp"
 #include "mem_func.hpp"
 #include "pool_type.hpp"
+#include "math_func.hpp"
+#include "bitmath_func.hpp"
 
 /**
  * Helper for defining the method's signature.
@@ -35,12 +35,13 @@ DEFINE_POOL_METHOD(inline)::Pool(const char *name) :
 		first_free(0),
 		first_unused(0),
 		items(0),
-#ifdef OTTD_ASSERT
+#ifdef WITH_ASSERT
 		checked(0),
-#endif /* OTTD_ASSERT */
+#endif /* WITH_ASSERT */
 		cleaning(false),
-		data(NULL),
-		alloc_cache(NULL)
+		data(nullptr),
+		free_bitmap(nullptr),
+		alloc_cache(nullptr)
 { }
 
 /**
@@ -54,10 +55,16 @@ DEFINE_POOL_METHOD(inline void)::ResizeFor(size_t index)
 	assert(index >= this->size);
 	assert(index < Tmax_size);
 
-	size_t new_size = min(Tmax_size, Align(index + 1, Tgrowth_step));
+	size_t new_size = std::min(Tmax_size, Align(index + 1, std::max<uint>(64, Tgrowth_step)));
 
 	this->data = ReallocT(this->data, new_size);
 	MemSetT(this->data + this->size, 0, new_size - this->size);
+
+	this->free_bitmap = ReallocT(this->free_bitmap, CeilDivT<size_t>(new_size, 64));
+	MemSetT(this->free_bitmap + CeilDivT<size_t>(this->size, 64), 0, CeilDivT<size_t>(new_size, 64) - CeilDivT<size_t>(this->size, 64));
+	if (new_size % 64 != 0) {
+		this->free_bitmap[new_size / 64] |= (~((uint64) 0)) << (new_size % 64);
+	}
 
 	this->size = new_size;
 }
@@ -68,25 +75,27 @@ DEFINE_POOL_METHOD(inline void)::ResizeFor(size_t index)
  */
 DEFINE_POOL_METHOD(inline size_t)::FindFirstFree()
 {
-	size_t index = this->first_free;
+	size_t bitmap_index = this->first_free / 64;
+	size_t bitmap_end = CeilDivT<size_t>(this->first_unused, 64);
 
-	for (; index < this->first_unused; index++) {
-		if (this->data[index] == NULL) return index;
+	for (; bitmap_index < bitmap_end; bitmap_index++) {
+		uint64 available = ~this->free_bitmap[bitmap_index];
+		if (available == 0) continue;
+		return (bitmap_index * 64) + FindFirstBit(available);
 	}
 
-	if (index < this->size) {
-		return index;
+	if (this->first_unused < this->size) {
+		return this->first_unused;
 	}
 
-	assert(index == this->size);
 	assert(this->first_unused == this->size);
 
-	if (index < Tmax_size) {
-		this->ResizeFor(index);
-		return index;
+	if (this->first_unused < Tmax_size) {
+		this->ResizeFor(this->first_unused);
+		return this->first_unused;
 	}
 
-	assert(this->items == Tmax_size);
+	assert(this->first_unused == Tmax_size);
 
 	return NO_FREE_ITEM;
 }
@@ -96,17 +105,17 @@ DEFINE_POOL_METHOD(inline size_t)::FindFirstFree()
  * @param size size of item
  * @param index index of item
  * @pre index < this->size
- * @pre this->Get(index) == NULL
+ * @pre this->Get(index) == nullptr
  */
 DEFINE_POOL_METHOD(inline void *)::AllocateItem(size_t size, size_t index)
 {
-	assert(this->data[index] == NULL);
+	assert(this->data[index] == nullptr);
 
-	this->first_unused = max(this->first_unused, index + 1);
+	this->first_unused = std::max(this->first_unused, index + 1);
 	this->items++;
 
 	Titem *item;
-	if (Tcache && this->alloc_cache != NULL) {
+	if (Tcache && this->alloc_cache != nullptr) {
 		assert(sizeof(Titem) == size);
 		item = (Titem *)this->alloc_cache;
 		this->alloc_cache = this->alloc_cache->next;
@@ -121,6 +130,7 @@ DEFINE_POOL_METHOD(inline void *)::AllocateItem(size_t size, size_t index)
 		item = (Titem *)MallocT<byte>(size);
 	}
 	this->data[index] = item;
+	SetBit(this->free_bitmap[index / 64], index % 64);
 	item->index = (Tindex)(uint)index;
 	return item;
 }
@@ -135,10 +145,10 @@ DEFINE_POOL_METHOD(void *)::GetNew(size_t size)
 {
 	size_t index = this->FindFirstFree();
 
-#ifdef OTTD_ASSERT
+#ifdef WITH_ASSERT
 	assert(this->checked != 0);
 	this->checked--;
-#endif /* OTTD_ASSERT */
+#endif /* WITH_ASSERT */
 	if (index == NO_FREE_ITEM) {
 		error("%s: no more free items", this->name);
 	}
@@ -164,7 +174,7 @@ DEFINE_POOL_METHOD(void *)::GetNew(size_t size, size_t index)
 
 	if (index >= this->size) this->ResizeFor(index);
 
-	if (this->data[index] != NULL) {
+	if (this->data[index] != nullptr) {
 		SlErrorCorruptFmt("%s index " PRINTF_SIZE " already in use", this->name, index);
 	}
 
@@ -174,13 +184,13 @@ DEFINE_POOL_METHOD(void *)::GetNew(size_t size, size_t index)
 /**
  * Deallocates memory used by this index and marks item as free
  * @param index item to deallocate
- * @pre unit is allocated (non-NULL)
- * @note 'delete NULL' doesn't cause call of this function, so it is safe
+ * @pre unit is allocated (non-nullptr)
+ * @note 'delete nullptr' doesn't cause call of this function, so it is safe
  */
 DEFINE_POOL_METHOD(void)::FreeItem(size_t index)
 {
 	assert(index < this->size);
-	assert(this->data[index] != NULL);
+	assert(this->data[index] != nullptr);
 	if (Tcache) {
 		AllocCache *ac = (AllocCache *)this->data[index];
 		ac->next = this->alloc_cache;
@@ -188,8 +198,9 @@ DEFINE_POOL_METHOD(void)::FreeItem(size_t index)
 	} else {
 		free(this->data[index]);
 	}
-	this->data[index] = NULL;
-	this->first_free = min(this->first_free, index);
+	this->data[index] = nullptr;
+	ClrBit(this->free_bitmap[index / 64], index % 64);
+	this->first_free = std::min(this->first_free, index);
 	this->items--;
 	if (!this->cleaning) Titem::PostDestructor(index);
 }
@@ -198,17 +209,20 @@ DEFINE_POOL_METHOD(void)::FreeItem(size_t index)
 DEFINE_POOL_METHOD(void)::CleanPool()
 {
 	this->cleaning = true;
+	Titem::PreCleanPool();
 	for (size_t i = 0; i < this->first_unused; i++) {
-		delete this->Get(i); // 'delete NULL;' is very valid
+		delete this->Get(i); // 'delete nullptr;' is very valid
 	}
 	assert(this->items == 0);
 	free(this->data);
+	free(this->free_bitmap);
 	this->first_unused = this->first_free = this->size = 0;
-	this->data = NULL;
+	this->data = nullptr;
+	this->free_bitmap = nullptr;
 	this->cleaning = false;
 
 	if (Tcache) {
-		while (this->alloc_cache != NULL) {
+		while (this->alloc_cache != nullptr) {
 			AllocCache *ac = this->alloc_cache;
 			this->alloc_cache = ac->next;
 			free(ac);

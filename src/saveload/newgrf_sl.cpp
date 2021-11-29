@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,6 +9,7 @@
 
 #include "../stdafx.h"
 #include "../fios.h"
+#include "../string_func.h"
 
 #include "saveload.h"
 #include "newgrf_sl.h"
@@ -22,7 +21,6 @@ static const SaveLoad _newgrf_mapping_desc[] = {
 	SLE_VAR(EntityIDMapping, grfid,         SLE_UINT32),
 	SLE_VAR(EntityIDMapping, entity_id,     SLE_UINT8),
 	SLE_VAR(EntityIDMapping, substitute_id, SLE_UINT8),
-	SLE_END()
 };
 
 /**
@@ -32,8 +30,11 @@ static const SaveLoad _newgrf_mapping_desc[] = {
 void Save_NewGRFMapping(const OverrideManagerBase &mapping)
 {
 	for (uint i = 0; i < mapping.GetMaxMapping(); i++) {
+		if (mapping.mapping_ID[i].grfid == 0 &&
+		    mapping.mapping_ID[i].entity_id == 0) continue;
 		SlSetArrayIndex(i);
-		SlObject(&mapping.mapping_ID[i], _newgrf_mapping_desc);
+		SlSetLength(4 + 1 + 1);
+		SlObjectSaveFiltered(&mapping.mapping_ID[i], _newgrf_mapping_desc); // _newgrf_mapping_desc has no conditionals
 	}
 }
 
@@ -51,11 +52,12 @@ void Load_NewGRFMapping(OverrideManagerBase &mapping)
 
 	int index;
 	while ((index = SlIterateArray()) != -1) {
-		if ((uint)index >= max_id) SlErrorCorrupt("Too many NewGRF entity mappings");
-		SlObject(&mapping.mapping_ID[index], _newgrf_mapping_desc);
+		if (unlikely((uint)index >= max_id)) SlErrorCorrupt("Too many NewGRF entity mappings");
+		SlObjectLoadFiltered(&mapping.mapping_ID[index], _newgrf_mapping_desc); // _newgrf_mapping_desc has no conditionals
 	}
 }
 
+static std::string _grf_name;
 
 static const SaveLoad _grfconfig_desc[] = {
 	    SLE_STR(GRFConfig, filename,         SLE_STR,    0x40),
@@ -65,7 +67,7 @@ static const SaveLoad _grfconfig_desc[] = {
 	    SLE_ARR(GRFConfig, param,            SLE_UINT32, 0x80),
 	    SLE_VAR(GRFConfig, num_params,       SLE_UINT8),
 	SLE_CONDVAR(GRFConfig, palette,          SLE_UINT8,  SLV_101, SL_MAX_VERSION),
-	SLE_END()
+	SLEG_CONDSSTR_X(_grf_name, 0,                        SL_MIN_VERSION, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_NEWGRF_INFO_EXTRA)),
 };
 
 
@@ -73,9 +75,10 @@ static void Save_NGRF()
 {
 	int index = 0;
 
-	for (GRFConfig *c = _grfconfig; c != NULL; c = c->next) {
-		if (HasBit(c->flags, GCF_STATIC)) continue;
+	for (GRFConfig *c = _grfconfig; c != nullptr; c = c->next) {
+		if (HasBit(c->flags, GCF_STATIC) || HasBit(c->flags, GCF_INIT_ONLY)) continue;
 		SlSetArrayIndex(index++);
+		_grf_name = str_strip_all_scc(GetDefaultLangGRFStringFromGRFText(c->name));
 		SlObject(c, _grfconfig_desc);
 	}
 }
@@ -87,6 +90,9 @@ static void Load_NGRF_common(GRFConfig *&grfconfig)
 	while (SlIterateArray() != -1) {
 		GRFConfig *c = new GRFConfig();
 		SlObject(c, _grfconfig_desc);
+		if (SlXvIsFeaturePresent(XSLFI_NEWGRF_INFO_EXTRA)) {
+			AddGRFTextToList(c->name, 0x7F, c->ident.grfid, false, _grf_name.c_str());
+		}
 		if (IsSavegameVersionBefore(SLV_101)) c->SetSuitablePalette();
 		AppendToGRFConfigList(&grfconfig, c);
 	}
@@ -98,7 +104,7 @@ static void Load_NGRF()
 
 	if (_game_mode == GM_MENU) {
 		/* Intro game must not have NewGRF. */
-		if (_grfconfig != NULL) SlErrorCorrupt("The intro game must not use NewGRF");
+		if (_grfconfig != nullptr) SlErrorCorrupt("The intro game must not use NewGRF");
 
 		/* Activate intro NewGRFs (townnames) */
 		ResetGRFConfig(false);
@@ -113,6 +119,8 @@ static void Check_NGRF()
 	Load_NGRF_common(_load_check_data.grfconfig);
 }
 
-extern const ChunkHandler _newgrf_chunk_handlers[] = {
-	{ 'NGRF', Save_NGRF, Load_NGRF, NULL, Check_NGRF, CH_ARRAY | CH_LAST }
+static const ChunkHandler newgrf_chunk_handlers[] = {
+	{ 'NGRF', Save_NGRF, Load_NGRF, nullptr, Check_NGRF, CH_ARRAY }
 };
+
+extern const ChunkHandlerTable _newgrf_chunk_handlers(newgrf_chunk_handlers);

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,6 +12,7 @@
 #include "company_base.h"
 #include "roadveh.h"
 #include "viewport_func.h"
+#include "viewport_kdtree.h"
 #include "date_func.h"
 #include "command_func.h"
 #include "news_func.h"
@@ -21,11 +20,15 @@
 #include "vehiclelist.h"
 #include "core/pool_func.hpp"
 #include "station_base.h"
+#include "station_kdtree.h"
 #include "roadstop_base.h"
 #include "industry.h"
+#include "town.h"
 #include "core/random_func.hpp"
 #include "linkgraph/linkgraph.h"
 #include "linkgraph/linkgraphschedule.h"
+#include "tracerestrict.h"
+#include "newgrf_debug.h"
 
 #include "table/strings.h"
 
@@ -38,9 +41,24 @@
 StationPool _station_pool("Station");
 INSTANTIATE_POOL_METHODS(Station)
 
+std::array<ExtraStationNameInfo, MAX_EXTRA_STATION_NAMES> _extra_station_names;
+uint _extra_station_names_used;
+
+
+StationKdtree _station_kdtree(Kdtree_StationXYFunc);
+
+void RebuildStationKdtree()
+{
+	std::vector<StationID> stids;
+	for (const Station *st : Station::Iterate()) {
+		stids.push_back(st->index);
+	}
+	_station_kdtree.Build(stids.begin(), stids.end());
+}
+
+
 BaseStation::~BaseStation()
 {
-	free(this->name);
 	free(this->speclist);
 
 	if (CleaningPool()) return;
@@ -49,19 +67,26 @@ BaseStation::~BaseStation()
 	DeleteWindowById(WC_ROADVEH_LIST,  VehicleListIdentifier(VL_STATION_LIST, VEH_ROAD,     this->owner, this->index).Pack());
 	DeleteWindowById(WC_SHIPS_LIST,    VehicleListIdentifier(VL_STATION_LIST, VEH_SHIP,     this->owner, this->index).Pack());
 	DeleteWindowById(WC_AIRCRAFT_LIST, VehicleListIdentifier(VL_STATION_LIST, VEH_AIRCRAFT, this->owner, this->index).Pack());
+	DeleteWindowById(WC_DEPARTURES_BOARD, this->index);
+	DeleteWindowById(WC_STATION_CARGO, this->index);
 
-	this->sign.MarkDirty();
+	if (HasBit(_display_opt, Station::IsExpected(this) ? DO_SHOW_STATION_NAMES : DO_SHOW_WAYPOINT_NAMES) &&
+			!(_local_company != this->owner && this->owner != OWNER_NONE && !HasBit(_display_opt, DO_SHOW_COMPETITOR_SIGNS))) {
+		this->sign.MarkDirty(ZOOM_LVL_DRAW_SPR);
+	}
 }
 
 Station::Station(TileIndex tile) :
 	SpecializedStation<Station, false>(tile),
 	bus_station(INVALID_TILE, 0, 0),
 	truck_station(INVALID_TILE, 0, 0),
-	dock_tile(INVALID_TILE),
+	ship_station(INVALID_TILE, 0, 0),
 	indtype(IT_INVALID),
+	extra_name_index(UINT16_MAX),
 	time_since_load(255),
 	time_since_unload(255),
-	last_vehicle_type(VEH_INVALID)
+	station_cargo_history_cargoes(0),
+	station_cargo_history_offset(0)
 {
 	/* this->random_bits is set in Station::AddFacility() */
 }
@@ -86,15 +111,14 @@ Station::~Station()
 		this->loading_vehicles.front()->LeaveStation();
 	}
 
-	Aircraft *a;
-	FOR_ALL_AIRCRAFT(a) {
+	for (Aircraft *a : Aircraft::Iterate()) {
 		if (!a->IsNormalAircraft()) continue;
 		if (a->targetairport == this->index) a->targetairport = INVALID_STATION;
 	}
 
 	for (CargoID c = 0; c < NUM_CARGO; ++c) {
 		LinkGraph *lg = LinkGraph::GetIfValid(this->goods[c].link_graph);
-		if (lg == NULL) continue;
+		if (lg == nullptr) continue;
 
 		for (NodeID node = 0; node < lg->Size(); ++node) {
 			Station *st = Station::Get((*lg)[node].Station());
@@ -111,8 +135,7 @@ Station::~Station()
 		}
 	}
 
-	Vehicle *v;
-	FOR_ALL_VEHICLES(v) {
+	for (Vehicle *v : Vehicle::Iterate()) {
 		/* Forget about this station if this station is removed */
 		if (v->last_station_visited == this->index) {
 			v->last_station_visited = INVALID_STATION;
@@ -121,6 +144,9 @@ Station::~Station()
 			v->last_loading_station = INVALID_STATION;
 		}
 	}
+
+	/* Remove station from industries and towns that reference it. */
+	this->RemoveFromAllNearbyLists();
 
 	/* Clear the persistent storage. */
 	delete this->airport.psa;
@@ -133,9 +159,12 @@ Station::~Station()
 	}
 
 	DeleteWindowById(WC_STATION_VIEW, index);
+	DeleteNewGRFInspectWindow(GSF_FAKE_STATION_STRUCT, this->index);
 
 	/* Now delete all orders that go to the station */
 	RemoveOrderFromAllVehicles(OT_GOTO_STATION, this->index);
+
+	TraceRestrictRemoveDestinationID(TROCAF_STATION, this->index);
 
 	/* Remove all news items */
 	DeleteStationNews(this->index);
@@ -145,6 +174,9 @@ Station::~Station()
 	}
 
 	CargoPacket::InvalidateAllFrom(this->index);
+
+	_station_kdtree.Remove(this->index);
+	if (_viewport_sign_kdtree_valid && this->sign.kdtree_valid) _viewport_sign_kdtree.Remove(ViewportSignKdtreeItem::MakeStation(this->index));
 }
 
 
@@ -167,9 +199,9 @@ RoadStop *Station::GetPrimaryRoadStop(const RoadVehicle *v) const
 {
 	RoadStop *rs = this->GetPrimaryRoadStop(v->IsBus() ? ROADSTOP_BUS : ROADSTOP_TRUCK);
 
-	for (; rs != NULL; rs = rs->next) {
+	for (; rs != nullptr; rs = rs->next) {
 		/* The vehicle cannot go to this roadstop (different roadtype) */
-		if ((GetRoadTypes(rs->xy) & v->compatible_roadtypes) == ROADTYPES_NONE) continue;
+		if (!HasTileAnyRoadType(rs->xy, v->compatible_roadtypes)) continue;
 		/* The vehicle is articulated and can therefore not go to a standard road stop. */
 		if (IsStandardRoadStopTile(rs->xy) && v->HasArticulatedPart()) continue;
 
@@ -187,7 +219,7 @@ RoadStop *Station::GetPrimaryRoadStop(const RoadVehicle *v) const
 void Station::AddFacility(StationFacility new_facility_bit, TileIndex facil_xy)
 {
 	if (this->facilities == FACIL_NONE) {
-		this->xy = facil_xy;
+		this->MoveSign(facil_xy);
 		this->random_bits = Random();
 	}
 	this->facilities |= new_facility_bit;
@@ -219,7 +251,7 @@ void Station::MarkTilesDirty(bool cargo_change) const
 	for (h = 0; h < train_station.h; h++) {
 		for (w = 0; w < train_station.w; w++) {
 			if (this->TileBelongsToRailStation(tile)) {
-				MarkTileDirtyByTile(tile);
+				MarkTileDirtyByTile(tile, VMDF_NOT_MAP_MODE);
 			}
 			tile += TileDiffXY(1, 0);
 		}
@@ -230,7 +262,7 @@ void Station::MarkTilesDirty(bool cargo_change) const
 /* BEGIN of OpenTTD 1.9.1 stable code: */
 /* virtual / uint Station::GetPlatformLength(TileIndex tile) const
 {
-	assert(this->TileBelongsToRailStation(tile));
+	assert_tile(this->TileBelongsToRailStation(tile), tile);
 
 	TileIndexDiff delta = (GetRailStationAxis(tile) == AXIS_X ? TileDiffXY(1, 0) : TileDiffXY(0, 1));
 
@@ -462,7 +494,7 @@ void Station::MarkTilesDirty(bool cargo_change) const
 {
 	TileIndex start_tile = tile;
 	uint length = 0;
-	assert(IsRailStationTile(tile));
+	assert_tile(IsRailStationTile(tile), tile);
 	assert(dir < DIAGDIR_END);
 
 	do {
@@ -712,6 +744,41 @@ uint Station::GetPlatformLength(TileIndex tile, int32 z_position) const   // vir
 // END of   Existing objects tunnels and bridges as stations */
 
 /**
+ * Get the catchment size of an individual station tile.
+ * @param tile Station tile to get catchment size of.
+ * @param st Associated station of station tile.
+ * @pre IsTileType(tile, MP_STATION)
+ * @return The catchment size of the station tile.
+ */
+static uint GetTileCatchmentRadius(TileIndex tile, const Station *st)
+{
+	assert(IsTileType(tile, MP_STATION));
+
+	const int32 inc = _settings_game.station.catchment_increase;
+
+	if (_settings_game.station.modified_catchment) {
+		switch (GetStationType(tile)) {
+			case STATION_RAIL:    return CA_TRAIN + inc;
+			case STATION_OILRIG:  return CA_UNMODIFIED + inc;
+			case STATION_AIRPORT: return st->airport.GetSpec()->catchment + inc;
+			case STATION_TRUCK:   return CA_TRUCK + inc;
+			case STATION_BUS:     return CA_BUS + inc;
+			case STATION_DOCK:    return CA_DOCK + inc;
+
+			default: NOT_REACHED();
+			case STATION_BUOY:
+			case STATION_WAYPOINT: return CA_NONE;
+		}
+	} else {
+		switch (GetStationType(tile)) {
+			default:               return CA_UNMODIFIED + inc;
+			case STATION_BUOY:
+			case STATION_WAYPOINT: return CA_NONE;
+		}
+	}
+}
+
+/**
  * Determines the catchment radius of the station
  * @return The radius
  */
@@ -720,16 +787,18 @@ uint Station::GetCatchmentRadius() const
 	uint ret = CA_NONE;
 
 	if (_settings_game.station.modified_catchment) {
-		if (this->bus_stops          != NULL)         ret = max<uint>(ret, CA_BUS);
-		if (this->truck_stops        != NULL)         ret = max<uint>(ret, CA_TRUCK);
-		if (this->train_station.tile != INVALID_TILE) ret = max<uint>(ret, CA_TRAIN);
-		if (this->dock_tile          != INVALID_TILE) ret = max<uint>(ret, CA_DOCK);
-		if (this->airport.tile       != INVALID_TILE) ret = max<uint>(ret, this->airport.GetSpec()->catchment);
+		if (this->bus_stops          != nullptr)      ret = std::max<uint>(ret, CA_BUS);
+		if (this->truck_stops        != nullptr)      ret = std::max<uint>(ret, CA_TRUCK);
+		if (this->train_station.tile != INVALID_TILE) ret = std::max<uint>(ret, CA_TRAIN);
+		if (this->ship_station.tile  != INVALID_TILE) ret = std::max<uint>(ret, CA_DOCK);
+		if (this->airport.tile       != INVALID_TILE) ret = std::max<uint>(ret, this->airport.GetSpec()->catchment);
 	} else {
-		if (this->bus_stops != NULL || this->truck_stops != NULL || this->train_station.tile != INVALID_TILE || this->dock_tile != INVALID_TILE || this->airport.tile != INVALID_TILE) {
+		if (this->bus_stops != nullptr || this->truck_stops != nullptr || this->train_station.tile != INVALID_TILE || this->ship_station.tile != INVALID_TILE || this->airport.tile != INVALID_TILE) {
 			ret = CA_UNMODIFIED;
 		}
 	}
+
+	if (ret != CA_NONE) ret += _settings_game.station.catchment_increase;
 
 	return ret;
 }
@@ -738,96 +807,162 @@ uint Station::GetCatchmentRadius() const
  * Determines catchment rectangle of this station
  * @return clamped catchment rectangle
  */
-Rect Station::GetCatchmentRect() const
+Rect Station::GetCatchmentRectUsingRadius(uint catchment_radius) const
 {
 	assert(!this->rect.IsEmpty());
 
 	/* Compute acceptance rectangle */
-	int catchment_radius = this->GetCatchmentRadius();
-
 	Rect ret = {
-		max<int>(this->rect.left   - catchment_radius, 0),
-		max<int>(this->rect.top    - catchment_radius, 0),
-		min<int>(this->rect.right  + catchment_radius, MapMaxX()),
-		min<int>(this->rect.bottom + catchment_radius, MapMaxY())
+		std::max<int>(this->rect.left   - catchment_radius, 0),
+		std::max<int>(this->rect.top    - catchment_radius, 0),
+		std::min<int>(this->rect.right  + catchment_radius, MapMaxX()),
+		std::min<int>(this->rect.bottom + catchment_radius, MapMaxY())
 	};
 
 	return ret;
 }
 
-/** Rect and pointer to IndustryVector */
-struct RectAndIndustryVector {
-	Rect rect;                       ///< The rectangle to search the industries in.
-	IndustryVector *industries_near; ///< The nearby industries.
-};
+bool Station::IsWithinRangeOfDockingTile(TileIndex tile, uint max_distance) const
+{
+	if (DistanceManhattan(this->xy, tile) > _settings_game.station.station_spread + max_distance) return false;
+	for (TileIndex dock_tile : this->docking_tiles) {
+		if (DistanceManhattan(dock_tile, tile) <= max_distance) return true;
+	}
+	return false;
+}
 
 /**
- * Callback function for Station::RecomputeIndustriesNear()
- * Tests whether tile is an industry and possibly adds
- * the industry to station's industries_near list.
- * @param ind_tile tile to check
- * @param user_data pointer to RectAndIndustryVector
- * @return always false, we want to search all tiles
+ * Add nearby industry to station's industries_near list if it accepts cargo.
+ * @param ind Industry
  */
-static bool FindIndustryToDeliver(TileIndex ind_tile, void *user_data)
+void Station::AddIndustryToDeliver(Industry *ind)
 {
-	/* Only process industry tiles */
-	if (!IsTileType(ind_tile, MP_INDUSTRY)) return false;
-
-	RectAndIndustryVector *riv = (RectAndIndustryVector *)user_data;
-	Industry *ind = Industry::GetByTile(ind_tile);
-
 	/* Don't check further if this industry is already in the list */
-	if (riv->industries_near->Contains(ind)) return false;
-
-	/* Only process tiles in the station acceptance rectangle */
-	int x = TileX(ind_tile);
-	int y = TileY(ind_tile);
-	if (x < riv->rect.left || x > riv->rect.right || y < riv->rect.top || y > riv->rect.bottom) return false;
+	if (this->industries_near.find(ind) != this->industries_near.end()) return;
 
 	/* Include only industries that can accept cargo */
 	uint cargo_index;
 	for (cargo_index = 0; cargo_index < lengthof(ind->accepts_cargo); cargo_index++) {
 		if (ind->accepts_cargo[cargo_index] != CT_INVALID) break;
 	}
-	if (cargo_index >= lengthof(ind->accepts_cargo)) return false;
+	if (cargo_index >= lengthof(ind->accepts_cargo)) return;
 
-	*riv->industries_near->Append() = ind;
+	this->industries_near.insert(ind);
+}
 
+/**
+ * Remove this station from the nearby stations lists of all towns and industries.
+ */
+void Station::RemoveFromAllNearbyLists()
+{
+	for (Town *t : Town::Iterate()) { t->stations_near.erase(this); }
+	for (Industry *i : Industry::Iterate()) { i->stations_near.erase(this); }
+}
+
+/**
+ * Test if the given town ID is covered by our catchment area.
+ * This is used when removing a house tile to determine if it was the last house tile
+ * within our catchment.
+ * @param t TownID to test.
+ * @return true if at least one house tile of TownID is covered.
+ */
+bool Station::CatchmentCoversTown(TownID t) const
+{
+	BitmapTileIterator it(this->catchment_tiles);
+	for (TileIndex tile = it; tile != INVALID_TILE; tile = ++it) {
+		if (IsTileType(tile, MP_HOUSE) && GetTownIndex(tile) == t) return true;
+	}
 	return false;
 }
 
 /**
- * Recomputes Station::industries_near, list of industries possibly
- * accepting cargo in station's catchment radius
+ * Recompute tiles covered in our catchment area.
+ * This will additionally recompute nearby towns and industries.
  */
-void Station::RecomputeIndustriesNear()
+void Station::RecomputeCatchment(bool no_clear_nearby_lists)
 {
-	this->industries_near.Clear();
-	if (this->rect.IsEmpty()) return;
+	this->industries_near.clear();
+	if (!no_clear_nearby_lists) this->RemoveFromAllNearbyLists();
 
-	RectAndIndustryVector riv = {
-		this->GetCatchmentRect(),
-		&this->industries_near
-	};
+	if (this->rect.IsEmpty()) {
+		this->catchment_tiles.Reset();
+		return;
+	}
 
-	/* Compute maximum extent of acceptance rectangle wrt. station sign */
-	TileIndex start_tile = this->xy;
-	uint max_radius = max(
-		max(DistanceManhattan(start_tile, TileXY(riv.rect.left,  riv.rect.top)), DistanceManhattan(start_tile, TileXY(riv.rect.left,  riv.rect.bottom))),
-		max(DistanceManhattan(start_tile, TileXY(riv.rect.right, riv.rect.top)), DistanceManhattan(start_tile, TileXY(riv.rect.right, riv.rect.bottom)))
-	);
+	if (!_settings_game.station.serve_neutral_industries && this->industry != nullptr) {
+		/* Station is associated with an industry, so we only need to deliver to that industry. */
+		this->catchment_tiles.Initialize(this->industry->location);
+		for (TileIndex tile : this->industry->location) {
+			if (IsTileType(tile, MP_INDUSTRY) && GetIndustryIndex(tile) == this->industry->index) {
+				this->catchment_tiles.SetTile(tile);
+			}
+		}
+		/* The industry's stations_near may have been computed before its neutral station was built so clear and re-add here. */
+		for (Station *st : this->industry->stations_near) {
+			st->industries_near.erase(this->industry);
+		}
+		this->industry->stations_near.clear();
+		this->industry->stations_near.insert(this);
+		this->industries_near.insert(this->industry);
 
-	CircularTileSearch(&start_tile, 2 * max_radius + 1, &FindIndustryToDeliver, &riv);
+		/* Loop finding all station tiles */
+		TileArea ta(TileXY(this->rect.left, this->rect.top), TileXY(this->rect.right, this->rect.bottom));
+		this->station_tiles = 0;
+		for (TileIndex tile : ta) {
+			if (!IsTileType(tile, MP_STATION) || GetStationIndex(tile) != this->index) continue;
+			this->station_tiles++;
+		}
+		return;
+	}
+
+	this->catchment_tiles.Initialize(GetCatchmentRect());
+
+	/* Loop finding all station tiles */
+	TileArea ta(TileXY(this->rect.left, this->rect.top), TileXY(this->rect.right, this->rect.bottom));
+	this->station_tiles = 0;
+	for (TileIndex tile : ta) {
+		if (!IsTileType(tile, MP_STATION) || GetStationIndex(tile) != this->index) continue;
+
+		this->station_tiles++;
+
+		uint r = GetTileCatchmentRadius(tile, this);
+		if (r == CA_NONE) continue;
+
+		/* This tile sub-loop doesn't need to test any tiles, they are simply added to the catchment set. */
+		TileArea ta2 = TileArea(tile, 1, 1).Expand(r);
+		for (TileIndex tile2 : ta2) this->catchment_tiles.SetTile(tile2);
+	}
+
+	/* Search catchment tiles for towns and industries */
+	BitmapTileIterator it(this->catchment_tiles);
+	for (TileIndex tile = it; tile != INVALID_TILE; tile = ++it) {
+		if (IsTileType(tile, MP_HOUSE)) {
+			Town *t = Town::GetByTile(tile);
+			t->stations_near.insert(this);
+		}
+		if (IsTileType(tile, MP_INDUSTRY)) {
+			Industry *i = Industry::GetByTile(tile);
+
+			/* Ignore industry if it has a neutral station. It already can't be this station. */
+			if (!_settings_game.station.serve_neutral_industries && i->neutral_station != nullptr) continue;
+
+			i->stations_near.insert(this);
+
+			/* Add if we can deliver to this industry as well */
+			this->AddIndustryToDeliver(i);
+		}
+	}
 }
 
 /**
- * Recomputes Station::industries_near for all stations
+ * Recomputes catchment of all stations.
+ * This will additionally recompute nearby stations for all towns and industries.
  */
-/* static */ void Station::RecomputeIndustriesNearForAll()
+/* static */ void Station::RecomputeCatchmentForAll()
 {
-	Station *st;
-	FOR_ALL_STATIONS(st) st->RecomputeIndustriesNear();
+	for (Town *t : Town::Iterate()) { t->stations_near.clear(); }
+	for (Industry *i : Industry::Iterate()) { i->stations_near.clear(); }
+	for (Station *st : Station::Iterate()) { st->RecomputeCatchment(true); }
 }
 
 /************************************************************************/
@@ -877,7 +1012,7 @@ CommandCost StationRect::BeforeAddTile(TileIndex tile, StationRectMode mode)
 	} else if (!this->PtInExtendedRect(x, y)) {
 		/* current rect is not empty and new point is outside this rect
 		 * make new spread-out rectangle */
-		Rect new_rect = {min(x, this->left), min(y, this->top), max(x, this->right), max(y, this->bottom)};
+		Rect new_rect = {std::min(x, this->left), std::min(y, this->top), std::max(x, this->right), std::max(y, this->bottom)};
 
 		/* check new rect dimensions against preset max */
 		int w = new_rect.right - new_rect.left + 1;
@@ -921,7 +1056,7 @@ CommandCost StationRect::BeforeAddRect(TileIndex tile, int w, int h, StationRect
 /* static */ bool StationRect::ScanForStationTiles(StationID st_id, int left_a, int top_a, int right_a, int bottom_a)
 {
 	TileArea ta(TileXY(left_a, top_a), TileXY(right_a, bottom_a));
-	TILE_AREA_LOOP(tile, ta) {
+	for (TileIndex tile : ta) {
 //  for Existing objects tunnels and bridges as stations
 		// if (IsTileType(tile, MP_STATION) && GetStationIndex(tile) == st_id) return true;
 		if ((IsTileType(tile, MP_STATION) || IsTileType(tile, MP_TUNNELBRIDGE)) && GetStationIndex(tile) == st_id) return true;
@@ -1008,12 +1143,16 @@ Money AirportMaintenanceCost(Owner owner)
 {
 	Money total_cost = 0;
 
-	const Station *st;
-	FOR_ALL_STATIONS(st) {
+	for (const Station *st : Station::Iterate()) {
 		if (st->owner == owner && (st->facilities & FACIL_AIRPORT)) {
 			total_cost += _price[PR_INFRASTRUCTURE_AIRPORT] * st->airport.GetSpec()->maintenance_cost;
 		}
 	}
 	/* 3 bits fraction for the maintenance cost factor. */
 	return total_cost >> 3;
+}
+
+bool StationCompare::operator() (const Station *lhs, const Station *rhs) const
+{
+	return lhs->index < rhs->index;
 }

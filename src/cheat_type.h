@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -30,15 +28,38 @@ struct Cheats {
 	Cheat switch_company;   ///< change to another company
 	Cheat money;            ///< get rich or poor
 	Cheat crossing_tunnels; ///< allow tunnels that cross each other
-	Cheat dummy1;           ///< empty cheat (build while in pause mode)
 	Cheat no_jetcrash;      ///< no jet will crash on small airports anymore
-	Cheat dummy2;           ///< empty cheat (change the climate of the map)
 	Cheat change_date;      ///< changes date ingame
 	Cheat setup_prod;       ///< setup raw-material production in game
-	Cheat dummy3;           ///< empty cheat (enable running el-engines on normal rail)
 	Cheat edit_max_hl;      ///< edit the maximum heightlevel; this is a cheat because of the fact that it needs to reset NewGRF game state and doing so as a simple configuration breaks the expectation of many
 };
 
+struct ExtraCheats {
+	Cheat inflation_cost;   ///< inflation cost factor
+	Cheat inflation_income; ///< inflation income factor
+	Cheat station_rating;   ///< 100% station rating
+	Cheat town_rating;      ///< 100% town local authority rating
+};
+
+/** Available cheats. */
+enum CheatNumbers {
+	CHT_MONEY,           ///< Change amount of money.
+	CHT_CHANGE_COMPANY,  ///< Switch company.
+	CHT_EXTRA_DYNAMITE,  ///< Dynamite anything.
+	CHT_CROSSINGTUNNELS, ///< Allow tunnels to cross each other.
+	CHT_NO_JETCRASH,     ///< Disable jet-airplane crashes.
+	CHT_SETUP_PROD,      ///< Allow manually editing of industry production.
+	CHT_EDIT_MAX_HL,     ///< Edit maximum allowed heightlevel
+	CHT_CHANGE_DATE,     ///< Do time traveling.
+	CHT_INFLATION_COST,  ///< Change inflation cost factor
+	CHT_INFLATION_INCOME,///< Change inflation income factor
+	CHT_STATION_RATING,  ///< 100% station ratings
+	CHT_TOWN_RATING,     ///< 100% town local authority ratings
+
+	CHT_NUM_CHEATS,      ///< Number of cheats.
+};
+
 extern Cheats _cheats;
+extern ExtraCheats _extra_cheats;
 
 #endif /* CHEAT_TYPE_H */

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,9 +14,9 @@
 
 /** Modes of the in-game console. */
 enum IConsoleModes {
-	ICONSOLE_FULL,   ///< In-game console is closed.
+	ICONSOLE_FULL,   ///< In-game console is opened, whole screen.
 	ICONSOLE_OPENED, ///< In-game console is opened, upper 1/3 of the screen.
-	ICONSOLE_CLOSED, ///< In-game console is opened, whole screen.
+	ICONSOLE_CLOSED, ///< In-game console is closed.
 };
 
 /* Colours of the console messages. */

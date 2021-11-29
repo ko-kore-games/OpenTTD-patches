@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -41,6 +39,16 @@ void Blitter_8bppBase::DrawLine(void *video, int x, int y, int x2, int y2, int s
 	this->DrawLineGeneric(x, y, x2, y2, screen_width, screen_height, width, dash, [=](int x, int y) {
 		*((uint8 *)video + x + y * _screen.pitch) = colour;
 	});
+}
+
+void Blitter_8bppBase::SetRect(void *video, int x, int y, const uint8 *colours, uint lines, uint width, uint pitch)
+{
+	uint8 *dst = (uint8 *)video + x + y * _screen.pitch;
+	do {
+		memcpy(dst, colours, width * sizeof(uint8));
+		dst += _screen.pitch;
+		colours += pitch;
+	} while (--lines);
 }
 
 void Blitter_8bppBase::DrawRect(void *video, int width, int height, uint8 colour)
@@ -87,7 +95,7 @@ void Blitter_8bppBase::CopyImageToBuffer(const void *video, void *dst, int width
 	}
 }
 
-void Blitter_8bppBase::ScrollBuffer(void *video, int &left, int &top, int &width, int &height, int scroll_x, int scroll_y)
+void Blitter_8bppBase::ScrollBuffer(void *video, int left, int top, int width, int height, int scroll_x, int scroll_y)
 {
 	const uint8 *src;
 	uint8 *dst;

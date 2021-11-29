@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -10,6 +8,7 @@
 /** @file company_gui.cpp %Company related GUIs. */
 
 #include "stdafx.h"
+#include "currency.h"
 #include "error.h"
 #include "gui.h"
 #include "window_gui.h"
@@ -30,6 +29,7 @@
 #include "core/geometry_func.hpp"
 #include "object_type.h"
 #include "rail.h"
+#include "road.h"
 #include "engine_base.h"
 #include "window_func.h"
 #include "road_func.h"
@@ -64,6 +64,8 @@ static ExpensesType _expenses_list_1[] = {
 	EXPENSES_AIRCRAFT_INC,
 	EXPENSES_SHIP_INC,
 	EXPENSES_LOAN_INT,
+	EXPENSES_SHARING_INC,
+	EXPENSES_SHARING_COST,
 	EXPENSES_OTHER,
 };
 
@@ -73,6 +75,7 @@ static ExpensesType _expenses_list_2[] = {
 	EXPENSES_ROADVEH_INC,
 	EXPENSES_AIRCRAFT_INC,
 	EXPENSES_SHIP_INC,
+	EXPENSES_SHARING_INC,
 	INVALID_EXPENSES,
 	EXPENSES_TRAIN_RUN,
 	EXPENSES_ROADVEH_RUN,
@@ -80,6 +83,7 @@ static ExpensesType _expenses_list_2[] = {
 	EXPENSES_SHIP_RUN,
 	EXPENSES_PROPERTY,
 	EXPENSES_LOAN_INT,
+	EXPENSES_SHARING_COST,
 	INVALID_EXPENSES,
 	EXPENSES_CONSTRUCTION,
 	EXPENSES_NEW_VEHICLES,
@@ -112,11 +116,11 @@ struct ExpensesList {
 			ExpensesType et = this->et[i];
 			if (et == INVALID_EXPENSES) {
 				if (!invalid_expenses_measured) {
-					width = max(width, GetStringBoundingBox(STR_FINANCES_TOTAL_CAPTION).width);
+					width = std::max(width, GetStringBoundingBox(STR_FINANCES_TOTAL_CAPTION).width);
 					invalid_expenses_measured = true;
 				}
 			} else {
-				width = max(width, GetStringBoundingBox(STR_FINANCES_SECTION_CONSTRUCTION + et).width);
+				width = std::max(width, GetStringBoundingBox(STR_FINANCES_SECTION_CONSTRUCTION + et).width);
 			}
 		}
 		return width;
@@ -242,10 +246,10 @@ static const NWidgetPart _nested_company_finances_widgets[] = {
 			EndContainer(),
 			NWidget(NWID_SPACER), SetFill(0, 0), SetMinimalSize(30, 0),
 			NWidget(NWID_VERTICAL), // Vertical column with bank balance amount, loan amount, and total.
-				NWidget(WWT_TEXT, COLOUR_GREY, WID_CF_BALANCE_VALUE), SetDataTip(STR_NULL, STR_NULL),
-				NWidget(WWT_TEXT, COLOUR_GREY, WID_CF_LOAN_VALUE), SetDataTip(STR_NULL, STR_NULL),
+				NWidget(WWT_TEXT, COLOUR_GREY, WID_CF_BALANCE_VALUE), SetDataTip(STR_FINANCES_TOTAL_CURRENCY, STR_NULL), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
+				NWidget(WWT_TEXT, COLOUR_GREY, WID_CF_LOAN_VALUE), SetDataTip(STR_FINANCES_TOTAL_CURRENCY, STR_NULL), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 				NWidget(WWT_EMPTY, COLOUR_GREY, WID_CF_LOAN_LINE), SetMinimalSize(0, 2), SetFill(1, 0),
-				NWidget(WWT_TEXT, COLOUR_GREY, WID_CF_TOTAL_VALUE), SetDataTip(STR_NULL, STR_NULL),
+				NWidget(WWT_TEXT, COLOUR_GREY, WID_CF_TOTAL_VALUE), SetDataTip(STR_FINANCES_TOTAL_CURRENCY, STR_NULL), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 			EndContainer(),
 			NWidget(NWID_SELECTION, INVALID_COLOUR, WID_CF_SEL_MAXLOAN),
 				NWidget(NWID_HORIZONTAL),
@@ -262,8 +266,8 @@ static const NWidgetPart _nested_company_finances_widgets[] = {
 	EndContainer(),
 	NWidget(NWID_SELECTION, INVALID_COLOUR, WID_CF_SEL_BUTTONS),
 		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_CF_INCREASE_LOAN), SetFill(1, 0), SetDataTip(STR_FINANCES_BORROW_BUTTON, STR_FINANCES_BORROW_TOOLTIP),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_CF_REPAY_LOAN), SetFill(1, 0), SetDataTip(STR_FINANCES_REPAY_BUTTON, STR_FINANCES_REPAY_TOOLTIP),
+			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_CF_INCREASE_LOAN), SetFill(1, 0), SetDataTip(STR_FINANCES_BORROW_BUTTON, STR_NULL),
+			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_CF_REPAY_LOAN), SetFill(1, 0), SetDataTip(STR_FINANCES_REPAY_BUTTON, STR_NULL),
 			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_CF_INFRASTRUCTURE), SetFill(1, 0), SetDataTip(STR_FINANCES_INFRASTRUCTURE_BUTTON, STR_COMPANY_VIEW_INFRASTRUCTURE_TOOLTIP),
 		EndContainer(),
 	EndContainer(),
@@ -271,11 +275,14 @@ static const NWidgetPart _nested_company_finances_widgets[] = {
 
 /** Window class displaying the company finances. */
 struct CompanyFinancesWindow : Window {
-	static Money max_money; ///< The maximum amount of money a company has had this 'run'
+	Money max_money;        ///< The approximate maximum amount of money a company has had over the lifetime of this window
 	bool small;             ///< Window is toggled to 'small'.
+	int query_widget;       ///< The widget associated with the current text query input.
 
 	CompanyFinancesWindow(WindowDesc *desc, CompanyID company) : Window(desc)
 	{
+		const Company *c = Company::Get(company);
+		this->max_money = std::max<Money>(abs(c->money) * 2, INT32_MAX);
 		this->small = false;
 		this->CreateNestedTree();
 		this->SetupWidgets();
@@ -284,13 +291,31 @@ struct CompanyFinancesWindow : Window {
 		this->owner = (Owner)this->window_number;
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_CF_CAPTION:
 				SetDParam(0, (CompanyID)this->window_number);
 				SetDParam(1, (CompanyID)this->window_number);
 				break;
+
+			case WID_CF_BALANCE_VALUE: {
+				const Company *c = Company::Get((CompanyID)this->window_number);
+				SetDParam(0, c->money);
+				break;
+			}
+
+			case WID_CF_LOAN_VALUE: {
+				const Company *c = Company::Get((CompanyID)this->window_number);
+				SetDParam(0, c->current_loan);
+				break;
+			}
+
+			case WID_CF_TOTAL_VALUE: {
+				const Company *c = Company::Get((CompanyID)this->window_number);
+				SetDParam(0, c->money - c->current_loan);
+				break;
+			}
 
 			case WID_CF_MAXLOAN_VALUE:
 				SetDParam(0, _economy.max_loan);
@@ -303,7 +328,7 @@ struct CompanyFinancesWindow : Window {
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		int type = _settings_client.gui.expenses_layout;
 		switch (widget) {
@@ -321,8 +346,8 @@ struct CompanyFinancesWindow : Window {
 			case WID_CF_BALANCE_VALUE:
 			case WID_CF_LOAN_VALUE:
 			case WID_CF_TOTAL_VALUE:
-				SetDParamMaxValue(0, CompanyFinancesWindow::max_money);
-				size->width = max(GetStringBoundingBox(STR_FINANCES_NEGATIVE_INCOME).width, GetStringBoundingBox(STR_FINANCES_POSITIVE_INCOME).width) + padding.width;
+				SetDParamMaxValue(0, this->max_money);
+				size->width = std::max(GetStringBoundingBox(STR_FINANCES_NEGATIVE_INCOME).width, GetStringBoundingBox(STR_FINANCES_POSITIVE_INCOME).width) + padding.width;
 				break;
 
 			case WID_CF_MAXLOAN_GAP:
@@ -331,7 +356,7 @@ struct CompanyFinancesWindow : Window {
 		}
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
 			case WID_CF_EXPS_CATEGORY:
@@ -342,32 +367,11 @@ struct CompanyFinancesWindow : Window {
 			case WID_CF_EXPS_PRICE2:
 			case WID_CF_EXPS_PRICE3: {
 				const Company *c = Company::Get((CompanyID)this->window_number);
-				int age = min(_cur_year - c->inaugurated_year, 2);
+				int age = std::min(_cur_year - c->inaugurated_year, 2);
 				int wid_offset = widget - WID_CF_EXPS_PRICE1;
 				if (wid_offset <= age) {
 					DrawYearColumn(r, _cur_year - (age - wid_offset), c->yearly_expenses + (age - wid_offset));
 				}
-				break;
-			}
-
-			case WID_CF_BALANCE_VALUE: {
-				const Company *c = Company::Get((CompanyID)this->window_number);
-				SetDParam(0, c->money);
-				DrawString(r.left, r.right, r.top, STR_FINANCES_TOTAL_CURRENCY, TC_FROMSTRING, SA_RIGHT);
-				break;
-			}
-
-			case WID_CF_LOAN_VALUE: {
-				const Company *c = Company::Get((CompanyID)this->window_number);
-				SetDParam(0, c->current_loan);
-				DrawString(r.left, r.right, r.top, STR_FINANCES_TOTAL_CURRENCY, TC_FROMSTRING, SA_RIGHT);
-				break;
-			}
-
-			case WID_CF_TOTAL_VALUE: {
-				const Company *c = Company::Get((CompanyID)this->window_number);
-				SetDParam(0, c->money - c->current_loan);
-				DrawString(r.left, r.right, r.top, STR_FINANCES_TOTAL_CURRENCY, TC_FROMSTRING, SA_RIGHT);
 				break;
 			}
 
@@ -392,7 +396,7 @@ struct CompanyFinancesWindow : Window {
 		this->GetWidget<NWidgetStacked>(WID_CF_SEL_BUTTONS)->SetDisplayedPlane(plane);
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		if (!this->IsShaded()) {
 			if (!this->small) {
@@ -422,7 +426,7 @@ struct CompanyFinancesWindow : Window {
 		this->DrawWidgets();
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_CF_TOGGLE_SIZE: // toggle size
@@ -438,11 +442,23 @@ struct CompanyFinancesWindow : Window {
 				break;
 
 			case WID_CF_INCREASE_LOAN: // increase loan
-				DoCommandP(0, 0, _ctrl_pressed, CMD_INCREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_BORROW_ANY_MORE_MONEY));
+				if (_shift_pressed) {
+					this->query_widget = WID_CF_INCREASE_LOAN;
+					SetDParam(0, 0);
+					ShowQueryString(STR_JUST_INT, STR_FINANCES_BORROW_QUERY_CAPT, 20, this, CS_NUMERAL, QSF_ACCEPT_UNCHANGED);
+				} else {
+					DoCommandP(0, 0, _ctrl_pressed, CMD_INCREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_BORROW_ANY_MORE_MONEY));
+				}
 				break;
 
 			case WID_CF_REPAY_LOAN: // repay loan
-				DoCommandP(0, 0, _ctrl_pressed, CMD_DECREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_REPAY_LOAN));
+				if (_shift_pressed) {
+					this->query_widget = WID_CF_REPAY_LOAN;
+					SetDParam(0, 0);
+					ShowQueryString(STR_JUST_INT, STR_FINANCES_REPAY_QUERY_CAPT, 20, this, CS_NUMERAL, QSF_ACCEPT_UNCHANGED);
+				} else {
+					DoCommandP(0, 0, _ctrl_pressed, CMD_DECREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_REPAY_LOAN));
+				}
 				break;
 
 			case WID_CF_INFRASTRUCTURE: // show infrastructure details
@@ -451,19 +467,54 @@ struct CompanyFinancesWindow : Window {
 		}
 	}
 
-	virtual void OnHundredthTick()
+	void OnQueryTextFinished(char *str) override
+	{
+		/* Was 'cancel' pressed or nothing entered? */
+		if (str == nullptr || StrEmpty(str)) return;
+
+		if (this->query_widget == WID_CF_INCREASE_LOAN) {
+			const Company *c = Company::Get((CompanyID)this->window_number);
+			Money amount = std::min<Money>(strtoull(str, nullptr, 10) / _currency->rate, _economy.max_loan - c->current_loan);
+			amount = LOAN_INTERVAL * CeilDivT<Money>(amount, LOAN_INTERVAL);
+			DoCommandP(0, amount >> 32, (amount & 0xFFFFFFFC) | 2, CMD_INCREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_BORROW_ANY_MORE_MONEY));
+		} else if (this->query_widget == WID_CF_REPAY_LOAN) {
+			const Company *c = Company::Get((CompanyID)this->window_number);
+			Money amount = std::min<Money>(strtoull(str, nullptr, 10) / _currency->rate, c->current_loan);
+			amount = LOAN_INTERVAL * CeilDivT<Money>(amount, LOAN_INTERVAL);
+			DoCommandP(0, amount >> 32, (amount & 0xFFFFFFFC) | 2, CMD_DECREASE_LOAN | CMD_MSG(STR_ERROR_CAN_T_REPAY_LOAN));
+		}
+	}
+
+	void OnHundredthTick() override
 	{
 		const Company *c = Company::Get((CompanyID)this->window_number);
-		if (c->money > CompanyFinancesWindow::max_money) {
-			CompanyFinancesWindow::max_money = max(c->money * 2, CompanyFinancesWindow::max_money * 4);
+		if (abs(c->money) > this->max_money) {
+			this->max_money = std::max<Money>(abs(c->money) * 2, this->max_money * 4);
 			this->SetupWidgets();
 			this->ReInit();
 		}
 	}
-};
 
-/** First conservative estimate of the maximum amount of money */
-Money CompanyFinancesWindow::max_money = INT32_MAX;
+	bool OnTooltip(Point pt, int widget, TooltipCloseCondition close_cond) override
+	{
+		switch (widget) {
+			case WID_CF_INCREASE_LOAN: {
+				uint64 arg = STR_FINANCES_BORROW_TOOLTIP;
+				GuiShowTooltips(this, STR_FINANCES_BORROW_TOOLTIP_EXTRA, 1, &arg, close_cond);
+				return true;
+			}
+
+			case WID_CF_REPAY_LOAN: {
+				uint64 arg = STR_FINANCES_REPAY_TOOLTIP;
+				GuiShowTooltips(this, STR_FINANCES_REPAY_TOOLTIP_EXTRA, 1, &arg, close_cond);
+				return true;
+			}
+
+			default:
+				return false;
+		}
+	}
+};
 
 static WindowDesc _company_finances_desc(
 	WDP_AUTO, "company_finances", 0, 0,
@@ -519,24 +570,22 @@ class DropDownListColourItem : public DropDownListItem {
 public:
 	DropDownListColourItem(int result, bool masked) : DropDownListItem(result, masked) {}
 
-	virtual ~DropDownListColourItem() {}
-
 	StringID String() const
 	{
 		return this->result >= COLOUR_END ? STR_COLOUR_DEFAULT : _colour_dropdown[this->result];
 	}
 
-	uint Height(uint width) const
+	uint Height(uint width) const override
 	{
-		return max(FONT_HEIGHT_NORMAL, ScaleGUITrad(12) + 2);
+		return std::max(FONT_HEIGHT_NORMAL, ScaleGUITrad(12) + 2);
 	}
 
-	bool Selectable() const
+	bool Selectable() const override
 	{
 		return true;
 	}
 
-	void Draw(int left, int right, int top, int bottom, bool sel, int bg_colour) const
+	void Draw(int left, int right, int top, int bottom, bool sel, Colours bg_colour) const override
 	{
 		bool rtl = _current_text_dir == TD_RTL;
 		int height = bottom - top;
@@ -555,6 +604,9 @@ static const int LEVEL_WIDTH = 10; ///< Indenting width of a sub-group in pixels
 
 typedef GUIList<const Group*> GUIGroupList;
 
+/* cached values for GroupNameSorter to spare many GetString() calls */
+static const Group *_last_group[2] = { nullptr, nullptr };
+
 /** Company livery colour scheme window. */
 struct SelectCompanyLiveryWindow : public Window {
 private:
@@ -564,20 +616,20 @@ private:
 	uint rows;
 	uint line_height;
 	GUIGroupList groups;
-	SmallVector<int, 32> indents;
+	std::vector<int> indents;
 	Scrollbar *vscroll;
 
 	void ShowColourDropDownMenu(uint32 widget)
 	{
 		uint32 used_colours = 0;
 		const Company *c;
-		const Livery *livery, *default_livery = NULL;
+		const Livery *livery, *default_livery = nullptr;
 		bool primary = widget == WID_SCL_PRI_COL_DROPDOWN;
 		byte default_col;
 
 		/* Disallow other company colours for the primary colour */
 		if (this->livery_class < LC_GROUP_RAIL && HasBit(this->sel, LS_DEFAULT) && primary) {
-			FOR_ALL_COMPANIES(c) {
+			for (const Company *c : Company::Iterate()) {
 				if (c->index != _local_company) SetBit(used_colours, c->colour);
 			}
 		}
@@ -604,49 +656,48 @@ private:
 			}
 		}
 
-		DropDownList *list = new DropDownList();
-		if (default_livery != NULL) {
+		DropDownList list;
+		if (default_livery != nullptr) {
 			/* Add COLOUR_END to put the colour out of range, but also allow us to show what the default is */
 			default_col = (primary ? default_livery->colour1 : default_livery->colour2) + COLOUR_END;
-			*list->Append() = new DropDownListColourItem(default_col, false);
+			list.emplace_back(new DropDownListColourItem(default_col, false));
 		}
 		for (uint i = 0; i < lengthof(_colour_dropdown); i++) {
-			*list->Append() = new DropDownListColourItem(i, HasBit(used_colours, i));
+			list.emplace_back(new DropDownListColourItem(i, HasBit(used_colours, i)));
 		}
 
-		byte sel = (default_livery == NULL || HasBit(livery->in_use, primary ? 0 : 1)) ? (primary ? livery->colour1 : livery->colour2) : default_col;
-		ShowDropDownList(this, list, sel, widget);
+		byte sel = (default_livery == nullptr || HasBit(livery->in_use, primary ? 0 : 1)) ? (primary ? livery->colour1 : livery->colour2) : default_col;
+		ShowDropDownList(this, std::move(list), sel, widget);
 	}
 
-	static int CDECL GroupNameSorter(const Group * const *a, const Group * const *b)
+	static bool GroupNameSorter(const Group * const &a, const Group * const &b)
 	{
-		static const Group *last_group[2] = { NULL, NULL };
 		static char         last_name[2][64] = { "", "" };
 
-		if (*a != last_group[0]) {
-			last_group[0] = *a;
-			SetDParam(0, (*a)->index);
+		if (a != _last_group[0]) {
+			_last_group[0] = a;
+			SetDParam(0, a->index);
 			GetString(last_name[0], STR_GROUP_NAME, lastof(last_name[0]));
 		}
 
-		if (*b != last_group[1]) {
-			last_group[1] = *b;
-			SetDParam(0, (*b)->index);
+		if (b != _last_group[1]) {
+			_last_group[1] = b;
+			SetDParam(0, b->index);
 			GetString(last_name[1], STR_GROUP_NAME, lastof(last_name[1]));
 		}
 
 		int r = strnatcmp(last_name[0], last_name[1]); // Sort by name (natural sorting).
-		if (r == 0) return (*a)->index - (*b)->index;
-		return r;
+		if (r == 0) return a->index < b->index;
+		return r < 0;
 	}
 
 	void AddChildren(GUIGroupList *source, GroupID parent, int indent)
 	{
-		for (const Group **g = source->Begin(); g != source->End(); g++) {
-			if ((*g)->parent != parent) continue;
-			*this->groups.Append() = *g;
-			*this->indents.Append() = indent;
-			AddChildren(source, (*g)->index, indent + 1);
+		for (const Group *g : *source) {
+			if (g->parent != parent) continue;
+			this->groups.push_back(g);
+			this->indents.push_back(indent);
+			AddChildren(source, g->index, indent + 1);
 		}
 	}
 
@@ -654,27 +705,30 @@ private:
 	{
 		if (!this->groups.NeedRebuild()) return;
 
-		this->groups.Clear();
-		this->indents.Clear();
+		this->groups.clear();
+		this->indents.clear();
 
 		if (this->livery_class >= LC_GROUP_RAIL) {
 			GUIGroupList list;
 			VehicleType vtype = (VehicleType)(this->livery_class - LC_GROUP_RAIL);
 
-			const Group *g;
-			FOR_ALL_GROUPS(g) {
+			for (const Group *g : Group::Iterate()) {
 				if (g->owner == owner && g->vehicle_type == vtype) {
-					*list.Append() = g;
+					list.push_back(g);
 				}
 			}
 
 			list.ForceResort();
+
+			/* invalidate cached values for name sorter - group names could change */
+			_last_group[0] = _last_group[1] = nullptr;
+
 			list.Sort(&GroupNameSorter);
 
 			AddChildren(&list, INVALID_GROUP, 0);
 		}
 
-		this->groups.Compact();
+		this->groups.shrink_to_fit();
 		this->groups.RebuildDone();
 	}
 
@@ -688,7 +742,7 @@ private:
 				}
 			}
 		} else {
-			this->rows = this->groups.Length();
+			this->rows = (uint)this->groups.size();
 		}
 
 		this->vscroll->SetCount(this->rows);
@@ -736,13 +790,13 @@ public:
 		/* Position scrollbar to selected group */
 		for (uint i = 0; i < this->rows; i++) {
 			if (this->groups[i]->index == sel) {
-				this->vscroll->SetPosition(Clamp(i - this->vscroll->GetCapacity() / 2, 0, max(this->vscroll->GetCount() - this->vscroll->GetCapacity(), 0)));
+				this->vscroll->SetPosition(Clamp(i - this->vscroll->GetCapacity() / 2, 0, std::max(this->vscroll->GetCount() - this->vscroll->GetCapacity(), 0)));
 				break;
 			}
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_SCL_SPACER_DROPDOWN: {
@@ -753,22 +807,21 @@ public:
 				}
 
 				/* And group names */
-				const Group *g;
-				FOR_ALL_GROUPS(g) {
+				for (const Group *g : Group::Iterate()) {
 					if (g->owner == (CompanyID)this->window_number) {
 						SetDParam(0, g->index);
 						d = maxdim(d, GetStringBoundingBox(STR_GROUP_NAME));
 					}
 				}
 
-				size->width = max(size->width, 5 + d.width + WD_FRAMERECT_RIGHT);
+				size->width = std::max(size->width, 5 + d.width + WD_FRAMERECT_RIGHT);
 				break;
 			}
 
 			case WID_SCL_MATRIX: {
 				/* 11 items in the default rail class */
 				this->square = GetSpriteSize(SPR_SQUARE);
-				this->line_height = max(this->square.height, (uint)FONT_HEIGHT_NORMAL) + 4;
+				this->line_height = std::max(this->square.height, (uint)FONT_HEIGHT_NORMAL) + 4;
 
 				size->height = 11 * this->line_height;
 				resize->width = 1;
@@ -785,17 +838,17 @@ public:
 
 			case WID_SCL_PRI_COL_DROPDOWN: {
 				this->square = GetSpriteSize(SPR_SQUARE);
-				int padding = this->square.width + NWidgetScrollbar::GetVerticalDimension().width + 10;
+				int string_padding = this->square.width + NWidgetScrollbar::GetVerticalDimension().width + 10;
 				for (const StringID *id = _colour_dropdown; id != endof(_colour_dropdown); id++) {
-					size->width = max(size->width, GetStringBoundingBox(*id).width + padding);
+					size->width = std::max(size->width, GetStringBoundingBox(*id).width + string_padding);
 				}
-				size->width = max(size->width, GetStringBoundingBox(STR_COLOUR_DEFAULT).width + padding);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COLOUR_DEFAULT).width + string_padding);
 				break;
 			}
 		}
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		bool local = (CompanyID)this->window_number == _local_company;
 
@@ -809,7 +862,7 @@ public:
 		this->DrawWidgets();
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_SCL_CAPTION:
@@ -849,7 +902,7 @@ public:
 		}
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_SCL_MATRIX) return;
 
@@ -904,7 +957,7 @@ public:
 				}
 			}
 		} else {
-			uint max = min(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), this->groups.Length());
+			uint max = static_cast<uint>(std::min<size_t>(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), this->groups.size()));
 			for (uint i = this->vscroll->GetPosition(); i < max; ++i) {
 				const Group *g = this->groups[i];
 				SetDParam(0, g->index);
@@ -913,7 +966,7 @@ public:
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			/* Livery Class buttons */
@@ -944,7 +997,7 @@ public:
 					this->groups.ForceRebuild();
 					this->BuildGroupList((CompanyID)this->window_number);
 
-					if (this->groups.Length() > 0) {
+					if (this->groups.size() > 0) {
 						this->sel = this->groups[0]->index;
 					}
 				}
@@ -962,7 +1015,7 @@ public:
 				break;
 
 			case WID_SCL_MATRIX: {
-				uint row = this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_SCL_MATRIX, 0, this->line_height);
+				uint row = this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_SCL_MATRIX);
 				if (row >= this->rows) return;
 
 				if (this->livery_class < LC_GROUP_RAIL) {
@@ -987,12 +1040,12 @@ public:
 		}
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
 		this->vscroll->SetCapacityFromWidget(this, WID_SCL_MATRIX);
 	}
 
-	virtual void OnDropdownSelect(int widget, int index)
+	void OnDropdownSelect(int widget, int index) override
 	{
 		bool local = (CompanyID)this->window_number == _local_company;
 		if (!local) return;
@@ -1018,7 +1071,7 @@ public:
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 
@@ -1031,7 +1084,7 @@ public:
 
 				if (!Group::IsValidID(this->sel)) {
 					this->sel = INVALID_GROUP;
-					if (this->groups.Length() > 0) this->sel = this->groups[0]->index;
+					if (this->groups.size() > 0) this->sel = this->groups[0]->index;
 				}
 
 				this->SetDirty();
@@ -1102,7 +1155,7 @@ static WindowDesc _select_company_livery_desc(
 void ShowCompanyLiveryWindow(CompanyID company, GroupID group)
 {
 	SelectCompanyLiveryWindow *w = (SelectCompanyLiveryWindow *)BringWindowToFrontById(WC_COMPANY_COLOUR, company);
-	if (w == NULL) {
+	if (w == nullptr) {
 		new SelectCompanyLiveryWindow(&_select_company_livery_desc, company, group);
 	} else if (group != INVALID_GROUP) {
 		w->SetSelectedGroup(company, group);
@@ -1206,70 +1259,82 @@ static const NWidgetPart _nested_select_company_manager_face_widgets[] = {
 						EndContainer(),
 						NWidget(NWID_SPACER), SetMinimalSize(0, 4),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_EYECOLOUR, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_HAS_MOUSTACHE_EARRING), SetDataTip(STR_EMPTY, STR_FACE_MOUSTACHE_EARRING_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_HAS_GLASSES_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_HAS_GLASSES_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_GLASSES, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_HAS_GLASSES), SetDataTip(STR_EMPTY, STR_FACE_GLASSES_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_SPACER), SetMinimalSize(0, 2), SetFill(1, 0),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_HAIR_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_HAIR_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_HAIR, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_HAIR_L), SetDataTip(AWV_DECREASE, STR_FACE_HAIR_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_HAIR), SetDataTip(STR_EMPTY, STR_FACE_HAIR_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_HAIR_R), SetDataTip(AWV_INCREASE, STR_FACE_HAIR_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_EYEBROWS_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_EYEBROWS_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_EYEBROWS, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_EYEBROWS_L), SetDataTip(AWV_DECREASE, STR_FACE_EYEBROWS_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_EYEBROWS), SetDataTip(STR_EMPTY, STR_FACE_EYEBROWS_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_EYEBROWS_R), SetDataTip(AWV_INCREASE, STR_FACE_EYEBROWS_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_EYECOLOUR_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_EYECOLOUR_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_EYECOLOUR, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_EYECOLOUR_L), SetDataTip(AWV_DECREASE, STR_FACE_EYECOLOUR_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_EYECOLOUR), SetDataTip(STR_EMPTY, STR_FACE_EYECOLOUR_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_EYECOLOUR_R), SetDataTip(AWV_INCREASE, STR_FACE_EYECOLOUR_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_GLASSES_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_GLASSES_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_GLASSES, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_GLASSES_L), SetDataTip(AWV_DECREASE, STR_FACE_GLASSES_TOOLTIP_2),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_GLASSES), SetDataTip(STR_EMPTY, STR_FACE_GLASSES_TOOLTIP_2),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_GLASSES_R), SetDataTip(AWV_INCREASE, STR_FACE_GLASSES_TOOLTIP_2),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_NOSE_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_NOSE_TEXT), SetFill(1, 0),  SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_NOSE, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_NOSE_L), SetDataTip(AWV_DECREASE, STR_FACE_NOSE_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_NOSE), SetDataTip(STR_EMPTY, STR_FACE_NOSE_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_NOSE_R), SetDataTip(AWV_INCREASE, STR_FACE_NOSE_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_LIPS_MOUSTACHE_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_LIPS_MOUSTACHE_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_MOUSTACHE, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_LIPS_MOUSTACHE_L), SetDataTip(AWV_DECREASE, STR_FACE_LIPS_MOUSTACHE_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_LIPS_MOUSTACHE), SetDataTip(STR_EMPTY, STR_FACE_LIPS_MOUSTACHE_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_LIPS_MOUSTACHE_R), SetDataTip(AWV_INCREASE, STR_FACE_LIPS_MOUSTACHE_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_CHIN_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_CHIN_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_CHIN, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_CHIN_L), SetDataTip(AWV_DECREASE, STR_FACE_CHIN_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_CHIN), SetDataTip(STR_EMPTY, STR_FACE_CHIN_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_CHIN_R), SetDataTip(AWV_INCREASE, STR_FACE_CHIN_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_JACKET_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_JACKET_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_JACKET, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_JACKET_L), SetDataTip(AWV_DECREASE, STR_FACE_JACKET_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_JACKET), SetDataTip(STR_EMPTY, STR_FACE_JACKET_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_JACKET_R), SetDataTip(AWV_INCREASE, STR_FACE_JACKET_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_COLLAR_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_COLLAR_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_COLLAR, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_COLLAR_L), SetDataTip(AWV_DECREASE, STR_FACE_COLLAR_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_COLLAR), SetDataTip(STR_EMPTY, STR_FACE_COLLAR_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_COLLAR_R), SetDataTip(AWV_INCREASE, STR_FACE_COLLAR_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_HORIZONTAL),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_SCMF_TIE_EARRING_TEXT), SetFill(1, 0),
+							NWidget(WWT_TEXT, INVALID_COLOUR, WID_SCMF_TIE_EARRING_TEXT), SetFill(1, 0), SetPadding(0, WD_FRAMERECT_RIGHT, 0, WD_FRAMERECT_LEFT),
+								SetDataTip(STR_FACE_EARRING, STR_NULL), SetTextColour(TC_GOLD), SetAlignment(SA_VERT_CENTER | SA_RIGHT),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_TIE_EARRING_L), SetDataTip(AWV_DECREASE, STR_FACE_TIE_EARRING_TOOLTIP),
 							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SCMF_TIE_EARRING), SetDataTip(STR_EMPTY, STR_FACE_TIE_EARRING_TOOLTIP),
 							NWidget(WWT_PUSHARROWBTN, COLOUR_GREY, WID_SCMF_TIE_EARRING_R), SetDataTip(AWV_INCREASE, STR_FACE_TIE_EARRING_TOOLTIP),
@@ -1299,9 +1364,6 @@ class SelectCompanyManagerFaceWindow : public Window
 
 	Dimension yesno_dim;  ///< Dimension of a yes/no button of a part in the advanced face window.
 	Dimension number_dim; ///< Dimension of a number widget of a part in the advanced face window.
-
-	static const StringID PART_TEXTS_IS_FEMALE[]; ///< Strings depending on #is_female, used to describe parts (2 entries for a part).
-	static const StringID PART_TEXTS[];           ///< Fixed strings to describe parts of the face.
 
 	/**
 	 * Draw dynamic a label to the left of the button and a value in the button
@@ -1335,6 +1397,10 @@ class SelectCompanyManagerFaceWindow : public Window
 		this->ge = (GenderEthnicity)GB(this->face, _cmf_info[CMFV_GEN_ETHN].offset, _cmf_info[CMFV_GEN_ETHN].length); // get the gender and ethnicity
 		this->is_female = HasBit(this->ge, GENDER_FEMALE); // get the gender: 0 == male and 1 == female
 		this->is_moust_male = !is_female && GetCompanyManagerFaceBits(this->face, CMFV_HAS_MOUSTACHE, this->ge) != 0; // is a male face with moustache
+
+		this->GetWidget<NWidgetCore>(WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT)->widget_data = this->is_female ? STR_FACE_EARRING : STR_FACE_MOUSTACHE;
+		this->GetWidget<NWidgetCore>(WID_SCMF_TIE_EARRING_TEXT)->widget_data           = this->is_female ? STR_FACE_EARRING : STR_FACE_TIE;
+		this->GetWidget<NWidgetCore>(WID_SCMF_LIPS_MOUSTACHE_TEXT)->widget_data        = this->is_moust_male ? STR_FACE_MOUSTACHE : STR_FACE_LIPS;
 	}
 
 public:
@@ -1370,7 +1436,7 @@ public:
 		}
 	}
 
-	virtual void OnInit()
+	void OnInit() override
 	{
 		/* Size of the boolean yes/no button. */
 		Dimension yesno_dim = maxdim(GetStringBoundingBox(STR_FACE_YES), GetStringBoundingBox(STR_FACE_NO));
@@ -1386,51 +1452,37 @@ public:
 		number_dim.width += WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT + arrows_width;
 		number_dim.height += WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
 		/* Compute width of both buttons. */
-		yesno_dim.width = max(yesno_dim.width, number_dim.width);
+		yesno_dim.width = std::max(yesno_dim.width, number_dim.width);
 		number_dim.width = yesno_dim.width - arrows_width;
 
 		this->yesno_dim = yesno_dim;
 		this->number_dim = number_dim;
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
-			case WID_SCMF_FACE: {
-				Dimension face_size = GetSpriteSize(SPR_GRADIENT);
-				size->width  = max(size->width,  face_size.width);
-				size->height = max(size->height, face_size.height);
-				break;
-			}
-
 			case WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT:
-			case WID_SCMF_TIE_EARRING_TEXT: {
-				int offset = (widget - WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT) * 2;
-				*size = maxdim(GetStringBoundingBox(PART_TEXTS_IS_FEMALE[offset]), GetStringBoundingBox(PART_TEXTS_IS_FEMALE[offset + 1]));
-				size->width  += WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT;
-				size->height += WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
+				*size = maxdim(*size, GetStringBoundingBox(STR_FACE_EARRING));
+				*size = maxdim(*size, GetStringBoundingBox(STR_FACE_MOUSTACHE));
 				break;
-			}
+
+			case WID_SCMF_TIE_EARRING_TEXT:
+				*size = maxdim(*size, GetStringBoundingBox(STR_FACE_EARRING));
+				*size = maxdim(*size, GetStringBoundingBox(STR_FACE_TIE));
+				break;
 
 			case WID_SCMF_LIPS_MOUSTACHE_TEXT:
-				*size = maxdim(GetStringBoundingBox(STR_FACE_LIPS), GetStringBoundingBox(STR_FACE_MOUSTACHE));
-				size->width  += WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT;
-				size->height += WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
+				*size = maxdim(*size, GetStringBoundingBox(STR_FACE_LIPS));
+				*size = maxdim(*size, GetStringBoundingBox(STR_FACE_MOUSTACHE));
 				break;
 
-			case WID_SCMF_HAS_GLASSES_TEXT:
-			case WID_SCMF_HAIR_TEXT:
-			case WID_SCMF_EYEBROWS_TEXT:
-			case WID_SCMF_EYECOLOUR_TEXT:
-			case WID_SCMF_GLASSES_TEXT:
-			case WID_SCMF_NOSE_TEXT:
-			case WID_SCMF_CHIN_TEXT:
-			case WID_SCMF_JACKET_TEXT:
-			case WID_SCMF_COLLAR_TEXT:
-				*size = GetStringBoundingBox(PART_TEXTS[widget - WID_SCMF_HAS_GLASSES_TEXT]);
-				size->width  += WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT;
-				size->height += WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
+			case WID_SCMF_FACE: {
+				Dimension face_size = GetSpriteSize(SPR_GRADIENT);
+				size->width  = std::max(size->width,  face_size.width);
+				size->height = std::max(size->height, face_size.height);
 				break;
+			}
 
 			case WID_SCMF_HAS_MOUSTACHE_EARRING:
 			case WID_SCMF_HAS_GLASSES:
@@ -1452,7 +1504,7 @@ public:
 		}
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		/* lower the non-selected gender button */
 		this->SetWidgetsLoweredState(!this->is_female, WID_SCMF_MALE, WID_SCMF_MALE2, WIDGET_LIST_END);
@@ -1513,33 +1565,9 @@ public:
 		this->DrawWidgets();
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
-			case WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT:
-			case WID_SCMF_TIE_EARRING_TEXT: {
-				StringID str = PART_TEXTS_IS_FEMALE[(widget - WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT) * 2 + this->is_female];
-				DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, r.top + WD_FRAMERECT_TOP, str, TC_GOLD, SA_RIGHT);
-				break;
-			}
-
-			case WID_SCMF_LIPS_MOUSTACHE_TEXT:
-				DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, r.top + WD_FRAMERECT_TOP, (this->is_moust_male) ? STR_FACE_MOUSTACHE : STR_FACE_LIPS, TC_GOLD, SA_RIGHT);
-				break;
-
-			case WID_SCMF_HAS_GLASSES_TEXT:
-			case WID_SCMF_HAIR_TEXT:
-			case WID_SCMF_EYEBROWS_TEXT:
-			case WID_SCMF_EYECOLOUR_TEXT:
-			case WID_SCMF_GLASSES_TEXT:
-			case WID_SCMF_NOSE_TEXT:
-			case WID_SCMF_CHIN_TEXT:
-			case WID_SCMF_JACKET_TEXT:
-			case WID_SCMF_COLLAR_TEXT:
-				DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, r.top + WD_FRAMERECT_TOP, PART_TEXTS[widget - WID_SCMF_HAS_GLASSES_TEXT], TC_GOLD, SA_RIGHT);
-				break;
-
-
 			case WID_SCMF_HAS_MOUSTACHE_EARRING:
 				if (this->is_female) { // Only for female faces
 					this->DrawFaceStringLabel(WID_SCMF_HAS_MOUSTACHE_EARRING, GetCompanyManagerFaceBits(this->face, CMFV_HAS_TIE_EARRING, this->ge), true);
@@ -1602,7 +1630,7 @@ public:
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			/* Toggle size, advanced/simple face selection */
@@ -1711,12 +1739,12 @@ public:
 		}
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
-		if (str == NULL) return;
+		if (str == nullptr) return;
 		/* Set a new company manager face number */
 		if (!StrEmpty(str)) {
-			this->face = strtoul(str, NULL, 10);
+			this->face = strtoul(str, nullptr, 10);
 			ScaleAllCompanyManagerFaceBits(this->face);
 			ShowErrorMessage(STR_FACE_FACECODE_SET, INVALID_STRING_ID, WL_INFO);
 			this->UpdateData();
@@ -1725,25 +1753,6 @@ public:
 			ShowErrorMessage(STR_FACE_FACECODE_ERR, INVALID_STRING_ID, WL_INFO);
 		}
 	}
-};
-
-/** Both text values of parts of the face that depend on the #is_female boolean value. */
-const StringID SelectCompanyManagerFaceWindow::PART_TEXTS_IS_FEMALE[] = {
-	STR_FACE_MOUSTACHE, STR_FACE_EARRING, // WID_SCMF_HAS_MOUSTACHE_EARRING_TEXT
-	STR_FACE_TIE,       STR_FACE_EARRING, // WID_SCMF_TIE_EARRING_TEXT
-};
-
-/** Textual names for parts of the face. */
-const StringID SelectCompanyManagerFaceWindow::PART_TEXTS[] = {
-	STR_FACE_GLASSES,   // WID_SCMF_HAS_GLASSES_TEXT
-	STR_FACE_HAIR,      // WID_SCMF_HAIR_TEXT
-	STR_FACE_EYEBROWS,  // WID_SCMF_EYEBROWS_TEXT
-	STR_FACE_EYECOLOUR, // WID_SCMF_EYECOLOUR_TEXT
-	STR_FACE_GLASSES,   // WID_SCMF_GLASSES_TEXT
-	STR_FACE_NOSE,      // WID_SCMF_NOSE_TEXT
-	STR_FACE_CHIN,      // WID_SCMF_CHIN_TEXT
-	STR_FACE_JACKET,    // WID_SCMF_JACKET_TEXT
-	STR_FACE_COLLAR,    // WID_SCMF_COLLAR_TEXT
 };
 
 /** Company manager face selection window description */
@@ -1785,6 +1794,10 @@ static const NWidgetPart _nested_company_infrastructure_widgets[] = {
 				NWidget(WWT_EMPTY, COLOUR_GREY, WID_CI_ROAD_COUNT), SetMinimalTextLines(2, 0), SetFill(0, 1),
 			EndContainer(),
 			NWidget(NWID_HORIZONTAL), SetPIP(2, 4, 2),
+				NWidget(WWT_EMPTY, COLOUR_GREY, WID_CI_TRAM_DESC), SetMinimalTextLines(2, 0), SetFill(1, 0),
+				NWidget(WWT_EMPTY, COLOUR_GREY, WID_CI_TRAM_COUNT), SetMinimalTextLines(2, 0), SetFill(0, 1),
+			EndContainer(),
+			NWidget(NWID_HORIZONTAL), SetPIP(2, 4, 2),
 				NWidget(WWT_EMPTY, COLOUR_GREY, WID_CI_WATER_DESC), SetMinimalTextLines(2, 0), SetFill(1, 0),
 				NWidget(WWT_EMPTY, COLOUR_GREY, WID_CI_WATER_COUNT), SetMinimalTextLines(2, 0), SetFill(0, 1),
 			EndContainer(),
@@ -1821,11 +1834,10 @@ struct CompanyInfrastructureWindow : Window
 	void UpdateRailRoadTypes()
 	{
 		this->railtypes = RAILTYPES_NONE;
-		this->roadtypes = ROADTYPES_ROAD; // Road is always available.
+		this->roadtypes = ROADTYPES_NONE;
 
 		/* Find the used railtypes. */
-		Engine *e;
-		FOR_ALL_ENGINES_OF_TYPE(e, VEH_TRAIN) {
+		for (const Engine *e : Engine::IterateType(VEH_TRAIN)) {
 			if (!HasBit(e->info.climates, _settings_game.game_creation.landscape)) continue;
 
 			this->railtypes |= GetRailTypeInfo(e->u.rail.railtype)->introduces_railtypes;
@@ -1834,14 +1846,16 @@ struct CompanyInfrastructureWindow : Window
 		/* Get the date introduced railtypes as well. */
 		this->railtypes = AddDateIntroducedRailTypes(this->railtypes, MAX_DAY);
 
-		/* Tram is only visible when there will be a tram. */
-		FOR_ALL_ENGINES_OF_TYPE(e, VEH_ROAD) {
+		/* Find the used roadtypes. */
+		for (const Engine *e : Engine::IterateType(VEH_ROAD)) {
 			if (!HasBit(e->info.climates, _settings_game.game_creation.landscape)) continue;
-			if (!HasBit(e->info.misc_flags, EF_ROAD_TRAM)) continue;
 
-			this->roadtypes |= ROADTYPES_TRAM;
-			break;
+			this->roadtypes |= GetRoadTypeInfo(e->u.road.roadtype)->introduces_roadtypes;
 		}
+
+		/* Get the date introduced roadtypes as well. */
+		this->roadtypes = AddDateIntroducedRoadTypes(this->roadtypes, MAX_DAY);
+		this->roadtypes &= ~_roadtypes_hidden_mask;
 	}
 
 	/** Get total infrastructure maintenance cost. */
@@ -1856,8 +1870,11 @@ struct CompanyInfrastructureWindow : Window
 		}
 		total += SignalMaintenanceCost(c->infrastructure.signal);
 
-		if (HasBit(this->roadtypes, ROADTYPE_ROAD)) total += RoadMaintenanceCost(ROADTYPE_ROAD, c->infrastructure.road[ROADTYPE_ROAD]);
-		if (HasBit(this->roadtypes, ROADTYPE_TRAM)) total += RoadMaintenanceCost(ROADTYPE_TRAM, c->infrastructure.road[ROADTYPE_TRAM]);
+		uint32 road_total = c->infrastructure.GetRoadTotal();
+		uint32 tram_total = c->infrastructure.GetTramTotal();
+		for (RoadType rt = ROADTYPE_BEGIN; rt != ROADTYPE_END; rt++) {
+			if (HasBit(this->roadtypes, rt)) total += RoadMaintenanceCost(rt, c->infrastructure.road[rt], RoadTypeIsRoad(rt) ? road_total : tram_total);
+		}
 
 		total += CanalMaintenanceCost(c->infrastructure.water);
 		total += StationMaintenanceCost(c->infrastructure.station);
@@ -1866,7 +1883,7 @@ struct CompanyInfrastructureWindow : Window
 		return total;
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_CI_CAPTION:
@@ -1875,63 +1892,64 @@ struct CompanyInfrastructureWindow : Window
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		const Company *c = Company::Get((CompanyID)this->window_number);
 
 		switch (widget) {
 			case WID_CI_RAIL_DESC: {
-				uint lines = 1;
+				uint lines = 1; // Starts at 1 because a line is also required for the section title
 
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_RAIL_SECT).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_RAIL_SECT).width);
 
-				for (RailType rt = RAILTYPE_BEGIN; rt < RAILTYPE_END; rt++) {
+				for (const auto &rt : _sorted_railtypes) {
 					if (HasBit(this->railtypes, rt)) {
 						lines++;
 						SetDParam(0, GetRailTypeInfo(rt)->strings.name);
-						size->width = max(size->width, GetStringBoundingBox(STR_WHITE_STRING).width + WD_FRAMERECT_LEFT);
+						size->width = std::max(size->width, GetStringBoundingBox(STR_WHITE_STRING).width + WD_FRAMERECT_LEFT);
 					}
 				}
 				if (this->railtypes != RAILTYPES_NONE) {
 					lines++;
-					size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_SIGNALS).width + WD_FRAMERECT_LEFT);
+					size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_SIGNALS).width + WD_FRAMERECT_LEFT);
 				}
 
-				size->height = max(size->height, lines * FONT_HEIGHT_NORMAL);
+				size->height = std::max(size->height, lines * FONT_HEIGHT_NORMAL);
 				break;
 			}
 
-			case WID_CI_ROAD_DESC: {
-				uint lines = 1;
+			case WID_CI_ROAD_DESC:
+			case WID_CI_TRAM_DESC: {
+				uint lines = 1; // Starts at 1 because a line is also required for the section title
 
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_ROAD_SECT).width);
+				size->width = std::max(size->width, GetStringBoundingBox(widget == WID_CI_ROAD_DESC ? STR_COMPANY_INFRASTRUCTURE_VIEW_ROAD_SECT : STR_COMPANY_INFRASTRUCTURE_VIEW_TRAM_SECT).width);
 
-				if (HasBit(this->roadtypes, ROADTYPE_ROAD)) {
-					lines++;
-					size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_ROAD).width + WD_FRAMERECT_LEFT);
+				for (const auto &rt : _sorted_roadtypes) {
+					if (HasBit(this->roadtypes, rt) && RoadTypeIsRoad(rt) == (widget == WID_CI_ROAD_DESC)) {
+						lines++;
+						SetDParam(0, GetRoadTypeInfo(rt)->strings.name);
+						size->width = std::max(size->width, GetStringBoundingBox(STR_WHITE_STRING).width + WD_FRAMERECT_LEFT);
+					}
 				}
-				if (HasBit(this->roadtypes, ROADTYPE_TRAM)) {
-					lines++;
-					size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_TRAMWAY).width + WD_FRAMERECT_LEFT);
-				}
 
-				size->height = max(size->height, lines * FONT_HEIGHT_NORMAL);
+				size->height = std::max(size->height, lines * FONT_HEIGHT_NORMAL);
 				break;
 			}
 
 			case WID_CI_WATER_DESC:
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_WATER_SECT).width);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_CANALS).width + WD_FRAMERECT_LEFT);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_WATER_SECT).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_CANALS).width + WD_FRAMERECT_LEFT);
 				break;
 
 			case WID_CI_STATION_DESC:
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_STATION_SECT).width);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_STATIONS).width + WD_FRAMERECT_LEFT);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_AIRPORTS).width + WD_FRAMERECT_LEFT);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_STATION_SECT).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_STATIONS).width + WD_FRAMERECT_LEFT);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_AIRPORTS).width + WD_FRAMERECT_LEFT);
 				break;
 
 			case WID_CI_RAIL_COUNT:
 			case WID_CI_ROAD_COUNT:
+			case WID_CI_TRAM_COUNT:
 			case WID_CI_WATER_COUNT:
 			case WID_CI_STATION_COUNT:
 			case WID_CI_TOTAL: {
@@ -1940,21 +1958,24 @@ struct CompanyInfrastructureWindow : Window
 				Money max_cost = 10000; // Some random number to reserve enough space.
 				uint32 rail_total = c->infrastructure.GetRailTotal();
 				for (RailType rt = RAILTYPE_BEGIN; rt < RAILTYPE_END; rt++) {
-					max_val = max(max_val, c->infrastructure.rail[rt]);
-					max_cost = max(max_cost, RailMaintenanceCost(rt, c->infrastructure.rail[rt], rail_total));
+					max_val = std::max(max_val, c->infrastructure.rail[rt]);
+					max_cost = std::max(max_cost, RailMaintenanceCost(rt, c->infrastructure.rail[rt], rail_total));
 				}
-				max_val = max(max_val, c->infrastructure.signal);
-				max_cost = max(max_cost, SignalMaintenanceCost(c->infrastructure.signal));
+				max_val = std::max(max_val, c->infrastructure.signal);
+				max_cost = std::max(max_cost, SignalMaintenanceCost(c->infrastructure.signal));
+				uint32 road_total = c->infrastructure.GetRoadTotal();
+				uint32 tram_total = c->infrastructure.GetTramTotal();
 				for (RoadType rt = ROADTYPE_BEGIN; rt < ROADTYPE_END; rt++) {
-					max_val = max(max_val, c->infrastructure.road[rt]);
-					max_cost = max(max_cost, RoadMaintenanceCost(rt, c->infrastructure.road[rt]));
+					max_val = std::max(max_val, c->infrastructure.road[rt]);
+					max_cost = std::max(max_cost, RoadMaintenanceCost(rt, c->infrastructure.road[rt], RoadTypeIsRoad(rt) ? road_total : tram_total));
+
 				}
-				max_val = max(max_val, c->infrastructure.water);
-				max_cost = max(max_cost, CanalMaintenanceCost(c->infrastructure.water));
-				max_val = max(max_val, c->infrastructure.station);
-				max_cost = max(max_cost, StationMaintenanceCost(c->infrastructure.station));
-				max_val = max(max_val, c->infrastructure.airport);
-				max_cost = max(max_cost, AirportMaintenanceCost(c->index));
+				max_val = std::max(max_val, c->infrastructure.water);
+				max_cost = std::max(max_cost, CanalMaintenanceCost(c->infrastructure.water));
+				max_val = std::max(max_val, c->infrastructure.station);
+				max_cost = std::max(max_cost, StationMaintenanceCost(c->infrastructure.station));
+				max_val = std::max(max_val, c->infrastructure.airport);
+				max_cost = std::max(max_cost, AirportMaintenanceCost(c->index));
 
 				SetDParamMaxValue(0, max_val);
 				uint count_width = GetStringBoundingBox(STR_WHITE_COMMA).width + 20; // Reserve some wiggle room
@@ -1962,17 +1983,17 @@ struct CompanyInfrastructureWindow : Window
 				if (_settings_game.economy.infrastructure_maintenance) {
 					SetDParamMaxValue(0, this->GetTotalMaintenanceCost() * 12); // Convert to per year
 					this->total_width = GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_TOTAL).width + 20;
-					size->width = max(size->width, this->total_width);
+					size->width = std::max(size->width, this->total_width);
 
 					SetDParamMaxValue(0, max_cost * 12); // Convert to per year
-					count_width += max(this->total_width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_TOTAL).width);
+					count_width += std::max(this->total_width, GetStringBoundingBox(STR_COMPANY_INFRASTRUCTURE_VIEW_TOTAL).width);
 				}
 
-				size->width = max(size->width, count_width);
+				size->width = std::max(size->width, count_width);
 
 				/* Set height of the total line. */
 				if (widget == WID_CI_TOTAL) {
-					size->height = _settings_game.economy.infrastructure_maintenance ? max(size->height, EXP_LINESPACE + FONT_HEIGHT_NORMAL) : 0;
+					size->height = _settings_game.economy.infrastructure_maintenance ? std::max(size->height, EXP_LINESPACE + FONT_HEIGHT_NORMAL) : 0;
 				}
 				break;
 			}
@@ -1998,7 +2019,7 @@ struct CompanyInfrastructureWindow : Window
 		}
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		const Company *c = Company::Get((CompanyID)this->window_number);
 		int y = r.top;
@@ -2012,8 +2033,7 @@ struct CompanyInfrastructureWindow : Window
 
 				if (this->railtypes != RAILTYPES_NONE) {
 					/* Draw name of each valid railtype. */
-					RailType rt;
-					FOR_ALL_SORTED_RAILTYPES(rt) {
+					for (const auto &rt : _sorted_railtypes) {
 						if (HasBit(this->railtypes, rt)) {
 							SetDParam(0, GetRailTypeInfo(rt)->strings.name);
 							DrawString(r.left + offs_left, r.right - offs_right, y += FONT_HEIGHT_NORMAL, STR_WHITE_STRING);
@@ -2030,8 +2050,7 @@ struct CompanyInfrastructureWindow : Window
 			case WID_CI_RAIL_COUNT: {
 				/* Draw infrastructure count for each valid railtype. */
 				uint32 rail_total = c->infrastructure.GetRailTotal();
-				RailType rt;
-				FOR_ALL_SORTED_RAILTYPES(rt) {
+				for (const auto &rt : _sorted_railtypes) {
 					if (HasBit(this->railtypes, rt)) {
 						this->DrawCountLine(r, y, c->infrastructure.rail[rt], RailMaintenanceCost(rt, c->infrastructure.rail[rt], rail_total));
 					}
@@ -2043,26 +2062,30 @@ struct CompanyInfrastructureWindow : Window
 			}
 
 			case WID_CI_ROAD_DESC:
-				DrawString(r.left, r.right, y, STR_COMPANY_INFRASTRUCTURE_VIEW_ROAD_SECT);
+			case WID_CI_TRAM_DESC: {
+				DrawString(r.left, r.right, y, widget == WID_CI_ROAD_DESC ? STR_COMPANY_INFRASTRUCTURE_VIEW_ROAD_SECT : STR_COMPANY_INFRASTRUCTURE_VIEW_TRAM_SECT);
 
-				if (this->roadtypes != ROADTYPES_NONE) {
-					if (HasBit(this->roadtypes, ROADTYPE_ROAD)) DrawString(r.left + offs_left, r.right - offs_right, y += FONT_HEIGHT_NORMAL, STR_COMPANY_INFRASTRUCTURE_VIEW_ROAD);
-					if (HasBit(this->roadtypes, ROADTYPE_TRAM)) DrawString(r.left + offs_left, r.right - offs_right, y += FONT_HEIGHT_NORMAL, STR_COMPANY_INFRASTRUCTURE_VIEW_TRAMWAY);
-				} else {
-					/* No valid roadtypes. */
-					DrawString(r.left + offs_left, r.right - offs_right, y += FONT_HEIGHT_NORMAL, STR_COMPANY_VIEW_INFRASTRUCTURE_NONE);
+				/* Draw name of each valid roadtype. */
+				for (const auto &rt : _sorted_roadtypes) {
+					if (HasBit(this->roadtypes, rt) && RoadTypeIsRoad(rt) == (widget == WID_CI_ROAD_DESC)) {
+						SetDParam(0, GetRoadTypeInfo(rt)->strings.name);
+						DrawString(r.left + offs_left, r.right - offs_right, y += FONT_HEIGHT_NORMAL, STR_WHITE_STRING);
+					}
 				}
 
 				break;
+			}
 
 			case WID_CI_ROAD_COUNT:
-				if (HasBit(this->roadtypes, ROADTYPE_ROAD)) {
-					this->DrawCountLine(r, y, c->infrastructure.road[ROADTYPE_ROAD], RoadMaintenanceCost(ROADTYPE_ROAD, c->infrastructure.road[ROADTYPE_ROAD]));
-				}
-				if (HasBit(this->roadtypes, ROADTYPE_TRAM)) {
-					this->DrawCountLine(r, y, c->infrastructure.road[ROADTYPE_TRAM], RoadMaintenanceCost(ROADTYPE_TRAM, c->infrastructure.road[ROADTYPE_TRAM]));
+			case WID_CI_TRAM_COUNT: {
+				uint32 road_tram_total = widget == WID_CI_ROAD_COUNT ? c->infrastructure.GetRoadTotal() : c->infrastructure.GetTramTotal();
+				for (const auto &rt : _sorted_roadtypes) {
+					if (HasBit(this->roadtypes, rt) && RoadTypeIsRoad(rt) == (widget == WID_CI_ROAD_COUNT)) {
+						this->DrawCountLine(r, y, c->infrastructure.road[rt], RoadMaintenanceCost(rt, c->infrastructure.road[rt], road_tram_total));
+					}
 				}
 				break;
+			}
 
 			case WID_CI_WATER_DESC:
 				DrawString(r.left, r.right, y, STR_COMPANY_INFRASTRUCTURE_VIEW_WATER_SECT);
@@ -2101,7 +2124,7 @@ struct CompanyInfrastructureWindow : Window
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 
@@ -2160,30 +2183,30 @@ static const NWidgetPart _nested_company_widgets[] = {
 					EndContainer(),
 					NWidget(NWID_VERTICAL), SetPIP(4, 2, 4),
 						NWidget(NWID_SELECTION, INVALID_COLOUR, WID_C_SELECT_VIEW_BUILD_HQ),
-							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_VIEW_HQ), SetFill(1, 0), SetDataTip(STR_COMPANY_VIEW_VIEW_HQ_BUTTON, STR_COMPANY_VIEW_VIEW_HQ_TOOLTIP),
-							NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_C_BUILD_HQ), SetFill(1, 0), SetDataTip(STR_COMPANY_VIEW_BUILD_HQ_BUTTON, STR_COMPANY_VIEW_BUILD_HQ_TOOLTIP),
+							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_VIEW_HQ), SetDataTip(STR_COMPANY_VIEW_VIEW_HQ_BUTTON, STR_COMPANY_VIEW_VIEW_HQ_TOOLTIP),
+							NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_C_BUILD_HQ), SetDataTip(STR_COMPANY_VIEW_BUILD_HQ_BUTTON, STR_COMPANY_VIEW_BUILD_HQ_TOOLTIP),
 						EndContainer(),
 						NWidget(NWID_SELECTION, INVALID_COLOUR, WID_C_SELECT_RELOCATE),
-							NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_C_RELOCATE_HQ), SetFill(1, 0), SetDataTip(STR_COMPANY_VIEW_RELOCATE_HQ, STR_COMPANY_VIEW_RELOCATE_COMPANY_HEADQUARTERS),
-							NWidget(NWID_SPACER), SetMinimalSize(90, 0),
+							NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_C_RELOCATE_HQ), SetDataTip(STR_COMPANY_VIEW_RELOCATE_HQ, STR_COMPANY_VIEW_RELOCATE_COMPANY_HEADQUARTERS),
+							NWidget(NWID_SPACER),
 						EndContainer(),
 						NWidget(NWID_SPACER), SetFill(0, 1),
 					EndContainer(),
 				EndContainer(),
 				NWidget(WWT_TEXT, COLOUR_GREY, WID_C_DESC_COMPANY_VALUE), SetDataTip(STR_COMPANY_VIEW_COMPANY_VALUE, STR_NULL), SetFill(1, 0),
-					NWidget(NWID_VERTICAL), SetPIP(4, 2, 4),
-						NWidget(NWID_HORIZONTAL), SetPIP(0, 4, 0),
-							NWidget(NWID_VERTICAL),
-								NWidget(WWT_TEXT, COLOUR_GREY, WID_C_DESC_INFRASTRUCTURE), SetDataTip(STR_COMPANY_VIEW_INFRASTRUCTURE, STR_NULL),
-								NWidget(NWID_SPACER), SetFill(0, 1),
-							EndContainer(),
-							NWidget(WWT_EMPTY, INVALID_COLOUR, WID_C_DESC_INFRASTRUCTURE_COUNTS), SetMinimalTextLines(5, 0), SetFill(1, 0),
-							NWidget(NWID_VERTICAL),
-								NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_VIEW_INFRASTRUCTURE), SetDataTip(STR_COMPANY_VIEW_INFRASTRUCTURE_BUTTON, STR_COMPANY_VIEW_INFRASTRUCTURE_TOOLTIP),
-								NWidget(NWID_SPACER), SetFill(0, 1), SetMinimalSize(90, 0),
-							EndContainer(),
+				NWidget(NWID_VERTICAL), SetPIP(4, 2, 4),
+					NWidget(NWID_HORIZONTAL), SetPIP(0, 4, 0),
+						NWidget(NWID_VERTICAL),
+							NWidget(WWT_TEXT, COLOUR_GREY, WID_C_DESC_INFRASTRUCTURE), SetDataTip(STR_COMPANY_VIEW_INFRASTRUCTURE, STR_NULL),
+							NWidget(NWID_SPACER), SetFill(0, 1),
+						EndContainer(),
+						NWidget(WWT_EMPTY, INVALID_COLOUR, WID_C_DESC_INFRASTRUCTURE_COUNTS), SetMinimalTextLines(5, 0), SetFill(1, 0),
+						NWidget(NWID_VERTICAL),
+							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_VIEW_INFRASTRUCTURE), SetDataTip(STR_COMPANY_VIEW_INFRASTRUCTURE_BUTTON, STR_COMPANY_VIEW_INFRASTRUCTURE_TOOLTIP),
+							NWidget(NWID_SPACER),
 						EndContainer(),
 					EndContainer(),
+				EndContainer(),
 				NWidget(NWID_HORIZONTAL),
 					NWidget(NWID_SELECTION, INVALID_COLOUR, WID_C_SELECT_DESC_OWNERS),
 						NWidget(NWID_VERTICAL), SetPIP(5, 5, 4),
@@ -2191,14 +2214,27 @@ static const NWidgetPart _nested_company_widgets[] = {
 							NWidget(NWID_SPACER), SetFill(0, 1),
 						EndContainer(),
 					EndContainer(),
+					NWidget(NWID_SPACER), SetFill(1, 0),
+					NWidget(NWID_SELECTION, INVALID_COLOUR, WID_C_SELECT_GIVE_MONEY),
+						NWidget(NWID_VERTICAL),
+							NWidget(NWID_SPACER), SetFill(0, 1), SetMinimalSize(90, 0),
+							NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_GIVE_MONEY), SetDataTip(STR_COMPANY_VIEW_GIVE_MONEY_BUTTON, STR_COMPANY_VIEW_GIVE_MONEY_TOOLTIP),
+						EndContainer(),
+					EndContainer(),
+				EndContainer(),
+				/* Multi player buttons. */
+				NWidget(NWID_HORIZONTAL),
+					NWidget(NWID_SPACER), SetFill(1, 0),
 					NWidget(NWID_VERTICAL), SetPIP(4, 2, 4),
-						NWidget(NWID_SPACER), SetMinimalSize(90, 0), SetFill(0, 1),
-						/* Multi player buttons. */
-						NWidget(NWID_HORIZONTAL),
+						NWidget(NWID_SPACER), SetMinimalSize(95, 0), SetFill(0, 1),
+						NWidget(NWID_HORIZONTAL), SetPIP(0, 5, 0),
 							NWidget(WWT_EMPTY, COLOUR_GREY, WID_C_HAS_PASSWORD),
-							NWidget(NWID_SELECTION, INVALID_COLOUR, WID_C_SELECT_MULTIPLAYER),
-								NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_COMPANY_PASSWORD), SetFill(1, 0), SetDataTip(STR_COMPANY_VIEW_PASSWORD, STR_COMPANY_VIEW_PASSWORD_TOOLTIP),
-								NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_COMPANY_JOIN), SetFill(1, 0), SetDataTip(STR_COMPANY_VIEW_JOIN, STR_COMPANY_VIEW_JOIN_TOOLTIP),
+							NWidget(NWID_VERTICAL),
+								NWidget(NWID_SPACER), SetMinimalSize(90, 0), SetFill(0, 1),
+								NWidget(NWID_SELECTION, INVALID_COLOUR, WID_C_SELECT_MULTIPLAYER),
+									NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_COMPANY_PASSWORD), SetFill(1, 0), SetDataTip(STR_COMPANY_VIEW_PASSWORD, STR_COMPANY_VIEW_PASSWORD_TOOLTIP),
+									NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_C_COMPANY_JOIN), SetFill(1, 0), SetDataTip(STR_COMPANY_VIEW_JOIN, STR_COMPANY_VIEW_JOIN_TOOLTIP),
+								EndContainer(),
 							EndContainer(),
 						EndContainer(),
 					EndContainer(),
@@ -2267,7 +2303,7 @@ struct CompanyWindow : Window
 		this->OnInvalidateData();
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		const Company *c = Company::Get((CompanyID)this->window_number);
 		bool local = this->window_number == _local_company;
@@ -2281,7 +2317,7 @@ struct CompanyWindow : Window
 			if (plane != wi->shown_plane) {
 				wi->SetDisplayedPlane(plane);
 				this->InvalidateData();
-				return;
+				reinit = true;
 			}
 
 			/* Build HQ button handling. */
@@ -2289,8 +2325,7 @@ struct CompanyWindow : Window
 			wi = this->GetWidget<NWidgetStacked>(WID_C_SELECT_VIEW_BUILD_HQ);
 			if (plane != wi->shown_plane) {
 				wi->SetDisplayedPlane(plane);
-				this->SetDirty();
-				return;
+				reinit = true;
 			}
 
 			this->SetWidgetDisabledState(WID_C_VIEW_HQ, c->location_of_HQ == INVALID_TILE);
@@ -2300,8 +2335,7 @@ struct CompanyWindow : Window
 			wi = this->GetWidget<NWidgetStacked>(WID_C_SELECT_RELOCATE);
 			if (plane != wi->shown_plane) {
 				wi->SetDisplayedPlane(plane);
-				this->SetDirty();
-				return;
+				reinit = true;
 			}
 
 			/* Owners of company */
@@ -2313,6 +2347,14 @@ struct CompanyWindow : Window
 				}
 			}
 			wi = this->GetWidget<NWidgetStacked>(WID_C_SELECT_DESC_OWNERS);
+			if (plane != wi->shown_plane) {
+				wi->SetDisplayedPlane(plane);
+				reinit = true;
+			}
+
+			/* Enable/disable 'Give money' button. */
+			plane = ((local || (_local_company == COMPANY_SPECTATOR)) ? SZSP_NONE : 0);
+			wi = this->GetWidget<NWidgetStacked>(WID_C_SELECT_GIVE_MONEY);
 			if (plane != wi->shown_plane) {
 				wi->SetDisplayedPlane(plane);
 				reinit = true;
@@ -2336,13 +2378,13 @@ struct CompanyWindow : Window
 		this->DrawWidgets();
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_C_FACE: {
 				Dimension face_size = GetSpriteSize(SPR_GRADIENT);
-				size->width  = max(size->width,  face_size.width);
-				size->height = max(size->height, face_size.height);
+				size->width  = std::max(size->width,  face_size.width);
+				size->height = std::max(size->height, face_size.height);
 				break;
 			}
 
@@ -2363,41 +2405,52 @@ struct CompanyWindow : Window
 			case WID_C_DESC_VEHICLE_COUNTS:
 				SetDParamMaxValue(0, 5000); // Maximum number of vehicles
 				for (uint i = 0; i < lengthof(_company_view_vehicle_count_strings); i++) {
-					size->width = max(size->width, GetStringBoundingBox(_company_view_vehicle_count_strings[i]).width);
+					size->width = std::max(size->width, GetStringBoundingBox(_company_view_vehicle_count_strings[i]).width);
 				}
 				break;
 
 			case WID_C_DESC_INFRASTRUCTURE_COUNTS:
 				SetDParamMaxValue(0, UINT_MAX);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_RAIL).width);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_ROAD).width);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_WATER).width);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_STATION).width);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_AIRPORT).width);
-				size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_NONE).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_RAIL).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_ROAD).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_WATER).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_STATION).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_AIRPORT).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_NONE).width);
 				break;
 
 			case WID_C_DESC_OWNERS: {
-				const Company *c2;
-
-				FOR_ALL_COMPANIES(c2) {
+				for (const Company *c2 : Company::Iterate()) {
 					SetDParamMaxValue(0, 75);
 					SetDParam(1, c2->index);
 
-					size->width = max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_SHARES_OWNED_BY).width);
+					size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_SHARES_OWNED_BY).width);
 				}
 				break;
 			}
 
-#ifdef ENABLE_NETWORK
+			case WID_C_VIEW_HQ:
+			case WID_C_BUILD_HQ:
+			case WID_C_RELOCATE_HQ:
+			case WID_C_VIEW_INFRASTRUCTURE:
+			case WID_C_COMPANY_PASSWORD:
+			case WID_C_COMPANY_JOIN:
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_VIEW_HQ_BUTTON).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_BUILD_HQ_BUTTON).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_RELOCATE_HQ).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_INFRASTRUCTURE_BUTTON).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_PASSWORD).width);
+				size->width = std::max(size->width, GetStringBoundingBox(STR_COMPANY_VIEW_JOIN).width);
+				break;
+
+
 			case WID_C_HAS_PASSWORD:
 				*size = maxdim(*size, GetSpriteSize(SPR_LOCK));
 				break;
-#endif /* ENABLE_NETWORK */
 		}
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		const Company *c = Company::Get((CompanyID)this->window_number);
 		switch (widget) {
@@ -2429,7 +2482,7 @@ struct CompanyWindow : Window
 				if (amounts[0] + amounts[1] + amounts[2] + amounts[3] == 0) {
 					DrawString(r.left, r.right, y, STR_COMPANY_VIEW_VEHICLES_NONE);
 				} else {
-					assert_compile(lengthof(amounts) == lengthof(_company_view_vehicle_count_strings));
+					static_assert(lengthof(amounts) == lengthof(_company_view_vehicle_count_strings));
 
 					for (uint i = 0; i < lengthof(amounts); i++) {
 						if (amounts[i] != 0) {
@@ -2484,10 +2537,9 @@ struct CompanyWindow : Window
 			}
 
 			case WID_C_DESC_OWNERS: {
-				const Company *c2;
 				uint y = r.top;
 
-				FOR_ALL_COMPANIES(c2) {
+				for (const Company *c2 : Company::Iterate()) {
 					uint amt = GetAmountOwnedBy(c, c2->index);
 					if (amt != 0) {
 						SetDParam(0, amt * 25);
@@ -2500,17 +2552,15 @@ struct CompanyWindow : Window
 				break;
 			}
 
-#ifdef ENABLE_NETWORK
 			case WID_C_HAS_PASSWORD:
 				if (_networking && NetworkCompanyIsPassworded(c->index)) {
 					DrawSprite(SPR_LOCK, PAL_NONE, r.left, r.top);
 				}
 				break;
-#endif /* ENABLE_NETWORK */
 		}
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_C_CAPTION:
@@ -2528,7 +2578,7 @@ struct CompanyWindow : Window
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_C_NEW_FACE: DoSelectCompanyManagerFace(this); break;
@@ -2552,7 +2602,7 @@ struct CompanyWindow : Window
 			case WID_C_VIEW_HQ: {
 				TileIndex tile = Company::Get((CompanyID)this->window_number)->location_of_HQ;
 				if (_ctrl_pressed) {
-					ShowExtraViewPortWindow(tile);
+					ShowExtraViewportWindow(tile);
 				} else {
 					ScrollMainWindowToTile(tile);
 				}
@@ -2588,6 +2638,11 @@ struct CompanyWindow : Window
 				ShowCompanyInfrastructure((CompanyID)this->window_number);
 				break;
 
+			case WID_C_GIVE_MONEY:
+				this->query_widget = WID_C_GIVE_MONEY;
+				ShowQueryString(STR_EMPTY, STR_COMPANY_VIEW_GIVE_MONEY_QUERY_CAPTION, 30, this, CS_NUMERAL, QSF_NONE);
+				break;
+
 			case WID_C_BUY_SHARE:
 				DoCommandP(0, this->window_number, 0, CMD_BUY_SHARE_IN_COMPANY | CMD_MSG(STR_ERROR_CAN_T_BUY_25_SHARE_IN_THIS));
 				break;
@@ -2596,7 +2651,6 @@ struct CompanyWindow : Window
 				DoCommandP(0, this->window_number, 0, CMD_SELL_SHARE_IN_COMPANY | CMD_MSG(STR_ERROR_CAN_T_SELL_25_SHARE_IN));
 				break;
 
-#ifdef ENABLE_NETWORK
 			case WID_C_COMPANY_PASSWORD:
 				if (this->window_number == _local_company) ShowNetworkCompanyPasswordWindow(this);
 				break;
@@ -2609,24 +2663,23 @@ struct CompanyWindow : Window
 					MarkWholeScreenDirty();
 				} else if (NetworkCompanyIsPassworded(company)) {
 					/* ask for the password */
-					ShowQueryString(STR_EMPTY, STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION, NETWORK_PASSWORD_LENGTH, this, CS_ALPHANUMERAL, QSF_NONE);
+					ShowQueryString(STR_EMPTY, STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION, NETWORK_PASSWORD_LENGTH, this, CS_ALPHANUMERAL, QSF_PASSWORD);
 				} else {
 					/* just send the join command */
 					NetworkClientRequestMove(company);
 				}
 				break;
 			}
-#endif /* ENABLE_NETWORK */
 		}
 	}
 
-	virtual void OnHundredthTick()
+	void OnHundredthTick() override
 	{
 		/* redraw the window every now and then */
 		this->SetDirty();
 	}
 
-	virtual void OnPlaceObject(Point pt, TileIndex tile)
+	void OnPlaceObject(Point pt, TileIndex tile) override
 	{
 		if (DoCommandP(tile, OBJECT_HQ, 0, CMD_BUILD_OBJECT | CMD_MSG(STR_ERROR_CAN_T_BUILD_COMPANY_HEADQUARTERS)) && !_shift_pressed) {
 			ResetObjectToPlace();
@@ -2634,31 +2687,33 @@ struct CompanyWindow : Window
 		}
 	}
 
-	virtual void OnPlaceObjectAbort()
+	void OnPlaceObjectAbort() override
 	{
 		this->RaiseButtons();
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
-		if (str == NULL) return;
+		if (str == nullptr) return;
 
 		switch (this->query_widget) {
 			default: NOT_REACHED();
 
+			case WID_C_GIVE_MONEY:
+				DoCommandP(0, (strtoull(str, nullptr, 10) / _currency->rate), this->window_number, CMD_GIVE_MONEY | CMD_MSG(STR_ERROR_CAN_T_GIVE_MONEY), CcGiveMoney, str);
+				break;
+
 			case WID_C_PRESIDENT_NAME:
-				DoCommandP(0, 0, 0, CMD_RENAME_PRESIDENT | CMD_MSG(STR_ERROR_CAN_T_CHANGE_PRESIDENT), NULL, str);
+				DoCommandP(0, 0, 0, CMD_RENAME_PRESIDENT | CMD_MSG(STR_ERROR_CAN_T_CHANGE_PRESIDENT), nullptr, str);
 				break;
 
 			case WID_C_COMPANY_NAME:
-				DoCommandP(0, 0, 0, CMD_RENAME_COMPANY | CMD_MSG(STR_ERROR_CAN_T_CHANGE_COMPANY_NAME), NULL, str);
+				DoCommandP(0, 0, 0, CMD_RENAME_COMPANY | CMD_MSG(STR_ERROR_CAN_T_CHANGE_COMPANY_NAME), nullptr, str);
 				break;
 
-#ifdef ENABLE_NETWORK
 			case WID_C_COMPANY_JOIN:
 				NetworkClientRequestMove((CompanyID)this->window_number, str);
 				break;
-#endif /* ENABLE_NETWORK */
 		}
 	}
 
@@ -2668,7 +2723,7 @@ struct CompanyWindow : Window
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (this->window_number == _local_company) return;
 
@@ -2721,13 +2776,30 @@ void DirtyCompanyInfrastructureWindows(CompanyID company)
 	SetWindowDirty(WC_COMPANY_INFRASTRUCTURE, company);
 }
 
+/**
+ * Redraw all windows with all company infrastructure counts.
+ */
+void DirtyAllCompanyInfrastructureWindows()
+{
+	SetWindowClassesDirty(WC_COMPANY);
+	SetWindowClassesDirty(WC_COMPANY_INFRASTRUCTURE);
+}
+
 struct BuyCompanyWindow : Window {
 	BuyCompanyWindow(WindowDesc *desc, WindowNumber window_number) : Window(desc)
 	{
 		this->InitNested(window_number);
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	~BuyCompanyWindow()
+	{
+		const Company *c = Company::GetIfValid((CompanyID)this->window_number);
+		if (c != nullptr && HasBit(c->bankrupt_asked, _current_company)) {
+			DoCommandP(0, this->window_number, 0, CMD_DECLINE_BUY_COMPANY);
+		}
+	}
+
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_BC_FACE:
@@ -2743,7 +2815,7 @@ struct BuyCompanyWindow : Window {
 		}
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_BC_CAPTION:
@@ -2753,7 +2825,7 @@ struct BuyCompanyWindow : Window {
 		}
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
 			case WID_BC_FACE: {
@@ -2772,7 +2844,7 @@ struct BuyCompanyWindow : Window {
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_BC_NO:
@@ -2806,7 +2878,7 @@ static const NWidgetPart _nested_buy_company_widgets[] = {
 };
 
 static WindowDesc _buy_company_desc(
-	WDP_AUTO, NULL, 0, 0,
+	WDP_AUTO, nullptr, 0, 0,
 	WC_BUY_COMPANY, WC_NONE,
 	WDF_CONSTRUCTION,
 	_nested_buy_company_widgets, lengthof(_nested_buy_company_widgets)

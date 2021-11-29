@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -12,6 +10,7 @@
 #ifndef MACOS_STDAFX_H
 #define MACOS_STDAFX_H
 
+#define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0
 
 #include <AvailabilityMacros.h>
 
@@ -20,11 +19,23 @@
 #define HAVE_OSX_107_SDK
 #endif
 
+#ifdef MAC_OS_X_VERSION_10_9
+#define HAVE_OSX_109_SDK
+#endif
+
 #ifdef MAC_OS_X_VERSION_10_11
 #define HAVE_OSX_1011_SDK
 #endif
 
-/* It would seem that to ensure backward compability we have to ensure that we have defined MAC_OS_X_VERSION_10_x everywhere */
+#ifdef MAC_OS_X_VERSION_10_12
+#define HAVE_OSX_1012_SDK
+#endif
+
+#ifdef MAC_OS_X_VERSION_10_15
+#define HAVE_OSX_1015_SDK
+#endif
+
+/* It would seem that to ensure backward compatibility we have to ensure that we have defined MAC_OS_X_VERSION_10_x everywhere */
 #ifndef MAC_OS_X_VERSION_10_3
 #define MAC_OS_X_VERSION_10_3 1030
 #endif
@@ -71,8 +82,8 @@
 #endif
 
 /* Check for mismatching 'architectures' */
-#if !defined(STRGEN) && !defined(SETTINGSGEN) && ((defined(__LP64__) && !defined(_SQ64)) || (!defined(__LP64__) && defined(_SQ64)))
-#	error "Compiling 64 bits without _SQ64 set! (or vice versa)"
+#if !defined(STRGEN) && !defined(SETTINGSGEN) && ((defined(__LP64__) && !defined(POINTER_IS_64BIT)) || (!defined(__LP64__) && defined(POINTER_IS_64BIT)))
+#	error "Compiling 64 bits without POINTER_IS_64BIT set! (or vice versa)"
 #endif
 
 /* Name conflict */

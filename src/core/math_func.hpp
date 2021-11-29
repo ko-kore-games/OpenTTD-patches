@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,66 +9,6 @@
 
 #ifndef MATH_FUNC_HPP
 #define MATH_FUNC_HPP
-
-/**
- * Returns the maximum of two values.
- *
- * This function returns the greater value of two given values.
- * If they are equal the value of a is returned.
- *
- * @param a The first value
- * @param b The second value
- * @return The greater value or a if equals
- */
-template <typename T>
-static inline T max(const T a, const T b)
-{
-	return (a >= b) ? a : b;
-}
-
-/**
- * Returns the minimum of two values.
- *
- * This function returns the smaller value of two given values.
- * If they are equal the value of b is returned.
- *
- * @param a The first value
- * @param b The second value
- * @return The smaller value or b if equals
- */
-template <typename T>
-static inline T min(const T a, const T b)
-{
-	return (a < b) ? a : b;
-}
-
-/**
- * Returns the minimum of two integer.
- *
- * This function returns the smaller value of two given integers.
- *
- * @param a The first integer
- * @param b The second integer
- * @return The smaller value
- */
-static inline int min(const int a, const int b)
-{
-	return min<int>(a, b);
-}
-
-/**
- * Returns the minimum of two unsigned integers.
- *
- * This function returns the smaller value of two given unsigned integers.
- *
- * @param a The first unsigned integer
- * @param b The second unsigned integer
- * @return The smaller value
- */
-static inline uint minu(const uint a, const uint b)
-{
-	return min<uint>(a, b);
-}
 
 /**
  * Returns the absolute value of (scalar) variable.
@@ -114,8 +52,8 @@ static inline T Align(const T x, uint n)
 template <typename T>
 static inline T *AlignPtr(T *x, uint n)
 {
-	assert_compile(sizeof(size_t) == sizeof(void *));
-	return (T *)Align((size_t)x, n);
+	static_assert(sizeof(size_t) == sizeof(void *));
+	return reinterpret_cast<T *>(Align((size_t)x, n));
 }
 
 /**
@@ -139,6 +77,29 @@ template <typename T>
 static inline T Clamp(const T a, const T min, const T max)
 {
 	assert(min <= max);
+	if (a <= min) return min;
+	if (a >= max) return max;
+	return a;
+}
+
+/**
+ * Clamp a value between an interval.
+ *
+ * This function returns a value which is between the given interval of
+ * min and max. If the given value is in this interval the value itself
+ * is returned otherwise the border of the interval is returned, according
+ * which side of the interval was 'left'.
+ *
+ * @note If the min value is greater than the return value is the average of the min and max.
+ * @param a The value to clamp/truncate.
+ * @param min The minimum of the interval.
+ * @param max the maximum of the interval.
+ * @returns A value between min and max which is closest to a.
+ */
+template <typename T>
+static inline T SoftClamp(const T a, const T min, const T max)
+{
+	if (min > max) return (min + max) / 2;
 	if (a <= min) return min;
 	if (a >= max) return max;
 	return a;
@@ -202,7 +163,7 @@ static inline uint ClampU(const uint a, const uint min, const uint max)
  */
 static inline int32 ClampToI32(const int64 a)
 {
-	return (int32)Clamp<int64>(a, INT32_MIN, INT32_MAX);
+	return static_cast<int32>(Clamp<int64>(a, INT32_MIN, INT32_MAX));
 }
 
 /**
@@ -218,7 +179,7 @@ static inline uint16 ClampToU16(const uint64 a)
 	 * match for min(uint64, uint) than uint64 min(uint64, uint64). As such we
 	 * need to cast the UINT16_MAX to prevent MSVC from displaying its
 	 * infinite loads of warnings. */
-	return (uint16)min<uint64>(a, (uint64)UINT16_MAX);
+	return static_cast<uint16>(std::min(a, static_cast<uint64>(UINT16_MAX)));
 }
 
 /**
@@ -247,9 +208,9 @@ static inline T Delta(const T a, const T b)
  * @return True if the value is in the interval, false else.
  */
 template <typename T>
-static inline bool IsInsideBS(const T x, const uint base, const uint size)
+static inline bool IsInsideBS(const T x, const size_t base, const size_t size)
 {
-	return (uint)(x - base) < size;
+	return (size_t)(x - base) < size;
 }
 
 /**
@@ -263,9 +224,9 @@ static inline bool IsInsideBS(const T x, const uint base, const uint size)
  * @see IsInsideBS()
  */
 template <typename T>
-static inline bool IsInsideMM(const T x, const uint min, const uint max)
+static inline bool IsInsideMM(const T x, const size_t min, const size_t max)
 {
-	return (uint)(x - min) < (max - min);
+	return (size_t)(x - min) < (max - min);
 }
 
 /**
@@ -319,6 +280,18 @@ static inline uint CeilDiv(uint a, uint b)
 }
 
 /**
+ * Computes ceil(a / b) for non-negative a and b (templated).
+ * @param a Numerator
+ * @param b Denominator
+ * @return Quotient, rounded up
+ */
+template <typename T>
+static inline T CeilDivT(T a, T b)
+{
+	return (a + b - 1) / b;
+}
+
+/**
  * Computes ceil(a / b) * b for non-negative a and b.
  * @param a Numerator
  * @param b Denominator
@@ -327,6 +300,18 @@ static inline uint CeilDiv(uint a, uint b)
 static inline uint Ceil(uint a, uint b)
 {
 	return CeilDiv(a, b) * b;
+}
+
+/**
+ * Computes ceil(a / b) * b for non-negative a and b (templated).
+ * @param a Numerator
+ * @param b Denominator
+ * @return a rounded up to the nearest multiple of b.
+ */
+template <typename T>
+static inline T CeilT(T a, T b)
+{
+	return CeilDivT<T>(a, b) * b;
 }
 
 /**
@@ -339,10 +324,10 @@ static inline int RoundDivSU(int a, uint b)
 {
 	if (a > 0) {
 		/* 0.5 is rounded to 1 */
-		return (a + (int)b / 2) / (int)b;
+		return (a + static_cast<int>(b) / 2) / static_cast<int>(b);
 	} else {
 		/* -0.5 is rounded to 0 */
-		return (a - ((int)b - 1) / 2) / (int)b;
+		return (a - (static_cast<int>(b) - 1) / 2) / static_cast<int>(b);
 	}
 }
 
@@ -363,6 +348,32 @@ static inline int DivAwayFromZero(int a, uint b)
 	}
 }
 
+/**
+ * Computes a / b rounded towards negative infinity for b > 0.
+ * @param a Numerator
+ * @param b Denominator
+ * @return Quotient, rounded towards negative infinity
+ */
+template <typename T>
+static inline T DivTowardsNegativeInf(T a, T b)
+{
+	return (a / b) - (a % b < 0 ? 1 : 0);
+}
+
+/**
+ * Computes a / b rounded towards positive infinity for b > 0.
+ * @param a Numerator
+ * @param b Denominator
+ * @return Quotient, rounded towards positive infinity
+ */
+template <typename T>
+static inline T DivTowardsPositiveInf(T a, T b)
+{
+	return (a / b) + (a % b > 0 ? 1 : 0);
+}
+
 uint32 IntSqrt(uint32 num);
+uint32 IntSqrt64(uint64 num);
+uint32 IntCbrt(uint64 num);
 
 #endif /* MATH_FUNC_HPP */

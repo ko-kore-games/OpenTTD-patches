@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,33 +16,33 @@
 
 #include "safeguards.h"
 
-#ifdef _SQ64
-	assert_compile((sizeof(ParentSpriteToDraw) % 16) == 0);
-	#define LOAD_128 _mm_load_si128
+static_assert((sizeof(ParentSpriteToDraw) % 16) == 0);
+#ifdef POINTER_IS_64BIT
+#	define LOAD_128 _mm_load_si128
 #else
-	#define LOAD_128 _mm_loadu_si128
+#	define LOAD_128 _mm_loadu_si128
 #endif
 
 /** Sort parent sprites pointer array using SSE4.1 optimizations. */
 void ViewportSortParentSpritesSSE41(ParentSpriteToSortVector *psdv)
 {
 	const __m128i mask_ptest = _mm_setr_epi8(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0);
-	ParentSpriteToDraw ** const psdvend = psdv->End();
-	ParentSpriteToDraw **psd = psdv->Begin();
+	auto const psdvend = psdv->end();
+	auto psd = psdv->begin();
 	while (psd != psdvend) {
 		ParentSpriteToDraw * const ps = *psd;
 
-		if (ps->comparison_done) {
+		if (ps->IsComparisonDone()) {
 			psd++;
 			continue;
 		}
 
-		ps->comparison_done = true;
+		ps->SetComparisonDone(true);
 
-		for (ParentSpriteToDraw **psd2 = psd + 1; psd2 != psdvend; psd2++) {
+		for (auto psd2 = psd + 1; psd2 != psdvend; psd2++) {
 			ParentSpriteToDraw * const ps2 = *psd2;
 
-			if (ps2->comparison_done) continue;
+			if (ps2->IsComparisonDone()) continue;
 
 			/*
 			 * Decide which comparator to use, based on whether the bounding boxes overlap
@@ -85,7 +83,7 @@ void ViewportSortParentSpritesSSE41(ParentSpriteToSortVector *psdv)
 
 			/* Move ps2 in front of ps */
 			ParentSpriteToDraw * const temp = ps2;
-			for (ParentSpriteToDraw **psd3 = psd2; psd3 > psd; psd3--) {
+			for (auto psd3 = psd2; psd3 > psd; psd3--) {
 				*psd3 = *(psd3 - 1);
 			}
 			*psd = temp;

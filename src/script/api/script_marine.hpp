@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -38,6 +36,8 @@ public:
 		BT_DOCK,  ///< Build a dock
 		BT_DEPOT, ///< Build a ship depot
 		BT_BUOY,  ///< Build a buoy
+		BT_LOCK,  ///< Build a lock
+		BT_CANAL, ///< Build a canal
 	};
 
 	/**
@@ -159,6 +159,18 @@ public:
 	 * @return Whether the canal has been/can be build or not.
 	 */
 	static bool BuildCanal(TileIndex tile);
+
+	/**
+	 * Builds a river on tile.
+	 * @param tile The tile where the canal will be build.
+	 * @pre ScriptMap::IsValidTile(tile).
+	 * @exception ScriptError::ERR_AREA_NOT_CLEAR
+	 * @exception ScriptError::ERR_LAND_SLOPED_WRONG
+	 * @exception ScriptError::ERR_OWNED_BY_ANOTHER_COMPANY
+	 * @exception ScriptError::ERR_ALREADY_BUILT
+	 * @return Whether the river has been/can be build or not.
+	 */
+	static bool BuildRiver(TileIndex tile);
 
 	/**
 	 * Removes a water depot.

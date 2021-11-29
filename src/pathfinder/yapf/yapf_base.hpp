@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,8 +12,6 @@
 
 #include "../../debug.h"
 #include "../../settings_type.h"
-
-extern int _total_pf_time_us;
 
 /**
  * CYapfBaseT - A-star type path finder base class.
@@ -62,7 +58,6 @@ public:
 protected:
 	Node                *m_pBestDestNode;      ///< pointer to the destination node found at last round
 	Node                *m_pBestIntermediateNode; ///< here should be node closest to the destination if path not found
-	const YAPFSettings  *m_settings;           ///< current settings (_settings_game.yapf)
 	int                  m_max_search_nodes;   ///< maximum number of nodes we are allowed to visit before we give up
 	const VehicleType   *m_veh;                ///< vehicle that we are trying to drive
 
@@ -70,22 +65,15 @@ protected:
 	int                  m_stats_cache_hits;   ///< stats - how many node's costs were reused from cache
 
 public:
-	CPerformanceTimer    m_perf_cost;          ///< stats - total CPU time of this run
-	CPerformanceTimer    m_perf_slope_cost;    ///< stats - slope calculation CPU time
-	CPerformanceTimer    m_perf_ts_cost;       ///< stats - GetTrackStatus() CPU time
-	CPerformanceTimer    m_perf_other_cost;    ///< stats - other CPU time
-
-public:
 	int                  m_num_steps;          ///< this is there for debugging purposes (hope it doesn't hurt)
 
 public:
 	/** default constructor */
 	inline CYapfBaseT()
-		: m_pBestDestNode(NULL)
-		, m_pBestIntermediateNode(NULL)
-		, m_settings(&_settings_game.pf.yapf)
+		: m_pBestDestNode(nullptr)
+		, m_pBestIntermediateNode(nullptr)
 		, m_max_search_nodes(PfGetSettings().max_search_nodes)
-		, m_veh(NULL)
+		, m_veh(nullptr)
 		, m_stats_cost_calcs(0)
 		, m_stats_cache_hits(0)
 		, m_num_steps(0)
@@ -106,7 +94,7 @@ public:
 	/** return current settings (can be custom - company based - but later) */
 	inline const YAPFSettings& PfGetSettings() const
 	{
-		return *m_settings;
+		return _settings_game.pf.yapf;
 	}
 
 	/**
@@ -122,55 +110,47 @@ public:
 	{
 		m_veh = v;
 
-		CPerformanceTimer perf;
-		perf.Start();
-
 		Yapf().PfSetStartupNodes();
 		bool bDestFound = true;
 
 		for (;;) {
 			m_num_steps++;
 			Node *n = m_nodes.GetBestOpenNode();
-			if (n == NULL) {
+			if (n == nullptr) {
 				break;
 			}
 
 			/* if the best open node was worse than the best path found, we can finish */
-			if (m_pBestDestNode != NULL && m_pBestDestNode->GetCost() < n->GetCostEstimate()) {
+			if (m_pBestDestNode != nullptr && m_pBestDestNode->GetCost() < n->GetCostEstimate()) {
 				break;
 			}
 
+			m_nodes.DequeueBestOpenNode();
 			Yapf().PfFollowNode(*n);
 			if (m_max_search_nodes == 0 || m_nodes.ClosedCount() < m_max_search_nodes) {
-				m_nodes.PopOpenNode(n->GetKey());
+				m_nodes.PopAlreadyDequeuedOpenNode(n->GetKey());
 				m_nodes.InsertClosedNode(*n);
 			} else {
+				m_nodes.ReenqueueOpenNode(*n);
 				bDestFound = false;
 				break;
 			}
 		}
 
-		bDestFound &= (m_pBestDestNode != NULL);
+		bDestFound &= (m_pBestDestNode != nullptr);
 
-		perf.Stop();
-		if (_debug_yapf_level >= 2) {
-			int t = perf.Get(1000000);
-			_total_pf_time_us += t;
+		if (_debug_yapf_level >= 3) {
+			UnitID veh_idx = (m_veh != nullptr) ? m_veh->unitnumber : 0;
+			char ttc = Yapf().TransportTypeChar();
+			float cache_hit_ratio = (m_stats_cache_hits == 0) ? 0.0f : ((float)m_stats_cache_hits / (float)(m_stats_cache_hits + m_stats_cost_calcs) * 100.0f);
+			int cost = bDestFound ? m_pBestDestNode->m_cost : -1;
+			int dist = bDestFound ? m_pBestDestNode->m_estimate - m_pBestDestNode->m_cost : -1;
 
-			if (_debug_yapf_level >= 3) {
-				UnitID veh_idx = (m_veh != NULL) ? m_veh->unitnumber : 0;
-				char ttc = Yapf().TransportTypeChar();
-				float cache_hit_ratio = (m_stats_cache_hits == 0) ? 0.0f : ((float)m_stats_cache_hits / (float)(m_stats_cache_hits + m_stats_cost_calcs) * 100.0f);
-				int cost = bDestFound ? m_pBestDestNode->m_cost : -1;
-				int dist = bDestFound ? m_pBestDestNode->m_estimate - m_pBestDestNode->m_cost : -1;
-
-				DEBUG(yapf, 3, "[YAPF%c]%c%4d- %d us - %d rounds - %d open - %d closed - CHR %4.1f%% - C %d D %d - c%d(sc%d, ts%d, o%d) -- ",
-					ttc, bDestFound ? '-' : '!', veh_idx, t, m_num_steps, m_nodes.OpenCount(), m_nodes.ClosedCount(),
-					cache_hit_ratio, cost, dist, m_perf_cost.Get(1000000), m_perf_slope_cost.Get(1000000),
-					m_perf_ts_cost.Get(1000000), m_perf_other_cost.Get(1000000)
-				);
-			}
+			DEBUG(yapf, 3, "[YAPF%c]%c%4d- %d rounds - %d open - %d closed - CHR %4.1f%% - C %d D %d",
+				ttc, bDestFound ? '-' : '!', veh_idx, m_num_steps, m_nodes.OpenCount(), m_nodes.ClosedCount(), cache_hit_ratio, cost, dist
+			);
 		}
+
 		return bDestFound;
 	}
 
@@ -180,7 +160,7 @@ public:
 	 */
 	inline Node *GetBestNode()
 	{
-		return (m_pBestDestNode != NULL) ? m_pBestDestNode : m_pBestIntermediateNode;
+		return (m_pBestDestNode != nullptr) ? m_pBestDestNode : m_pBestIntermediateNode;
 	}
 
 	/**
@@ -198,7 +178,7 @@ public:
 	{
 		Yapf().PfNodeCacheFetch(n);
 		/* insert the new node only if it is not there */
-		if (m_nodes.FindOpenNode(n.m_key) == NULL) {
+		if (m_nodes.FindOpenNode(n.m_key) == nullptr) {
 			m_nodes.InsertOpenNode(n);
 		} else {
 			/* if we are here, it means that node is already there - how it is possible?
@@ -208,15 +188,23 @@ public:
 	}
 
 	/** add multiple nodes - direct children of the given node */
-	inline void AddMultipleNodes(Node *parent, const TrackFollower &tf)
+	template <class TNodeFunc>
+	inline void AddMultipleNodes(Node *parent, const TrackFollower &tf, TNodeFunc node_func)
 	{
 		bool is_choice = (KillFirstBit(tf.m_new_td_bits) != TRACKDIR_BIT_NONE);
 		for (TrackdirBits rtds = tf.m_new_td_bits; rtds != TRACKDIR_BIT_NONE; rtds = KillFirstBit(rtds)) {
 			Trackdir td = (Trackdir)FindFirstBit2x64(rtds);
 			Node &n = Yapf().CreateNewNode();
 			n.Set(parent, tf.m_new_tile, td, is_choice);
+			node_func(n);
 			Yapf().AddNewNode(n, tf);
 		}
+	}
+
+	/** add multiple nodes - direct children of the given node */
+	inline void AddMultipleNodes(Node *parent, const TrackFollower &tf)
+	{
+		AddMultipleNodes(parent, tf, [&](Node &n) {});
 	}
 
 	/**
@@ -227,11 +215,14 @@ public:
 	 * remain the best intermediate node, and thus the vehicle would still
 	 * go towards the red EOL signal.
 	 */
-	void PruneIntermediateNodeBranch()
+	void PruneIntermediateNodeBranch(Node *n)
 	{
-		while (Yapf().m_pBestIntermediateNode != NULL && (Yapf().m_pBestIntermediateNode->m_segment->m_end_segment_reason & ESRB_CHOICE_FOLLOWS) == 0) {
-			Yapf().m_pBestIntermediateNode = Yapf().m_pBestIntermediateNode->m_parent;
+		bool intermediate_on_branch = false;
+		while (n != nullptr && (n->m_segment->m_end_segment_reason & ESRB_CHOICE_FOLLOWS) == 0) {
+			if (n == Yapf().m_pBestIntermediateNode) intermediate_on_branch = true;
+			n = n->m_parent;
 		}
+		if (intermediate_on_branch) Yapf().m_pBestIntermediateNode = n;
 	}
 
 	/**
@@ -262,20 +253,20 @@ public:
 		/* detect the destination */
 		bool bDestination = Yapf().PfDetectDestination(n);
 		if (bDestination) {
-			if (m_pBestDestNode == NULL || n < *m_pBestDestNode) {
+			if (m_pBestDestNode == nullptr || n < *m_pBestDestNode) {
 				m_pBestDestNode = &n;
 			}
 			m_nodes.FoundBestNode(n);
 			return;
 		}
 
-		if (m_max_search_nodes > 0 && (m_pBestIntermediateNode == NULL || (m_pBestIntermediateNode->GetCostEstimate() - m_pBestIntermediateNode->GetCost()) > (n.GetCostEstimate() - n.GetCost()))) {
-			m_pBestIntermediateNode = &n;
-		}
+		/* The new node can be set as the best intermediate node only once we're
+		 * certain it will be finalized by being inserted into the open list. */
+		bool set_intermediate = m_max_search_nodes > 0 && (m_pBestIntermediateNode == nullptr || (m_pBestIntermediateNode->GetCostEstimate() - m_pBestIntermediateNode->GetCost()) > (n.GetCostEstimate() - n.GetCost()));
 
 		/* check new node against open list */
 		Node *openNode = m_nodes.FindOpenNode(n.GetKey());
-		if (openNode != NULL) {
+		if (openNode != nullptr) {
 			/* another node exists with the same key in the open list
 			 * is it better than new one? */
 			if (n.GetCostEstimate() < openNode->GetCostEstimate()) {
@@ -284,13 +275,14 @@ public:
 				*openNode = n;
 				/* add the updated old node back to open list */
 				m_nodes.InsertOpenNode(*openNode);
+				if (set_intermediate) m_pBestIntermediateNode = openNode;
 			}
 			return;
 		}
 
 		/* check new node against closed list */
 		Node *closedNode = m_nodes.FindClosedNode(n.GetKey());
-		if (closedNode != NULL) {
+		if (closedNode != nullptr) {
 			/* another node exists with the same key in the closed list
 			 * is it better than new one? */
 			int node_est = n.GetCostEstimate();
@@ -309,6 +301,7 @@ public:
 		/* the new node is really new
 		 * add it to the open list */
 		m_nodes.InsertOpenNode(n);
+		if (set_intermediate) m_pBestIntermediateNode = &n;
 	}
 
 	const VehicleType * GetVehicle() const
@@ -319,7 +312,7 @@ public:
 	void DumpBase(DumpTarget &dmp) const
 	{
 		dmp.WriteStructT("m_nodes", &m_nodes);
-		dmp.WriteLine("m_num_steps = %d", m_num_steps);
+		dmp.WriteValue("m_num_steps", m_num_steps);
 	}
 
 	/* methods that should be implemented at derived class Types::Tpf (derived from CYapfBaseT) */

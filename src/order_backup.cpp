@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -30,7 +28,7 @@ OrderBackup::~OrderBackup()
 	if (CleaningPool()) return;
 
 	Order *o = this->orders;
-	while (o != NULL) {
+	while (o != nullptr) {
 		Order *next = o->next;
 		delete o;
 		o = next;
@@ -58,12 +56,20 @@ OrderBackup::OrderBackup(const Vehicle *v, uint32 user)
 		Order **tail = &this->orders;
 
 		/* Count the number of orders */
-		const Order *order;
-		FOR_VEHICLE_ORDERS(v, order) {
+		for (const Order *order : v->Orders()) {
 			Order *copy = new Order();
 			copy->AssignOrder(*order);
 			*tail = copy;
 			tail = &copy->next;
+		}
+
+		if (v->orders.list != nullptr && HasBit(v->vehicle_flags, VF_SCHEDULED_DISPATCH)) {
+			SetBit(this->vehicle_flags, VF_SCHEDULED_DISPATCH);
+			this->scheduled_dispatch = v->orders.list->GetScheduledDispatch();
+			this->scheduled_dispatch_duration = v->orders.list->GetScheduledDispatchDuration();
+			this->scheduled_dispatch_start_date = v->orders.list->GetScheduledDispatchStartDatePart();
+			this->scheduled_dispatch_start_full_date_fract = v->orders.list->GetScheduledDispatchStartDateFractPart();
+			this->scheduled_dispatch_max_delay = v->orders.list->GetScheduledDispatchDelay();
 		}
 	}
 }
@@ -75,11 +81,22 @@ OrderBackup::OrderBackup(const Vehicle *v, uint32 user)
 void OrderBackup::DoRestore(Vehicle *v)
 {
 	/* If we had shared orders, recover that */
-	if (this->clone != NULL) {
+	if (this->clone != nullptr) {
 		DoCommand(0, v->index | CO_SHARE << 30, this->clone->index, DC_EXEC, CMD_CLONE_ORDER);
-	} else if (this->orders != NULL && OrderList::CanAllocateItem()) {
+	} else if (this->orders != nullptr && OrderList::CanAllocateItem()) {
 		v->orders.list = new OrderList(this->orders, v);
-		this->orders = NULL;
+		this->orders = nullptr;
+
+		if (HasBit(this->vehicle_flags, VF_SCHEDULED_DISPATCH)) {
+			SetBit(v->vehicle_flags, VF_SCHEDULED_DISPATCH);
+			v->orders.list->SetScheduledDispatchDuration(this->scheduled_dispatch_duration);
+			v->orders.list->SetScheduledDispatchDelay(this->scheduled_dispatch_max_delay);
+			v->orders.list->SetScheduledDispatchStartDate(this->scheduled_dispatch_start_date,
+					this->scheduled_dispatch_start_full_date_fract);
+			v->orders.list->SetScheduledDispatchLastDispatch(0);
+			v->orders.list->SetScheduledDispatch(std::move(this->scheduled_dispatch));
+		}
+
 		/* Make sure buoys/oil rigs are updated in the station list. */
 		InvalidateWindowClassesData(WC_STATION_LIST, 0);
 	}
@@ -89,6 +106,7 @@ void OrderBackup::DoRestore(Vehicle *v)
 	/* Make sure orders are in range */
 	v->UpdateRealOrderIndex();
 	if (v->cur_implicit_order_index >= v->GetNumOrders()) v->cur_implicit_order_index = v->cur_real_order_index;
+	if (v->cur_timetable_order_index >= v->GetNumOrders()) v->cur_timetable_order_index = INVALID_VEH_ORDER_ID;
 
 	/* Restore vehicle group */
 	DoCommand(0, this->group, v->index, DC_EXEC, CMD_ADD_VEHICLE_GROUP);
@@ -104,8 +122,7 @@ void OrderBackup::DoRestore(Vehicle *v)
 {
 	/* Don't use reset as that broadcasts over the network to reset the variable,
 	 * which is what we are doing at the moment. */
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
 		if (ob->user == user) delete ob;
 	}
 	if (OrderBackup::CanAllocateItem()) {
@@ -121,8 +138,7 @@ void OrderBackup::DoRestore(Vehicle *v)
  */
 /* static */ void OrderBackup::Restore(Vehicle *v, uint32 user)
 {
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
 		if (v->tile != ob->tile || ob->user != user) continue;
 
 		ob->DoRestore(v);
@@ -138,8 +154,7 @@ void OrderBackup::DoRestore(Vehicle *v)
  */
 /* static */ void OrderBackup::ResetOfUser(TileIndex tile, uint32 user)
 {
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
 		if (ob->user == user && (ob->tile == tile || tile == INVALID_TILE)) delete ob;
 	}
 }
@@ -171,9 +186,8 @@ CommandCost CmdClearOrderBackup(TileIndex tile, DoCommandFlag flags, uint32 p1, 
 {
 	assert(_network_server);
 
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
-		/* If it's not an backup of us, so ignore it. */
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
+		/* If it's not a backup of us, ignore it. */
 		if (ob->user != user) continue;
 
 		DoCommandP(0, 0, user, CMD_CLEAR_ORDER_BACKUP);
@@ -193,15 +207,10 @@ CommandCost CmdClearOrderBackup(TileIndex tile, DoCommandFlag flags, uint32 p1, 
 	 * but compiled it. A network client has its own variable for the unique
 	 * client/user identifier. Finally if networking isn't compiled in the
 	 * default is just plain and simple: 0. */
-#ifdef ENABLE_NETWORK
 	uint32 user = _networking && !_network_server ? _network_own_client_id : CLIENT_ID_SERVER;
-#else
-	uint32 user = 0;
-#endif
 
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
-		/* If it's not an backup of us, so ignore it. */
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
+		/* If it's not a backup of us, ignore it. */
 		if (ob->user != user) continue;
 		/* If it's not for our chosen tile either, ignore it. */
 		if (t != INVALID_TILE && t != ob->tile) continue;
@@ -210,7 +219,7 @@ CommandCost CmdClearOrderBackup(TileIndex tile, DoCommandFlag flags, uint32 p1, 
 			/* We need to circumvent the "prevention" from this command being executed
 			 * while the game is paused, so use the internal method. Nor do we want
 			 * this command to get its cost estimated when shift is pressed. */
-			DoCommandPInternal(ob->tile, 0, user, CMD_CLEAR_ORDER_BACKUP, NULL, NULL, true, false);
+			DoCommandPInternal(ob->tile, 0, user, 0, CMD_CLEAR_ORDER_BACKUP, nullptr, nullptr, true, false, 0);
 		} else {
 			/* The command came from the game logic, i.e. the clearing of a tile.
 			 * In that case we have no need to actually sync this, just do it. */
@@ -225,8 +234,7 @@ CommandCost CmdClearOrderBackup(TileIndex tile, DoCommandFlag flags, uint32 p1, 
  */
 /* static */ void OrderBackup::ClearGroup(GroupID group)
 {
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
 		if (ob->group == group) ob->group = DEFAULT_GROUP;
 	}
 }
@@ -234,20 +242,19 @@ CommandCost CmdClearOrderBackup(TileIndex tile, DoCommandFlag flags, uint32 p1, 
 /**
  * Clear/update the (clone) vehicle from an order backup.
  * @param v The vehicle to clear.
- * @pre v != NULL
+ * @pre v != nullptr
  * @note If it is not possible to set another vehicle as clone
  *       "example", then this backed up order will be removed.
  */
 /* static */ void OrderBackup::ClearVehicle(const Vehicle *v)
 {
-	assert(v != NULL);
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
+	assert(v != nullptr);
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
 		if (ob->clone == v) {
 			/* Get another item in the shared list. */
 			ob->clone = (v->FirstShared() == v) ? v->NextShared() : v->FirstShared();
 			/* But if that isn't there, remove it. */
-			if (ob->clone == NULL) delete ob;
+			if (ob->clone == nullptr) delete ob;
 		}
 	}
 }
@@ -262,9 +269,8 @@ CommandCost CmdClearOrderBackup(TileIndex tile, DoCommandFlag flags, uint32 p1, 
  */
 /* static */ void OrderBackup::RemoveOrder(OrderType type, DestinationID destination, bool hangar)
 {
-	OrderBackup *ob;
-	FOR_ALL_ORDER_BACKUPS(ob) {
-		for (Order *order = ob->orders; order != NULL; order = order->next) {
+	for (OrderBackup *ob : OrderBackup::Iterate()) {
+		for (Order *order = ob->orders; order != nullptr; order = order->next) {
 			OrderType ot = order->GetType();
 			if (ot == OT_GOTO_DEPOT && (order->GetDepotActionType() & ODATFB_NEAREST_DEPOT) != 0) continue;
 			if (ot == OT_GOTO_DEPOT && hangar && !IsHangarTile(ob->tile)) continue; // Not an aircraft? Can't have a hangar order.

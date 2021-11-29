@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,8 +16,10 @@
 #include "order_type.h"
 #include "cargo_type.h"
 #include "vehicle_type.h"
+#include "company_type.h"
 #include "core/multimap.hpp"
-#include <list>
+#include "saveload/saveload_common.h"
+#include <deque>
 
 /** Unique identifier for a single cargo packet. */
 typedef uint32 CargoPacketID;
@@ -34,25 +34,40 @@ struct GoodsEntry; // forward-declare for Stage() and RerouteStalePackets()
 
 template <class Tinst, class Tcont> class CargoList;
 class StationCargoList; // forward-declare, so we can use it in VehicleCargoList.
-extern const struct SaveLoad *GetCargoPacketDesc();
+extern SaveLoadTable GetCargoPacketDesc();
+
+namespace upstream_sl {
+	extern upstream_sl::SaveLoadTable GetCargoPacketDesc();
+	class SlVehicleCommon;
+	class SlStationGoods;
+}
 
 typedef uint32 TileOrStationID;
+
+void ClearCargoPacketDeferredPayments();
+void ChangeOwnershipOfCargoPacketDeferredPayments(Owner old_owner, Owner new_owner);
 
 /**
  * Container for cargo from the same location and time.
  */
 struct CargoPacket : CargoPacketPool::PoolItem<&_cargopacket_pool> {
 private:
-	Money feeder_share;         ///< Value of feeder pickup to be paid for on delivery of cargo.
-	uint16 count;               ///< The amount of cargo in this packet.
-	byte days_in_transit;       ///< Amount of days this packet has been in transit.
-	SourceTypeByte source_type; ///< Type of \c source_id.
-	SourceID source_id;         ///< Index of source, INVALID_SOURCE if unknown/invalid.
-	StationID source;           ///< The station where the cargo came from first.
-	TileIndex source_xy;        ///< The origin of the cargo (first station in feeder chain).
+	Money feeder_share;     ///< Value of feeder pickup to be paid for on delivery of cargo.
+	uint16 count;           ///< The amount of cargo in this packet.
+	byte days_in_transit;   ///< Amount of days this packet has been in transit.
+	SourceType source_type; ///< Type of \c source_id.
+	SourceID source_id;     ///< Index of source, INVALID_SOURCE if unknown/invalid.
+	StationID source;       ///< The station where the cargo came from first.
+	TileIndex source_xy;    ///< The origin of the cargo (first station in feeder chain).
 	union {
 		TileOrStationID loaded_at_xy; ///< Location where this cargo has been loaded into the vehicle.
 		TileOrStationID next_station; ///< Station where the cargo wants to go next.
+	};
+	uint flags = 0;             ///< NOSAVE: temporary flags
+
+	/** Cargo packet flag bits in CargoPacket::flags. */
+	enum CargoPacketFlags {
+		CPF_HAS_DEFERRED_PAYMENT = 0x01, ///< Cargo packet has 1 or more deferred payment(s)
 	};
 
 	/** The CargoList caches, thus needs to know about it. */
@@ -60,7 +75,9 @@ private:
 	friend class VehicleCargoList;
 	friend class StationCargoList;
 	/** We want this to be saved, right? */
-	friend const struct SaveLoad *GetCargoPacketDesc();
+	friend SaveLoadTable GetCargoPacketDesc();
+	friend upstream_sl::SaveLoadTable upstream_sl::GetCargoPacketDesc();
+	friend void Load_CPDP();
 public:
 	/** Maximum number of items in a single cargo packet. */
 	static const uint16 MAX_COUNT = UINT16_MAX;
@@ -68,9 +85,7 @@ public:
 	CargoPacket();
 	CargoPacket(StationID source, TileIndex source_xy, uint16 count, SourceType source_type, SourceID source_id);
 	CargoPacket(uint16 count, byte days_in_transit, StationID source, TileIndex source_xy, TileIndex loaded_at_xy, Money feeder_share = 0, SourceType source_type = ST_INDUSTRY, SourceID source_id = INVALID_SOURCE);
-
-	/** Destroy the packet. */
-	~CargoPacket() { }
+	~CargoPacket();
 
 	CargoPacket *Split(uint new_size);
 	void Merge(CargoPacket *cp);
@@ -123,6 +138,9 @@ public:
 	{
 		return this->feeder_share * part / static_cast<uint>(this->count);
 	}
+
+	void RegisterDeferredCargoPayment(CompanyID cid, VehicleType type, Money payment);
+	void PayDeferredPayments();
 
 	/**
 	 * Gets the number of days this cargo has been in transit.
@@ -192,20 +210,9 @@ public:
 	static void InvalidateAllFrom(SourceType src_type, SourceID src);
 	static void InvalidateAllFrom(StationID sid);
 	static void AfterLoad();
+	static void PostVehiclesAfterLoad();
+	static bool ValidateDeferredCargoPayments();
 };
-
-/**
- * Iterate over all _valid_ cargo packets from the given start.
- * @param var   Variable used as "iterator".
- * @param start Cargo packet ID of the first packet to iterate over.
- */
-#define FOR_ALL_CARGOPACKETS_FROM(var, start) FOR_ALL_ITEMS_FROM(CargoPacket, cargopacket_index, var, start)
-
-/**
- * Iterate over all _valid_ cargo packets from the begin of the pool.
- * @param var   Variable used as "iterator".
- */
-#define FOR_ALL_CARGOPACKETS(var) FOR_ALL_CARGOPACKETS_FROM(var, 0)
 
 /**
  * Simple collection class for a list of cargo packets.
@@ -275,7 +282,7 @@ public:
 	void InvalidateCache();
 };
 
-typedef std::list<CargoPacket *> CargoPacketList;
+typedef std::deque<CargoPacket *> CargoPacketList;
 
 /**
  * CargoList that is used for vehicles.
@@ -286,25 +293,48 @@ protected:
 	typedef CargoList<VehicleCargoList, CargoPacketList> Parent;
 
 	Money feeder_share;                     ///< Cache for the feeder share.
-	uint action_counts[NUM_MOVE_TO_ACTION]; ///< Counts of cargo to be transfered, delivered, kept and loaded.
+	uint action_counts[NUM_MOVE_TO_ACTION]; ///< Counts of cargo to be transferred, delivered, kept and loaded.
 
 	template<class Taction>
 	void ShiftCargo(Taction action);
 
 	template<class Taction>
+	void ShiftCargoWithFrontInsert(Taction action);
+
+	template<class Taction>
 	void PopCargo(Taction action);
+
+	inline uint RecalculateCargoTotal() const
+	{
+		uint total = 0;
+		for (const auto &cp : this->packets) {
+			total += cp->Count();
+		}
+		return total;
+	}
+
+public:
 
 	/**
 	 * Assert that the designation counts add up.
 	 */
 	inline void AssertCountConsistency() const
 	{
-		assert(this->action_counts[MTA_KEEP] +
+		assert_msg(this->action_counts[MTA_KEEP] +
 				this->action_counts[MTA_DELIVER] +
 				this->action_counts[MTA_TRANSFER] +
-				this->action_counts[MTA_LOAD] == this->count);
+				this->action_counts[MTA_LOAD] == this->count,
+				"%u + %u + %u + %u != %u, (%u in %u packets)",
+				this->action_counts[MTA_KEEP],
+				this->action_counts[MTA_DELIVER],
+				this->action_counts[MTA_TRANSFER],
+				this->action_counts[MTA_LOAD],
+				this->count,
+				this->RecalculateCargoTotal(),
+				(uint) this->packets.size());
 	}
 
+protected:
 	void AddToCache(const CargoPacket *cp);
 	void RemoveFromCache(const CargoPacket *cp, uint count);
 
@@ -317,10 +347,11 @@ protected:
 public:
 	/** The station cargo list needs to control the unloading. */
 	friend class StationCargoList;
+	friend upstream_sl::SlVehicleCommon;
 	/** The super class ought to know what it's doing. */
 	friend class CargoList<VehicleCargoList, CargoPacketList>;
 	/** The vehicles have a cargo list (and we want that saved). */
-	friend const struct SaveLoad *GetVehicleDescription(VehicleType vt);
+	friend SaveLoadTable GetVehicleDescription(VehicleType vt);
 
 	friend class CargoShift;
 	friend class CargoTransfer;
@@ -438,7 +469,7 @@ public:
 	uint Reroute(uint max_move, VehicleCargoList *dest, StationID avoid, StationID avoid2, const GoodsEntry *ge);
 
 	/**
-	 * Are two the two CargoPackets mergeable in the context of
+	 * Are the two CargoPackets mergeable in the context of
 	 * a list of CargoPackets for a Vehicle?
 	 * @param cp1 First CargoPacket.
 	 * @param cp2 Second CargoPacket.
@@ -454,7 +485,7 @@ public:
 	}
 };
 
-typedef MultiMap<StationID, CargoPacket *> StationCargoPacketMap;
+typedef MultiMap<StationID, CargoPacket *, CargoPacketList> StationCargoPacketMap;
 typedef std::map<StationID, uint> StationCargoAmountMap;
 
 /**
@@ -471,7 +502,8 @@ public:
 	/** The super class ought to know what it's doing. */
 	friend class CargoList<StationCargoList, StationCargoPacketMap>;
 	/** The stations, via GoodsEntry, have a CargoList. */
-	friend const struct SaveLoad *GetGoodsDesc();
+	friend SaveLoadTable GetGoodsDesc();
+	friend upstream_sl::SlStationGoods;
 
 	friend class CargoLoad;
 	friend class CargoTransfer;
@@ -501,7 +533,7 @@ public:
 		while (!next.IsEmpty()) {
 			if (this->packets.find(next.Pop()) != this->packets.end()) return true;
 		}
-		/* Packets for INVALID_STTION can go anywhere. */
+		/* Packets for INVALID_STATION can go anywhere. */
 		return this->packets.find(INVALID_STATION) != this->packets.end();
 	}
 
@@ -523,6 +555,8 @@ public:
 	{
 		return this->count;
 	}
+
+	uint AvailableViaCount(StationID next) const;
 
 	/**
 	 * Returns sum of cargo reserved for loading onto vehicles.
@@ -549,12 +583,17 @@ public:
 
 	uint Reserve(uint max_move, VehicleCargoList *dest, TileIndex load_place, StationIDStack next);
 	uint Load(uint max_move, VehicleCargoList *dest, TileIndex load_place, StationIDStack next);
-	uint Truncate(uint max_move = UINT_MAX, StationCargoAmountMap *cargo_per_source = NULL);
+	uint Truncate(uint max_move = UINT_MAX, StationCargoAmountMap *cargo_per_source = nullptr);
 	uint Reroute(uint max_move, StationCargoList *dest, StationID avoid, StationID avoid2, const GoodsEntry *ge);
 
+	void AfterLoadIncreaseReservationCount(uint count)
+	{
+		this->reserved_count += count;
+	}
+
 	/**
-	 * Are two the two CargoPackets mergeable in the context of
-	 * a list of CargoPackets for a Vehicle?
+	 * Are the two CargoPackets mergeable in the context of
+	 * a list of CargoPackets for a Station?
 	 * @param cp1 First CargoPacket.
 	 * @param cp2 Second CargoPacket.
 	 * @return True if they are mergeable.

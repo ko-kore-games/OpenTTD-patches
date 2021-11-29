@@ -3,6 +3,8 @@
 #include "../stdafx.h"
 #include "demands.h"
 #include <queue>
+#include <algorithm>
+#include <tuple>
 
 #include "../safeguards.h"
 
@@ -45,7 +47,7 @@ public:
 	 */
 	inline void SetDemandPerNode(uint num_demands)
 	{
-		this->demand_per_node = max(this->supply_sum / num_demands, 1U);
+		this->demand_per_node = std::max(this->supply_sum / num_demands, 1U);
 	}
 
 	/**
@@ -57,7 +59,7 @@ public:
 	 */
 	inline uint EffectiveSupply(const Node &from, const Node &to)
 	{
-		return max(from.Supply() * max(1U, to.Supply()) * this->mod_size / 100 / this->demand_per_node, 1U);
+		return std::max(from.Supply() * std::max(1U, to.Supply()) * this->mod_size / 100 / this->demand_per_node, 1U);
 	}
 
 	/**
@@ -102,6 +104,15 @@ public:
 	}
 
 	/**
+	 * Nothing to do here.
+	 * @param unused.
+	 * @param unused.
+	 */
+	inline void AdjustDemandNodes(LinkGraphJob &, const std::vector<NodeID> &)
+	{
+	}
+
+	/**
 	 * Get the effective supply of one node towards another one.
 	 * @param from The supplying node.
 	 * @param unused.
@@ -120,6 +131,74 @@ public:
 };
 
 /**
+ * A scaler for asymmetric distribution (equal supply).
+ */
+class AsymmetricScalerEq : public Scaler {
+public:
+	/**
+	 * Count a node's supply into the sum of supplies.
+	 * @param node Node.
+	 */
+	inline void AddNode(const Node &node)
+	{
+		this->supply_sum += node.Supply();
+	}
+
+	/**
+	 * Calculate the mean demand per node using the sum of supplies.
+	 * @param num_demands Number of accepting nodes.
+	 */
+	inline void SetDemandPerNode(uint num_demands)
+	{
+		this->demand_per_node = CeilDiv(this->supply_sum, num_demands);
+		this->missing_supply = (this->demand_per_node * num_demands) - this->supply_sum;
+	}
+
+	/**
+	 * Adjust demand nodes after setting demand per node.
+	 * @param job The link graph job.
+	 * @param demands List of demand nodes to adjust.
+	 */
+	inline void AdjustDemandNodes(LinkGraphJob &job, const std::vector<NodeID> &demands)
+	{
+		const uint count = std::min<uint>((uint)demands.size(), this->missing_supply);
+		this->missing_supply = 0;
+		for (uint i = 0; i < count; i++) {
+			job[demands[i]].ReceiveDemand(1);
+		}
+	}
+
+	/**
+	 * Get the effective supply of one node towards another one. In symmetric
+	 * distribution the supply of the other node is weighed in.
+	 * @param from The supplying node.
+	 * @param to The receiving node.
+	 * @return Effective supply.
+	 */
+	inline uint EffectiveSupply(const Node &from, const Node &to)
+	{
+		return std::max<int>(std::min<int>(from.Supply(), ((int) this->demand_per_node) - ((int) to.ReceivedDemand())), 1);
+	}
+
+	/**
+	 * Check if there is any acceptance left for this node. In asymmetric (equal) distribution
+	 * nodes accept as long as their demand > 0 and received_demand < demand_per_node.
+	 * @param to The node to be checked.
+	 */
+	inline bool HasDemandLeft(const Node &to)
+	{
+		return to.Demand() > 0 && to.ReceivedDemand() < this->demand_per_node;
+	}
+
+	void SetDemands(LinkGraphJob &job, NodeID from, NodeID to, uint demand_forw);
+
+private:
+	uint supply_sum;      ///< Sum of all supplies in the component.
+	uint demand_per_node; ///< Mean demand associated with each node.
+	uint missing_supply;  ///< Suppply/demand adjustment for in AdjustDemandNodes.
+};
+
+/**
  * Set the demands between two nodes using the given base demand. In symmetric mode
  * this sets demands in both directions.
  * @param job The link graph job.
@@ -134,12 +213,25 @@ void SymmetricScaler::SetDemands(LinkGraphJob &job, NodeID from_id, NodeID to_id
 		uint undelivered = job[to_id].UndeliveredSupply();
 		if (demand_back > undelivered) {
 			demand_back = undelivered;
-			demand_forw = max(1U, demand_back * 100 / this->mod_size);
+			demand_forw = std::max(1U, demand_back * 100 / this->mod_size);
 		}
 		this->Scaler::SetDemands(job, to_id, from_id, demand_back);
 	}
 
 	this->Scaler::SetDemands(job, from_id, to_id, demand_forw);
+}
+
+/**
+ * Set the demands between two nodes using the given base demand.
+ * @param job The link graph job.
+ * @param from_id The supplying node.
+ * @param to_id The receiving node.
+ * @param demand_forw Demand calculated for the "forward" direction.
+ */
+void AsymmetricScalerEq::SetDemands(LinkGraphJob &job, NodeID from_id, NodeID to_id, uint demand_forw)
+{
+	this->Scaler::SetDemands(job, from_id, to_id, demand_forw);
+	job[to_id].ReceiveDemand(demand_forw);
 }
 
 /**
@@ -158,10 +250,11 @@ inline void Scaler::SetDemands(LinkGraphJob &job, NodeID from_id, NodeID to_id, 
 /**
  * Do the actual demand calculation, called from constructor.
  * @param job Job to calculate the demands for.
+ * @param reachable_nodes Bitmap of reachable nodes.
  * @tparam Tscaler Scaler to be used for scaling demands.
  */
 template<class Tscaler>
-void DemandCalculator::CalcDemand(LinkGraphJob &job, Tscaler scaler)
+void DemandCalculator::CalcDemand(LinkGraphJob &job, const std::vector<bool> &reachable_nodes, Tscaler scaler)
 {
 	NodeList supplies;
 	NodeList demands;
@@ -169,6 +262,7 @@ void DemandCalculator::CalcDemand(LinkGraphJob &job, Tscaler scaler)
 	uint num_demands = 0;
 
 	for (NodeID node = 0; node < job.Size(); node++) {
+		if (!reachable_nodes[node]) continue;
 		scaler.AddNode(job[node]);
 		if (job[node].Supply() > 0) {
 			supplies.push(node);
@@ -186,6 +280,7 @@ void DemandCalculator::CalcDemand(LinkGraphJob &job, Tscaler scaler)
 	 * symmetric this is relative to remote supply, otherwise it is
 	 * relative to remote demand. */
 	scaler.SetDemandPerNode(num_demands);
+
 	uint chance = 0;
 
 	while (!supplies.empty() && !demands.empty()) {
@@ -230,7 +325,7 @@ void DemandCalculator::CalcDemand(LinkGraphJob &job, Tscaler scaler)
 				demand_forw = 1;
 			}
 
-			demand_forw = min(demand_forw, job[from_id].UndeliveredSupply());
+			demand_forw = std::min(demand_forw, job[from_id].UndeliveredSupply());
 
 			scaler.SetDemands(job, from_id, to_id, demand_forw);
 
@@ -252,6 +347,59 @@ void DemandCalculator::CalcDemand(LinkGraphJob &job, Tscaler scaler)
 }
 
 /**
+ * Do the actual demand calculation, called from constructor.
+ * @param job Job to calculate the demands for.
+ * @param reachable_nodes Bitmap of reachable nodes.
+ * @tparam Tscaler Scaler to be used for scaling demands.
+ */
+template<class Tscaler>
+void DemandCalculator::CalcMinimisedDistanceDemand(LinkGraphJob &job, const std::vector<bool> &reachable_nodes, Tscaler scaler)
+{
+	std::vector<NodeID> supplies;
+	std::vector<NodeID> demands;
+
+	for (NodeID node = 0; node < job.Size(); node++) {
+		if (!reachable_nodes[node]) continue;
+		scaler.AddNode(job[node]);
+		if (job[node].Supply() > 0) {
+			supplies.push_back(node);
+		}
+		if (job[node].Demand() > 0) {
+			demands.push_back(node);
+		}
+	}
+
+	if (supplies.empty() || demands.empty()) return;
+
+	scaler.SetDemandPerNode((uint)demands.size());
+	scaler.AdjustDemandNodes(job, demands);
+
+	struct EdgeCandidate {
+		NodeID from_id;
+		NodeID to_id;
+		uint distance;
+	};
+	std::vector<EdgeCandidate> candidates;
+	candidates.reserve(supplies.size() * demands.size() - std::min(supplies.size(), demands.size()));
+	for (NodeID from_id : supplies) {
+		for (NodeID to_id : demands) {
+			if (from_id != to_id) {
+				candidates.push_back({ from_id, to_id, DistanceMaxPlusManhattan(job[from_id].XY(), job[to_id].XY()) });
+			}
+		}
+	}
+	std::sort(candidates.begin(), candidates.end(), [](const EdgeCandidate &a, const EdgeCandidate &b) {
+		return std::tie(a.distance, a.from_id, a.to_id) < std::tie(b.distance, b.from_id, b.to_id);
+	});
+	for (const EdgeCandidate &candidate : candidates) {
+		if (job[candidate.from_id].UndeliveredSupply() == 0) continue;
+		if (!scaler.HasDemandLeft(job[candidate.to_id])) continue;
+
+		scaler.SetDemands(job, candidate.from_id, candidate.to_id, std::min(job[candidate.from_id].UndeliveredSupply(), scaler.EffectiveSupply(job[candidate.from_id], job[candidate.to_id])));
+	}
+}
+
+/**
  * Create the DemandCalculator and immediately do the calculation.
  * @param job Job to calculate the demands for.
  */
@@ -269,15 +417,64 @@ DemandCalculator::DemandCalculator(LinkGraphJob &job) :
 		this->mod_dist = 100 + over100 * over100;
 	}
 
-	switch (settings.GetDistributionType(cargo)) {
-		case DT_SYMMETRIC:
-			this->CalcDemand<SymmetricScaler>(job, SymmetricScaler(settings.demand_size));
-			break;
-		case DT_ASYMMETRIC:
-			this->CalcDemand<AsymmetricScaler>(job, AsymmetricScaler());
-			break;
-		default:
-			/* Nothing to do. */
-			break;
+	const uint size = job.Size();
+
+	/* Symmetric edge matrix
+	 * Storage order: e01  e02 e12  e03 e13 e23  e04 e14 e24 e34  ... */
+	auto se_index = [](uint i, uint j) -> uint {
+		if (j < i) std::swap(i, j);
+		return i + (j * (j - 1) / 2);
+	};
+	std::vector<bool> symmetric_edges(se_index(0, size));
+
+	for (NodeID node_id = 0; node_id < size; ++node_id) {
+		Node from = job[node_id];
+		for (EdgeIterator it(from.Begin()); it != from.End(); ++it) {
+			symmetric_edges[se_index(node_id, it->first)] = true;
+		}
 	}
+	uint first_unseen = 0;
+	std::vector<bool> reachable_nodes(size);
+	do {
+		reachable_nodes.assign(size, false);
+		std::vector<NodeID> queue;
+		queue.push_back(first_unseen);
+		reachable_nodes[first_unseen] = true;
+		while (!queue.empty()) {
+			NodeID from = queue.back();
+			queue.pop_back();
+			for (NodeID to = 0; to < size; ++to) {
+				if (from == to) continue;
+				if (symmetric_edges[se_index(from, to)]) {
+					std::vector<bool>::reference bit = reachable_nodes[to];
+					if (!bit) {
+						bit = true;
+						queue.push_back(to);
+					}
+				}
+			}
+		}
+
+		switch (settings.GetDistributionType(cargo)) {
+			case DT_SYMMETRIC:
+				this->CalcDemand<SymmetricScaler>(job, reachable_nodes, SymmetricScaler(settings.demand_size));
+				break;
+			case DT_ASYMMETRIC:
+				this->CalcDemand<AsymmetricScaler>(job, reachable_nodes, AsymmetricScaler());
+				break;
+			case DT_ASYMMETRIC_EQ:
+				this->CalcMinimisedDistanceDemand<AsymmetricScalerEq>(job, reachable_nodes, AsymmetricScalerEq());
+				break;
+			case DT_ASYMMETRIC_NEAR:
+				this->CalcMinimisedDistanceDemand<AsymmetricScaler>(job, reachable_nodes, AsymmetricScaler());
+				break;
+			default:
+				/* Nothing to do. */
+				break;
+		}
+
+		while (first_unseen < size && reachable_nodes[first_unseen]) {
+			first_unseen++;
+		}
+	} while (first_unseen < size);
 }

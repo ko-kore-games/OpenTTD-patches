@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -13,6 +11,8 @@
 #define DEBUG_H
 
 #include "cpu.h"
+#include <chrono>
+#include <string>
 
 /* Debugging messages policy:
  * These should be the severities used for direct DEBUG() calls
@@ -49,10 +49,19 @@ extern int _debug_script_level;
 extern int _debug_sl_level;
 extern int _debug_gamelog_level;
 extern int _debug_desync_level;
+extern int _debug_yapfdesync_level;
 extern int _debug_console_level;
+extern int _debug_linkgraph_level;
+extern int _debug_sound_level;
 #ifdef RANDOM_DEBUG
 extern int _debug_random_level;
+extern int _debug_statecsum_level;
 #endif
+
+extern const char *_savegame_DBGL_data;
+extern std::string _loadgame_DBGL_data;
+extern bool _save_DBGC_data;
+extern std::string _loadgame_DBGC_data;
 
 void CDECL debug(const char *dbg, const char *format, ...) WARN_FORMAT(2, 3);
 
@@ -83,27 +92,50 @@ const char *GetDebugString();
  *
  * TIC() / TOC() creates its own block, so make sure not the mangle
  *  it with another block.
+ *
+ * The output is counted in CPU cycles, and not comparable across
+ *  machines. Mainly useful for local optimisations.
  **/
 #define TIC() {\
 	uint64 _xxx_ = ottd_rdtsc();\
-	static uint64 __sum__ = 0;\
-	static uint32 __i__ = 0;
+	static uint64 _sum_ = 0;\
+	static uint32 _i_ = 0;
 
 #define TOC(str, count)\
-	__sum__ += ottd_rdtsc() - _xxx_;\
-	if (++__i__ == count) {\
-		DEBUG(misc, 0, "[%s] " OTTD_PRINTF64 " [avg: %.1f]", str, __sum__, __sum__/(double)__i__);\
-		__i__ = 0;\
-		__sum__ = 0;\
+	_sum_ += ottd_rdtsc() - _xxx_;\
+	if (++_i_ == count) {\
+		DEBUG(misc, 0, "[%s] " OTTD_PRINTF64 " [avg: %.1f]", str, _sum_, _sum_/(double)_i_);\
+		_i_ = 0;\
+		_sum_ = 0;\
 	}\
 }
+
+/* Chrono based version. The output is in microseconds. */
+#define TICC() {\
+	auto _start_ = std::chrono::high_resolution_clock::now();\
+	static uint64 _sum_ = 0;\
+	static uint32 _i_ = 0;
+
+#define TOCC(str, _count_)\
+	_sum_ += (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - _start_)).count();\
+	if (++_i_ == _count_) {\
+		DEBUG(misc, 0, "[%s] " OTTD_PRINTF64 " us [avg: %.1f us]", str, _sum_, _sum_/(double)_i_);\
+		_i_ = 0;\
+		_sum_ = 0;\
+	}\
+}
+
 
 void ShowInfo(const char *str);
 void CDECL ShowInfoF(const char *str, ...) WARN_FORMAT(1, 2);
 
 const char *GetLogPrefix();
 
-/** The real time in the game. */
-extern uint32 _realtime_tick;
+void ClearDesyncMsgLog();
+void LogDesyncMsg(std::string msg);
+char *DumpDesyncMsgLog(char *buffer, const char *last);
+
+void DebugSendRemoteMessages();
+void DebugReconsiderSendRemoteMessages();
 
 #endif /* DEBUG_H */

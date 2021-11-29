@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,6 +9,28 @@
 
 #ifndef CRASHLOG_H
 #define CRASHLOG_H
+
+#include "core/enum_type.hpp"
+#include <string>
+#include <vector>
+
+struct DesyncExtraInfo {
+	enum Flags {
+		DEIF_NONE       = 0,      ///< no flags
+		DEIF_RAND1      = 1 << 0, ///< random 1 mismatch
+		DEIF_RAND2      = 1 << 1, ///< random 2 mismatch
+		DEIF_STATE      = 1 << 2, ///< state mismatch
+		DEIF_DBL_RAND   = 1 << 3, ///< double-seed sent
+	};
+
+	Flags flags = DEIF_NONE;
+	FILE **log_file = nullptr; ///< save unclosed log file handle here
+};
+DECLARE_ENUM_AS_BIT_SET(DesyncExtraInfo::Flags)
+
+struct InconsistencyExtraInfo {
+	std::vector<std::string> check_caches_result;
+};
 
 /**
  * Helper class for creating crash logs.
@@ -45,10 +65,18 @@ protected:
 	virtual char *LogCompiler(char *buffer, const char *last) const;
 
 	/**
+	 * Writes OS' version detail to the buffer, if available.
+	 * @param buffer The begin where to write at.
+	 * @param last   The last position in the buffer to write to.
+	 * @return the position of the \c '\0' character after the buffer.
+	 */
+	virtual char *LogOSVersionDetail(char *buffer, const char *last) const;
+
+	/**
 	 * Writes actually encountered error to the buffer.
 	 * @param buffer  The begin where to write at.
 	 * @param last    The last position in the buffer to write to.
-	 * @param message Message passed to use for possible errors. Can be NULL.
+	 * @param message Message passed to use for possible errors. Can be nullptr.
 	 * @return the position of the \c '\0' character after the buffer.
 	 */
 	virtual char *LogError(char *buffer, const char *last, const char *message) const = 0;
@@ -80,19 +108,36 @@ protected:
 	 */
 	virtual char *LogModules(char *buffer, const char *last) const;
 
+#ifdef USE_SCOPE_INFO
+	/**
+	 * Writes the scope info log to the buffer.
+	 * This may only be called when IsMainThread() returns true
+	 * @param buffer The begin where to write at.
+	 * @param last   The last position in the buffer to write to.
+	 * @return the position of the \c '\0' character after the buffer.
+	 */
+	virtual char *LogScopeInfo(char *buffer, const char *last) const;
+#endif
 
 	char *LogOpenTTDVersion(char *buffer, const char *last) const;
 	char *LogConfiguration(char *buffer, const char *last) const;
 	char *LogLibraries(char *buffer, const char *last) const;
 	char *LogGamelog(char *buffer, const char *last) const;
 	char *LogRecentNews(char *buffer, const char *list) const;
+	char *LogCommandLog(char *buffer, const char *last) const;
 
 public:
+	/** Buffer for the filename name prefix */
+	char name_buffer[64];
+
 	/** Stub destructor to silence some compilers. */
 	virtual ~CrashLog() {}
 
 	char *FillCrashLog(char *buffer, const char *last) const;
-	bool WriteCrashLog(const char *buffer, char *filename, const char *filename_last) const;
+	char *FillDesyncCrashLog(char *buffer, const char *last, const DesyncExtraInfo &info) const;
+	char *FillInconsistencyLog(char *buffer, const char *last, const InconsistencyExtraInfo &info) const;
+	char *FillVersionInfoLog(char *buffer, const char *last) const;
+	bool WriteCrashLog(const char *buffer, char *filename, const char *filename_last, const char *name = "crash", FILE **crashlog_file = nullptr) const;
 
 	/**
 	 * Write the (crash) dump to a file.
@@ -104,10 +149,14 @@ public:
 	 *         was successful (not all OSes support dumping files).
 	 */
 	virtual int WriteCrashDump(char *filename, const char *filename_last) const;
-	bool WriteSavegame(char *filename, const char *filename_last) const;
-	bool WriteScreenshot(char *filename, const char *filename_last) const;
+	bool WriteSavegame(char *filename, const char *filename_last, const char *name = "crash") const;
+	bool WriteScreenshot(char *filename, const char *filename_last, const char *name = "crash") const;
 
-	bool MakeCrashLog() const;
+	bool MakeCrashLog();
+	bool MakeDesyncCrashLog(const std::string *log_in, std::string *log_out, const DesyncExtraInfo &info) const;
+	bool MakeInconsistencyLog(const InconsistencyExtraInfo &info) const;
+	bool MakeVersionInfoLog() const;
+	bool MakeCrashSavegameAndScreenshot() const;
 
 	/**
 	 * Initialiser for crash logs; do the appropriate things so crashes are
@@ -116,8 +165,22 @@ public:
 	 */
 	static void InitialiseCrashLog();
 
+	/**
+	 * Prepare crash log handler for a newly started thread.
+	 * @note must be implemented by all implementers of CrashLog.
+	 */
+	static void InitThread();
+
+	static void DesyncCrashLog(const std::string *log_in, std::string *log_out, const DesyncExtraInfo &info);
+	static void InconsistencyLog(const InconsistencyExtraInfo &info);
+	static void VersionInfoLog();
+
 	static void SetErrorMessage(const char *message);
 	static void AfterCrashLogCleanup();
+
+	inline const char *GetMessage() const { return this->message; }
+
+	static const char *GetAbortCrashlogReason();
 };
 
 #endif /* CRASHLOG_H */

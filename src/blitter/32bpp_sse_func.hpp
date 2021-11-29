@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -36,7 +34,7 @@ static inline void InsertSecondUint32(const uint32 value, __m128i &into)
 
 static inline void LoadUint64(const uint64 value, __m128i &into)
 {
-#ifdef _SQ64
+#ifdef POINTER_IS_64BIT
 	into = _mm_cvtsi64_si128(value);
 #else
 	#if (SSE_VERSION >= 4)
@@ -138,7 +136,7 @@ IGNORE_UNINITIALIZED_WARNING_STOP
 static inline Colour AdjustBrightneSSE(Colour colour, uint8 brightness)
 {
 	/* Shortcut for normal brightness. */
-	if (brightness == Blitter_32bppBase::DEFAULT_BRIGHTNESS) return colour;
+	if (likely(brightness == Blitter_32bppBase::DEFAULT_BRIGHTNESS)) return colour;
 
 	return ReallyAdjustBrightness(colour, brightness);
 }
@@ -212,6 +210,12 @@ inline void Blitter_32bppSSE4::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 	const MapValue *src_mv_line = (const MapValue *) &sd->data[si->mv_offset] + bp->skip_top * si->sprite_width;
 	const Colour *src_rgba_line = (const Colour *) ((const byte *) &sd->data[si->sprite_offset] + bp->skip_top * si->sprite_line_size);
 
+	uint32 bm_normal_brightness = 0;
+	if (mode == BM_NORMAL_WITH_BRIGHTNESS) {
+		bm_normal_brightness = (DEFAULT_BRIGHTNESS + bp->brightness_adjust) << 8;
+		bm_normal_brightness |= bm_normal_brightness << 16;
+	}
+
 	if (read_mode != RM_WITH_MARGIN) {
 		src_rgba_line += bp->skip_left;
 		src_mv_line += bp->skip_left;
@@ -238,13 +242,13 @@ inline void Blitter_32bppSSE4::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 	for (int y = bp->height; y != 0; y--) {
 		Colour *dst = dst_line;
 		const Colour *src = src_rgba_line + META_LENGTH;
-		if (mode == BM_COLOUR_REMAP || mode == BM_CRASH_REMAP) src_mv = src_mv_line;
+		if (mode == BM_COLOUR_REMAP || mode == BM_CRASH_REMAP || mode == BM_COLOUR_REMAP_WITH_BRIGHTNESS) src_mv = src_mv_line;
 
 		if (read_mode == RM_WITH_MARGIN) {
 			assert(bt_last == BT_NONE); // or you must ensure block type is preserved
 			src += src_rgba_line[0].data;
 			dst += src_rgba_line[0].data;
-			if (mode == BM_COLOUR_REMAP || mode == BM_CRASH_REMAP) src_mv += src_rgba_line[0].data;
+			if (mode == BM_COLOUR_REMAP || mode == BM_CRASH_REMAP || mode == BM_COLOUR_REMAP_WITH_BRIGHTNESS) src_mv += src_rgba_line[0].data;
 			const int width_diff = si->sprite_width - bp->width;
 			effective_width = bp->width - (int) src_rgba_line[0].data;
 			const int delta_diff = (int) src_rgba_line[1].data - width_diff;
@@ -299,7 +303,7 @@ inline void Blitter_32bppSSE4::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 							m_colour = r == 0 ? m_colour : cmap; \
 							m_colour = m != 0 ? m_colour : srcm; \
 							}
-#ifdef _SQ64
+#ifdef POINTER_IS_64BIT
 						uint64 srcs = _mm_cvtsi128_si64(srcABCD);
 						uint64 remapped_src = 0;
 						CMOV_REMAP(c0, 0, srcs, mvX2);
@@ -405,10 +409,65 @@ bmcr_alpha_blend_single:
 					src++;
 				}
 				break;
+
+			case BM_NORMAL_WITH_BRIGHTNESS:
+				for (uint x = (uint) effective_width / 2; x > 0; x--) {
+#if (SSE_VERSION >= 3)
+					__m128i srcABCD = _mm_loadl_epi64((const __m128i*) src);
+					srcABCD = AdjustBrightnessOfTwoPixels(srcABCD, bm_normal_brightness);
+#else
+					__m128i srcABCD = _mm_setr_epi32(AdjustBrightneSSE(src->data, DEFAULT_BRIGHTNESS + bp->brightness_adjust).data, AdjustBrightneSSE((src + 1)->data, DEFAULT_BRIGHTNESS + bp->brightness_adjust).data, 0, 0);
+#endif
+					__m128i dstABCD = _mm_loadl_epi64((__m128i*) dst);
+					_mm_storel_epi64((__m128i*) dst, AlphaBlendTwoPixels(srcABCD, dstABCD, ALPHA_BLEND_PARAM_1, ALPHA_BLEND_PARAM_2));
+					src += 2;
+					dst += 2;
+				}
+
+				if ((bt_last == BT_NONE && effective_width & 1) || bt_last == BT_ODD) {
+					__m128i srcABCD = _mm_cvtsi32_si128(AdjustBrightneSSE(src->data, DEFAULT_BRIGHTNESS + bp->brightness_adjust).data);
+					__m128i dstABCD = _mm_cvtsi32_si128(dst->data);
+					dst->data = _mm_cvtsi128_si32(AlphaBlendTwoPixels(srcABCD, dstABCD, ALPHA_BLEND_PARAM_1, ALPHA_BLEND_PARAM_2));
+				}
+				break;
+
+			case BM_COLOUR_REMAP_WITH_BRIGHTNESS:
+				for (uint x = (uint) bp->width; x > 0; x--) {
+					/* In case the m-channel is zero, do not remap this pixel in any way. */
+					__m128i srcABCD;
+					if (src_mv->m) {
+						const uint r = remap[src_mv->m];
+						if (r != 0) {
+							Colour remapped_colour = AdjustBrightneSSE(this->LookupColourInPalette(r), Clamp(src_mv->v + bp->brightness_adjust, 0, 255));
+							if (src->a == 255) {
+								*dst = remapped_colour;
+							} else {
+								remapped_colour.a = src->a;
+								srcABCD = _mm_cvtsi32_si128(remapped_colour.data);
+								goto bmcr_alpha_blend_single_brightness;
+							}
+						}
+					} else {
+						{
+							Colour c = AdjustBrightneSSE(src->data, DEFAULT_BRIGHTNESS + bp->brightness_adjust);
+							srcABCD = _mm_cvtsi32_si128(c.data);
+						}
+						if (src->a < 255) {
+bmcr_alpha_blend_single_brightness:
+							__m128i dstABCD = _mm_cvtsi32_si128(dst->data);
+							srcABCD = AlphaBlendTwoPixels(srcABCD, dstABCD, ALPHA_BLEND_PARAM_1, ALPHA_BLEND_PARAM_2);
+						}
+						dst->data = _mm_cvtsi128_si32(srcABCD);
+					}
+					src_mv++;
+					dst++;
+					src++;
+				}
+				break;
 		}
 
 next_line:
-		if (mode == BM_COLOUR_REMAP || mode == BM_CRASH_REMAP) src_mv_line += si->sprite_width;
+		if (mode == BM_COLOUR_REMAP || mode == BM_CRASH_REMAP || mode == BM_COLOUR_REMAP_WITH_BRIGHTNESS) src_mv_line += si->sprite_width;
 		src_rgba_line = (const Colour*) ((const byte*) src_rgba_line + si->sprite_line_size);
 		dst_line += bp->pitch;
 	}
@@ -440,7 +499,7 @@ bm_normal:
 					case BT_ODD: Draw<BM_NORMAL, RM_WITH_SKIP, BT_ODD, true>(bp, zoom); return;
 				}
 			} else {
-				if (((const Blitter_32bppSSE_Base::SpriteData *) bp->sprite)->flags & SF_TRANSLUCENT) {
+				if (((const Blitter_32bppSSE_Base::SpriteData *) bp->sprite)->flags & BSF_TRANSLUCENT) {
 					Draw<BM_NORMAL, RM_WITH_MARGIN, BT_NONE, true>(bp, zoom);
 				} else {
 					Draw<BM_NORMAL, RM_WITH_MARGIN, BT_NONE, false>(bp, zoom);
@@ -450,7 +509,7 @@ bm_normal:
 			break;
 		}
 		case BM_COLOUR_REMAP:
-			if (((const Blitter_32bppSSE_Base::SpriteData *) bp->sprite)->flags & SF_NO_REMAP) goto bm_normal;
+			if (((const Blitter_32bppSSE_Base::SpriteData *) bp->sprite)->flags & BSF_NO_REMAP) goto bm_normal;
 			if (bp->skip_left != 0 || bp->width <= MARGIN_REMAP_THRESHOLD) {
 				Draw<BM_COLOUR_REMAP, RM_WITH_SKIP, BT_NONE, true>(bp, zoom); return;
 			} else {
@@ -459,6 +518,17 @@ bm_normal:
 		case BM_TRANSPARENT:  Draw<BM_TRANSPARENT, RM_NONE, BT_NONE, true>(bp, zoom); return;
 		case BM_CRASH_REMAP:  Draw<BM_CRASH_REMAP, RM_NONE, BT_NONE, true>(bp, zoom); return;
 		case BM_BLACK_REMAP:  Draw<BM_BLACK_REMAP, RM_NONE, BT_NONE, true>(bp, zoom); return;
+
+		case BM_COLOUR_REMAP_WITH_BRIGHTNESS:
+			if (!(((const Blitter_32bppSSE_Base::SpriteData *) bp->sprite)->flags & BSF_NO_REMAP)) {
+				Draw<BM_COLOUR_REMAP_WITH_BRIGHTNESS, RM_NONE, BT_NONE, true>(bp, zoom);
+				return;
+			}
+			/* FALL THROUGH */
+
+		case BM_NORMAL_WITH_BRIGHTNESS:
+			Draw<BM_NORMAL_WITH_BRIGHTNESS, RM_NONE, BT_NONE, true>(bp, zoom);
+			return;
 	}
 }
 #endif /* FULL_ANIMATION */

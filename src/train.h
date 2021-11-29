@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -20,28 +18,44 @@
 #include "engine_base.h"
 #include "rail_map.h"
 #include "ground_vehicle.hpp"
+#include "pbs.h"
 
 struct Train;
 
 /** Rail vehicle flags. */
 enum VehicleRailFlags {
 	VRF_REVERSING                     = 0,
+	VRF_WAITING_RESTRICTION           = 1, ///< Train is waiting due to a routing restriction, only valid when VRF_TRAIN_STUCK is also set.
+	VRF_HAVE_SLOT                     = 2, ///< Train has 1 or more slots
 	VRF_POWEREDWAGON                  = 3, ///< Wagon is powered.
 	VRF_REVERSE_DIRECTION             = 4, ///< Reverse the visible direction of the vehicle.
-
+	VRF_HAS_HIT_RV                    = 5, ///< Train has hit road vehicle
 	VRF_EL_ENGINE_ALLOWED_NORMAL_RAIL = 6, ///< Electric train engine is allowed to run on normal rail. */
 	VRF_TOGGLE_REVERSE                = 7, ///< Used for vehicle var 0xFE bit 8 (toggled each time the train is reversed, accurate for first vehicle only).
 	VRF_TRAIN_STUCK                   = 8, ///< Train can't get a path reservation.
 	VRF_LEAVING_STATION               = 9, ///< Train is just leaving a station.
+	VRF_BREAKDOWN_BRAKING             = 10,///< used to mark a train that is braking because it is broken down
+	VRF_BREAKDOWN_POWER               = 11,///< used to mark a train in which the power of one (or more) of the engines is reduced because of a breakdown
+	VRF_BREAKDOWN_SPEED               = 12,///< used to mark a train that has a reduced maximum speed because of a breakdown
+	VRF_BREAKDOWN_STOPPED             = 13,///< used to mark a train that is stopped because of a breakdown
+	VRF_NEED_REPAIR                   = 14,///< used to mark a train that has a reduced maximum speed because of a critical breakdown
+	VRF_TOO_HEAVY                     = 15,
+	VRF_BEYOND_PLATFORM_END           = 16,
+	VRF_NOT_YET_IN_PLATFORM           = 17,
+	VRF_ADVANCE_IN_PLATFORM           = 18,
+	VRF_CONSIST_BREAKDOWN             = 19,///< one or more vehicles in this consist have a breakdown of some sort (breakdown_ctr != 0)
+	VRF_CONSIST_SPEED_REDUCTION       = 20,///< one or more vehicles in this consist may be in a depot or on a bridge (may be false positive but not false negative)
+	VRF_PENDING_SPEED_RESTRICTION     = 21,///< This vehicle has one or more pending speed restriction changes
+
+	VRF_IS_BROKEN = (1 << VRF_BREAKDOWN_POWER) | (1 << VRF_BREAKDOWN_SPEED) | (1 << VRF_BREAKDOWN_STOPPED), ///< Bitmask of all flags that indicate a broken train (braking is not included)
 };
 
 /** Modes for ignoring signals. */
-enum TrainForceProceeding {
+enum TrainForceProceeding : byte {
 	TFP_NONE   = 0,    ///< Normal operation.
 	TFP_STUCK  = 1,    ///< Proceed till next signal, but ignore being stuck till then. This includes force leaving depots.
 	TFP_SIGNAL = 2,    ///< Ignore next signal, after the signal ignore being stuck.
 };
-typedef SimpleTinyEnumT<TrainForceProceeding, byte> TrainForceProceedingByte;
 
 /** Flags for Train::ConsistChanged */
 enum ConsistChangeFlags {
@@ -57,29 +71,54 @@ enum ConsistChangeFlags {
 };
 DECLARE_ENUM_AS_BIT_SET(ConsistChangeFlags)
 
+enum RealisticBrakingConstants {
+	RBC_BRAKE_FORCE_PER_LENGTH      = 2400,      ///< Additional force-based brake force per unit of train length
+	RBC_BRAKE_POWER_PER_LENGTH      = 15000,     ///< Additional power-based brake force per unit of train length (excludes maglevs)
+};
+
 byte FreightWagonMult(CargoID cargo);
 
 void CheckTrainsLengths();
 
-void FreeTrainTrackReservation(const Train *v);
+void FreeTrainTrackReservation(Train *v, TileIndex origin = INVALID_TILE, Trackdir orig_td = INVALID_TRACKDIR);
 bool TryPathReserve(Train *v, bool mark_as_stuck = false, bool first_tile_okay = false);
 
-int GetTrainStopLocation(StationID station_id, TileIndex tile, const Train *v, int *station_ahead, int *station_length);
+void DeleteVisibleTrain(Train *v);
 
+void CheckBreakdownFlags(Train *v);
 void GetTrainSpriteSize(EngineID engine, uint &width, uint &height, int &xoffs, int &yoffs, EngineImageType image_type);
+
+inline int GetTrainRealisticBrakingTargetDecelerationLimit(int acceleration_type)
+{
+	return 120 + (acceleration_type * 48);
+}
+
+/** Flags for TrainCache::cached_tflags */
+enum TrainCacheFlags : byte {
+	TCF_NONE       = 0,        ///< No flags
+	TCF_TILT       = 0x01,     ///< Train can tilt; feature provides a bonus in curves.
+	TCF_RL_BRAKING = 0x02,     ///< Train realistic braking (movement physics) in effect for this vehicle
+};
+DECLARE_ENUM_AS_BIT_SET(TrainCacheFlags)
 
 /** Variables that are cached to improve performance and such */
 struct TrainCache {
 	/* Cached wagon override spritegroup */
 	const struct SpriteGroup *cached_override;
 
-	/* cached values, recalculated on load and each time a vehicle is added to/removed from the consist. */
-	bool cached_tilt;           ///< train can tilt; feature provides a bonus in curves
-
-	byte user_def_data;         ///< Cached property 0x25. Can be set by Callback 0x36.
-
 	/* cached max. speed / acceleration data */
-	int cached_max_curve_speed; ///< max consist speed limited by curves
+	int cached_max_curve_speed;   ///< max consist speed limited by curves
+
+	/* cached values, recalculated on load and each time a vehicle is added to/removed from the consist. */
+	int cached_curve_speed_mod;   ///< curve speed modifier of the entire train
+	TrainCacheFlags cached_tflags;///< train cached flags
+	uint8 cached_num_engines;     ///< total number of engines, including rear ends of multiheaded engines
+	uint16 cached_centre_mass;    ///< Cached position of the centre of mass, from the front
+	uint16 cached_veh_weight;     ///< Cached individual vehicle weight
+	uint16 cached_uncapped_decel; ///< Uncapped cached deceleration for realistic braking lookahead purposes
+	uint8 cached_deceleration;    ///< Cached deceleration for realistic braking lookahead purposes
+
+	byte user_def_data;           ///< Cached property 0x25. Can be set by Callback 0x36.
 };
 
 /**
@@ -91,16 +130,25 @@ struct Train FINAL : public GroundVehicle<Train, VEH_TRAIN> {
 	/* Link between the two ends of a multiheaded engine */
 	Train *other_multiheaded_part;
 
-	uint16 crash_anim_pos; ///< Crash animation counter.
+	std::unique_ptr<TrainReservationLookAhead> lookahead;
 
-	uint16 flags;
-	TrackBitsByte track;
-	TrainForceProceedingByte force_proceed;
-	RailTypeByte railtype;
+	uint32 flags;
+
+	uint16 crash_anim_pos; ///< Crash animation counter, also used for realistic braking train brake overheating
+
+	TrackBits track;
+	TrainForceProceeding force_proceed;
+	RailType railtype;
+	byte critical_breakdown_count; ///< Counter for the number of critical breakdowns since last service
 	RailTypes compatible_railtypes;
 
 	/** Ticks waiting in front of a signal, ticks being stuck or a counter for forced proceeding through signals. */
 	uint16 wait_counter;
+
+	uint16 reverse_distance;
+	uint16 tunnel_bridge_signal_num;
+	uint16 speed_restriction;
+	uint16 signal_speed_restriction;
 
 	/** We don't want GCC to zero our struct! It already is zeroed and has an index! */
 	Train() : GroundVehicleBase() {}
@@ -118,11 +166,12 @@ struct Train FINAL : public GroundVehicle<Train, VEH_TRAIN> {
 	int GetDisplaySpeed() const { return this->gcache.last_speed; }
 	int GetDisplayMaxSpeed() const { return this->vcache.cached_max_speed; }
 	Money GetRunningCost() const;
-	int GetDisplayImageWidth(Point *offset = NULL) const;
+	int GetDisplayImageWidth(Point *offset = nullptr) const;
 	bool IsInDepot() const { return this->track == TRACK_BIT_DEPOT; }
 	bool Tick();
 	void OnNewDay();
 	uint Crash(bool flooded = false);
+	Money CalculateCurrentOverallValue() const;
 	Trackdir GetVehicleTrackdir() const;
 	TileIndex GetOrderStationLocation(StationID station);
 	bool FindClosestDepot(TileIndex *location, DestinationID *destination, bool *reverse);
@@ -137,7 +186,28 @@ struct Train FINAL : public GroundVehicle<Train, VEH_TRAIN> {
 
 	void UpdateAcceleration();
 
+	struct MaxSpeedInfo {
+		int strict_max_speed;
+		int advisory_max_speed;
+	};
+
+private:
+	MaxSpeedInfo GetCurrentMaxSpeedInfoInternal(bool update_state) const;
+
+public:
+	MaxSpeedInfo GetCurrentMaxSpeedInfo() const
+	{
+		return this->GetCurrentMaxSpeedInfoInternal(false);
+	}
+
+	MaxSpeedInfo GetCurrentMaxSpeedInfoAndUpdate()
+	{
+		return this->GetCurrentMaxSpeedInfoInternal(true);
+	}
+
 	int GetCurrentMaxSpeed() const;
+
+	bool UsingRealisticBraking() const { return this->tcache.cached_tflags & TCF_RL_BRAKING; }
 
 	/**
 	 * Get the next real (non-articulated part and non rear part of dualheaded engine) vehicle in the consist.
@@ -146,7 +216,7 @@ struct Train FINAL : public GroundVehicle<Train, VEH_TRAIN> {
 	inline Train *GetNextUnit() const
 	{
 		Train *v = this->GetNextVehicle();
-		if (v != NULL && v->IsRearDualheaded()) v = v->GetNextVehicle();
+		if (v != nullptr && v->IsRearDualheaded()) v = v->GetNextVehicle();
 
 		return v;
 	}
@@ -158,9 +228,20 @@ struct Train FINAL : public GroundVehicle<Train, VEH_TRAIN> {
 	inline Train *GetPrevUnit()
 	{
 		Train *v = this->GetPrevVehicle();
-		if (v != NULL && v->IsRearDualheaded()) v = v->GetPrevVehicle();
+		if (v != nullptr && v->IsRearDualheaded()) v = v->GetPrevVehicle();
 
 		return v;
+	}
+
+	/* Get the last vehicle of a chain
+	 * @return pointer the last vehicle in a chain
+	 */
+	inline Train *GetLastUnit() {
+		Train *tmp = this;
+		while (tmp->GetNextUnit()) {
+			tmp = tmp->GetNextUnit();
+		}
+		return tmp;
 	}
 
 	/**
@@ -173,10 +254,79 @@ struct Train FINAL : public GroundVehicle<Train, VEH_TRAIN> {
 		 * longer than the part after the center. This means we have to round up the
 		 * length of the next vehicle but may not round the length of the current
 		 * vehicle. */
-		return this->gcache.cached_veh_length / 2 + (this->Next() != NULL ? this->Next()->gcache.cached_veh_length + 1 : 0) / 2;
+		return this->gcache.cached_veh_length / 2 + (this->Next() != nullptr ? this->Next()->gcache.cached_veh_length + 1 : 0) / 2;
+	}
+
+	const Train *GetStationLoadingVehicle() const
+	{
+		const Train *v = this->First();
+		while (v && HasBit(v->flags, VRF_BEYOND_PLATFORM_END)) v = v->Next();
+		return v;
+	}
+
+	Train *GetStationLoadingVehicle()
+	{
+		return const_cast<Train *>(const_cast<const Train *>(this)->GetStationLoadingVehicle());
+	}
+
+	uint16 GetCargoWeight(uint cargo_amount) const
+	{
+		if (cargo_amount > 0) {
+			return (CargoSpec::Get(this->cargo_type)->weight * cargo_amount * FreightWagonMult(this->cargo_type)) / 16;
+		} else {
+			return 0;
+		}
+	}
+
+	/**
+	 * Allows to know the weight value that this vehicle will use (excluding cargo).
+	 * @return Weight value from the engine in tonnes.
+	 */
+	uint16 GetWeightWithoutCargo() const
+	{
+		uint16 weight = 0;
+
+		/* Vehicle weight is not added for articulated parts. */
+		if (!this->IsArticulatedPart()) {
+			weight += GetVehicleProperty(this, PROP_TRAIN_WEIGHT, RailVehInfo(this->engine_type)->weight);
+		}
+
+		/* Powered wagons have extra weight added. */
+		if (HasBit(this->flags, VRF_POWEREDWAGON)) {
+			weight += RailVehInfo(this->gcache.first_engine)->pow_wag_weight;
+		}
+
+		return weight;
+	}
+
+	/**
+	 * Allows to know the weight value that this vehicle will use (cargo only).
+	 * @return Weight value from the engine in tonnes.
+	 */
+	uint16 GetCargoWeight() const
+	{
+		return this->GetCargoWeight(this->cargo.StoredCount());
 	}
 
 protected: // These functions should not be called outside acceleration code.
+	/**
+	 * Gets the speed a broken down train (low speed breakdown) is limited to.
+	 * @note This value is not cached, because changing cached_max_speed would have unwanted consequences (e.g. in the GUI).
+	 * @param v The front engine of the vehicle.
+	 * @return The speed the train is limited to.
+	 */
+	inline uint16 GetBreakdownSpeed() const
+	{
+		assert(this->IsFrontEngine());
+		uint16 speed = UINT16_MAX;
+
+		for (const Train *w = this; w != nullptr; w = w->Next()) {
+			if (w->breakdown_ctr == 1 && w->breakdown_type == BREAKDOWN_LOW_SPEED) {
+				speed = std::min<uint16>(speed, w->breakdown_severity);
+			}
+		}
+		return speed;
+	}
 
 	/**
 	 * Allows to know the power value that this vehicle will use.
@@ -185,7 +335,7 @@ protected: // These functions should not be called outside acceleration code.
 	inline uint16 GetPower() const
 	{
 		/* Power is not added for articulated parts */
-		if (!this->IsArticulatedPart() && HasPowerOnRail(this->railtype, GetRailType(this->tile))) {
+		if (!this->IsArticulatedPart() && (this->IsVirtual() || HasPowerOnRail(this->railtype, GetRailTypeByTrackBit(this->tile, this->track)))) {
 			uint16 power = GetVehicleProperty(this, PROP_TRAIN_POWER, RailVehInfo(this->engine_type)->power);
 			/* Halve power for multiheaded parts */
 			if (this->IsMultiheaded()) power /= 2;
@@ -202,7 +352,7 @@ protected: // These functions should not be called outside acceleration code.
 	inline uint16 GetPoweredPartPower(const Train *head) const
 	{
 		/* For powered wagons the engine defines the type of engine (i.e. railtype) */
-		if (HasBit(this->flags, VRF_POWEREDWAGON) && HasPowerOnRail(head->railtype, GetRailType(this->tile))) {
+		if (HasBit(this->flags, VRF_POWEREDWAGON) && (head->IsVirtual() || HasPowerOnRail(head->railtype, GetRailTypeByTrackBit(this->tile, this->track)))) {
 			return RailVehInfo(this->gcache.first_engine)->pow_wag_power;
 		}
 
@@ -215,19 +365,7 @@ protected: // These functions should not be called outside acceleration code.
 	 */
 	inline uint16 GetWeight() const
 	{
-		uint16 weight = (CargoSpec::Get(this->cargo_type)->weight * this->cargo.StoredCount() * FreightWagonMult(this->cargo_type)) / 16;
-
-		/* Vehicle weight is not added for articulated parts. */
-		if (!this->IsArticulatedPart()) {
-			weight += GetVehicleProperty(this, PROP_TRAIN_WEIGHT, RailVehInfo(this->engine_type)->weight);
-		}
-
-		/* Powered wagons have extra weight added. */
-		if (HasBit(this->flags, VRF_POWEREDWAGON)) {
-			weight += RailVehInfo(this->gcache.first_engine)->pow_wag_weight;
-		}
-
-		return weight;
+		return this->GetWeightWithoutCargo() + this->GetCargoWeight();
 	}
 
 	/**
@@ -246,7 +384,7 @@ protected: // These functions should not be called outside acceleration code.
 	inline byte GetAirDragArea() const
 	{
 		/* Air drag is higher in tunnels due to the limited cross-section. */
-		return (this->track == TRACK_BIT_WORMHOLE && this->vehstatus & VS_HIDDEN) ? 28 : 14;
+		return (this->track & TRACK_BIT_WORMHOLE && this->vehstatus & VS_HIDDEN) ? 28 : 14;
 	}
 
 	/**
@@ -264,7 +402,7 @@ protected: // These functions should not be called outside acceleration code.
 	 */
 	inline AccelStatus GetAccelerationStatus() const
 	{
-		return (this->vehstatus & VS_STOPPED) || HasBit(this->flags, VRF_REVERSING) || HasBit(this->flags, VRF_TRAIN_STUCK) ? AS_BRAKE : AS_ACCEL;
+		return ((this->vehstatus & VS_STOPPED) || HasBit(this->flags, VRF_REVERSING) || HasBit(this->flags, VRF_TRAIN_STUCK) || HasBit(this->flags, VRF_BREAKDOWN_BRAKING)) ? AS_BRAKE : AS_ACCEL;
 	}
 
 	/**
@@ -312,7 +450,16 @@ protected: // These functions should not be called outside acceleration code.
 	 */
 	inline uint16 GetMaxTrackSpeed() const
 	{
-		return GetRailTypeInfo(GetRailType(this->tile))->max_speed;
+		return GetRailTypeInfo(GetRailTypeByTrackBit(this->tile, this->track))->max_speed;
+	}
+
+	/**
+	 * Returns the curve speed modifier of this vehicle.
+	 * @return Current curve speed modifier, in fixed-point binary representation with 8 fractional bits.
+	 */
+	inline int GetCurveSpeedModifier() const
+	{
+		return GetVehicleProperty(this, PROP_TRAIN_CURVE_SPEED_MOD, RailVehInfo(this->engine_type)->curve_speed_mod, true);
 	}
 
 	/**
@@ -336,6 +483,35 @@ protected: // These functions should not be called outside acceleration code.
 	}
 };
 
-#define FOR_ALL_TRAINS(var) FOR_ALL_VEHICLES_OF_TYPE(Train, var)
+struct TrainDecelerationStats {
+	int deceleration_x2;
+	int uncapped_deceleration_x2;
+	int z_pos;
+	const Train *t;
+
+	TrainDecelerationStats(const Train *t);
+};
+
+CommandCost CmdMoveRailVehicle(TileIndex, DoCommandFlag , uint32, uint32, const char *);
+CommandCost CmdMoveVirtualRailVehicle(TileIndex, DoCommandFlag, uint32, uint32, const char*);
+
+Train* CmdBuildVirtualRailVehicle(EngineID, StringID &error, uint32 user);
+
+int GetTileMarginInFrontOfTrain(const Train *v, int x_pos, int y_pos);
+
+inline int GetTileMarginInFrontOfTrain(const Train *v)
+{
+	return GetTileMarginInFrontOfTrain(v, v->x_pos, v->y_pos);
+}
+
+int GetTrainStopLocation(StationID station_id, TileIndex tile, Train *v, bool update_train_state, int *station_ahead, int *station_length, int x_pos, int y_pos);
+
+inline int GetTrainStopLocation(StationID station_id, TileIndex tile, Train *v, bool update_train_state, int *station_ahead, int *station_length)
+{
+	return GetTrainStopLocation(station_id, tile, v, update_train_state, station_ahead, station_length, v->x_pos, v->y_pos);
+}
+
+int GetTrainRealisticAccelerationAtSpeed(const int speed, const int mass, const uint32 cached_power, const uint32 max_te, const uint32 air_drag, const RailType railtype);
+int GetTrainEstimatedMaxAchievableSpeed(const Train *train, const int mass, const int speed_cap);
 
 #endif /* TRAIN_H */

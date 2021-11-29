@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -33,6 +31,11 @@
 #include "town.h"
 #include "linkgraph/linkgraph.h"
 #include "zoom_func.h"
+#include "departures_gui.h"
+#include "graph_gui.h"
+#include "zoning.h"
+#include "newgrf_debug.h"
+#include "roadveh.h"
 
 #include "widgets/station_widget.h"
 
@@ -41,7 +44,17 @@
 #include <set>
 #include <vector>
 
+#include "cheat_func.h"
+#include "newgrf_callbacks.h"
+#include "newgrf_cargo.h"
 #include "safeguards.h"
+#include "widgets/misc_widget.h"
+
+enum StationRatingTooltipMode {
+	SRTM_OFF,
+	SRTM_SIMPLE,
+	SRTM_DETAILED,
+};
 
 /**
  * Calculates and draws the accepted or supplied cargo around the selected tile(s)
@@ -81,15 +94,66 @@ int DrawStationCoverageAreaText(int left, int right, int top, StationCoverageTyp
 }
 
 /**
+ * Find stations adjacent to the current tile highlight area, so that existing coverage
+ * area can be drawn.
+ */
+static void FindStationsAroundSelection()
+{
+	/* With distant join we don't know which station will be selected, so don't show any */
+	if (_ctrl_pressed) {
+		SetViewportCatchmentStation(nullptr, true);
+		return;
+	}
+
+	/* Tile area for TileHighlightData */
+	TileArea location(TileVirtXY(_thd.pos.x, _thd.pos.y), _thd.size.x / TILE_SIZE - 1, _thd.size.y / TILE_SIZE - 1);
+
+	/* Extended area by one tile */
+	uint x = TileX(location.tile);
+	uint y = TileY(location.tile);
+
+	int max_c = 1;
+	TileArea ta(TileXY(std::max<int>(0, x - max_c), std::max<int>(0, y - max_c)), TileXY(std::min<int>(MapMaxX(), x + location.w + max_c), std::min<int>(MapMaxY(), y + location.h + max_c)));
+
+	Station *adjacent = nullptr;
+
+	/* Direct loop instead of ForAllStationsAroundTiles as we are not interested in catchment area */
+	for (TileIndex tile : ta) {
+		if (IsTileType(tile, MP_STATION) && GetTileOwner(tile) == _local_company) {
+			Station *st = Station::GetByTile(tile);
+			if (st == nullptr) continue;
+			if (adjacent != nullptr && st != adjacent) {
+				/* Multiple nearby, distant join is required. */
+				adjacent = nullptr;
+				break;
+			}
+			adjacent = st;
+		}
+	}
+	SetViewportCatchmentStation(adjacent, true);
+}
+
+/**
  * Check whether we need to redraw the station coverage text.
  * If it is needed actually make the window for redrawing.
  * @param w the window to check.
  */
-void CheckRedrawStationCoverage(const Window *w)
+void CheckRedrawStationCoverage(Window *w)
 {
+	/* Test if ctrl state changed */
+	static bool _last_ctrl_pressed;
+	if (_ctrl_pressed != _last_ctrl_pressed) {
+		_thd.dirty = 0xff;
+		_last_ctrl_pressed = _ctrl_pressed;
+	}
+
 	if (_thd.dirty & 1) {
 		_thd.dirty &= ~1;
 		w->SetDirty();
+
+		if (_settings_client.gui.station_show_coverage && _thd.drawstyle == HT_RECT) {
+			FindStationsAroundSelection();
+		}
 	}
 }
 
@@ -104,9 +168,6 @@ void CheckRedrawStationCoverage(const Window *w)
  * @param type   Cargo type
  * @param amount Cargo amount
  * @param rating ratings data for that particular cargo
- *
- * @note Each cargo-bar is 16 pixels wide and 6 pixels high
- * @note Each rating 14 pixels wide and 1 pixel high and is 1 pixel below the cargo-bar
  */
 static void StationsWndShowStationRating(int left, int right, int y, CargoID type, uint amount, byte rating)
 {
@@ -116,32 +177,33 @@ static void StationsWndShowStationRating(int left, int right, int y, CargoID typ
 	const CargoSpec *cs = CargoSpec::Get(type);
 	if (!cs->IsValid()) return;
 
+	int padding = ScaleFontTrad(1);
+	int width = right - left;
 	int colour = cs->rating_colour;
 	TextColour tc = GetContrastColour(colour);
-	uint w = (minu(amount, units_full) + 5) / 36;
+	uint w = std::min(amount + 5, units_full) * width / units_full;
 
-	int height = GetCharacterHeight(FS_SMALL);
+	int height = GetCharacterHeight(FS_SMALL) + padding - 1;
 
-	/* Draw total cargo (limited) on station (fits into 16 pixels) */
-	if (w != 0) GfxFillRect(left, y, left + w - 1, y + height, colour);
-
-	/* Draw a one pixel-wide bar of additional cargo meter, useful
-	 * for stations with only a small amount (<=30) */
-	if (w == 0) {
-		uint rest = amount / 5;
+	if (amount > 30) {
+		/* Draw total cargo (limited) on station */
+		GfxFillRect(left, y, left + w - 1, y + height, colour);
+	} else {
+		/* Draw a (scaled) one pixel-wide bar of additional cargo meter, useful
+		 * for stations with only a small amount (<=30) */
+		uint rest = ScaleFontTrad(amount) / 5;
 		if (rest != 0) {
-			w += left;
-			GfxFillRect(w, y + height - rest, w, y + height, colour);
+			GfxFillRect(left, y + height - rest, left + padding - 1, y + height, colour);
 		}
 	}
 
-	DrawString(left + 1, right, y, cs->abbrev, tc);
+	DrawString(left + padding, right, y, cs->abbrev, tc);
 
-	/* Draw green/red ratings bar (fits into 14 pixels) */
-	y += height + 2;
-	GfxFillRect(left + 1, y, left + 14, y, PC_RED);
-	rating = minu(rating, rating_full) / 16;
-	if (rating != 0) GfxFillRect(left + 1, y, left + rating, y, PC_GREEN);
+	/* Draw green/red ratings bar (fits under the waiting bar) */
+	y += height + padding + 1;
+	GfxFillRect(left + padding, y, right - padding - 1, y + padding - 1, PC_RED);
+	w = std::min<uint>(rating, rating_full) * (width - padding - padding) / rating_full;
+	if (w != 0) GfxFillRect(left + padding, y, left + w - 1, y + padding - 1, PC_GREEN);
 }
 
 typedef GUIList<const Station*> GUIStationList;
@@ -158,14 +220,16 @@ protected:
 	static bool include_empty;            // whether we should include stations without waiting cargo
 	static const CargoTypes cargo_filter_max;
 	static CargoTypes cargo_filter;           // bitmap of cargo types to include
-	static const Station *last_station;
 
 	/* Constants for sorting stations */
 	static const StringID sorter_names[];
 	static GUIStationList::SortFunction * const sorter_funcs[];
 
+	static btree::btree_map<StationID, uint> station_vehicle_calling_counts;
+
 	GUIStationList stations;
 	Scrollbar *vscroll;
+	uint rating_width;
 
 	/**
 	 * (Re)Build station list
@@ -178,10 +242,9 @@ protected:
 
 		DEBUG(misc, 3, "Building station list for company %d", owner);
 
-		this->stations.Clear();
+		this->stations.clear();
 
-		const Station *st;
-		FOR_ALL_STATIONS(st) {
+		for (const Station *st : Station::Iterate()) {
 			if (st->owner == owner || (st->owner == OWNER_NONE && HasStationInUse(st->index, true, owner))) {
 				if (this->facilities & st->facilities) { // only stations with selected facilities
 					int num_waiting_cargo = 0;
@@ -189,114 +252,154 @@ protected:
 						if (st->goods[j].HasRating()) {
 							num_waiting_cargo++; // count number of waiting cargo
 							if (HasBit(this->cargo_filter, j)) {
-								*this->stations.Append() = st;
+								this->stations.push_back(st);
 								break;
 							}
 						}
 					}
 					/* stations without waiting cargo */
 					if (num_waiting_cargo == 0 && this->include_empty) {
-						*this->stations.Append() = st;
+						this->stations.push_back(st);
 					}
 				}
 			}
 		}
 
-		this->stations.Compact();
+		this->stations.shrink_to_fit();
 		this->stations.RebuildDone();
 
-		this->vscroll->SetCount(this->stations.Length()); // Update the scrollbar
+		this->vscroll->SetCount((uint)this->stations.size()); // Update the scrollbar
 	}
 
 	/** Sort stations by their name */
-	static int CDECL StationNameSorter(const Station * const *a, const Station * const *b)
+	static bool StationNameSorter(const Station * const &a, const Station * const &b)
 	{
-		static char buf_cache[64];
-		char buf[64];
-
-		SetDParam(0, (*a)->index);
-		GetString(buf, STR_STATION_NAME, lastof(buf));
-
-		if (*b != last_station) {
-			last_station = *b;
-			SetDParam(0, (*b)->index);
-			GetString(buf_cache, STR_STATION_NAME, lastof(buf_cache));
-		}
-
-		int r = strnatcmp(buf, buf_cache); // Sort by name (natural sorting).
-		if (r == 0) return (*a)->index - (*b)->index;
-		return r;
+		int r = strnatcmp(a->GetCachedName(), b->GetCachedName()); // Sort by name (natural sorting).
+		if (r == 0) return a->index < b->index;
+		return r < 0;
 	}
 
 	/** Sort stations by their type */
-	static int CDECL StationTypeSorter(const Station * const *a, const Station * const *b)
+	static bool StationTypeSorter(const Station * const &a, const Station * const &b)
 	{
-		return (*a)->facilities - (*b)->facilities;
+		return a->facilities < b->facilities;
 	}
 
 	/** Sort stations by their waiting cargo */
-	static int CDECL StationWaitingTotalSorter(const Station * const *a, const Station * const *b)
+	static bool StationWaitingTotalSorter(const Station * const &a, const Station * const &b)
 	{
 		int diff = 0;
 
-		CargoID j;
-		FOR_EACH_SET_CARGO_ID(j, cargo_filter) {
-			diff += (*a)->goods[j].cargo.TotalCount() - (*b)->goods[j].cargo.TotalCount();
+		for (CargoID j : SetCargoBitIterator(cargo_filter)) {
+			diff += a->goods[j].cargo.TotalCount() - b->goods[j].cargo.TotalCount();
 		}
 
-		return diff;
+		return diff < 0;
 	}
 
 	/** Sort stations by their available waiting cargo */
-	static int CDECL StationWaitingAvailableSorter(const Station * const *a, const Station * const *b)
+	static bool StationWaitingAvailableSorter(const Station * const &a, const Station * const &b)
 	{
 		int diff = 0;
 
-		CargoID j;
-		FOR_EACH_SET_CARGO_ID(j, cargo_filter) {
-			diff += (*a)->goods[j].cargo.AvailableCount() - (*b)->goods[j].cargo.AvailableCount();
+		for (CargoID j : SetCargoBitIterator(cargo_filter)) {
+			diff += a->goods[j].cargo.AvailableCount() - b->goods[j].cargo.AvailableCount();
 		}
 
-		return diff;
+		return diff < 0;
 	}
 
 	/** Sort stations by their rating */
-	static int CDECL StationRatingMaxSorter(const Station * const *a, const Station * const *b)
+	static bool StationRatingMaxSorter(const Station * const &a, const Station * const &b)
 	{
 		byte maxr1 = 0;
 		byte maxr2 = 0;
 
-		CargoID j;
-		FOR_EACH_SET_CARGO_ID(j, cargo_filter) {
-			if ((*a)->goods[j].HasRating()) maxr1 = max(maxr1, (*a)->goods[j].rating);
-			if ((*b)->goods[j].HasRating()) maxr2 = max(maxr2, (*b)->goods[j].rating);
+		for (CargoID j : SetCargoBitIterator(cargo_filter)) {
+			if (a->goods[j].HasRating()) maxr1 = std::max(maxr1, a->goods[j].rating);
+			if (b->goods[j].HasRating()) maxr2 = std::max(maxr2, b->goods[j].rating);
 		}
 
-		return maxr1 - maxr2;
+		return maxr1 < maxr2;
 	}
 
 	/** Sort stations by their rating */
-	static int CDECL StationRatingMinSorter(const Station * const *a, const Station * const *b)
+	static bool StationRatingMinSorter(const Station * const &a, const Station * const &b)
 	{
 		byte minr1 = 255;
 		byte minr2 = 255;
 
 		for (CargoID j = 0; j < NUM_CARGO; j++) {
 			if (!HasBit(cargo_filter, j)) continue;
-			if ((*a)->goods[j].HasRating()) minr1 = min(minr1, (*a)->goods[j].rating);
-			if ((*b)->goods[j].HasRating()) minr2 = min(minr2, (*b)->goods[j].rating);
+			if (a->goods[j].HasRating()) minr1 = std::min(minr1, a->goods[j].rating);
+			if (b->goods[j].HasRating()) minr2 = std::min(minr2, b->goods[j].rating);
 		}
 
-		return -(minr1 - minr2);
+		return minr1 > minr2;
+	}
+
+	static void PrepareStationVehiclesCallingSorter(byte facilities)
+	{
+		station_vehicle_calling_counts.clear();
+
+		auto can_vehicle_use_facility = [&](const Vehicle *v) -> bool {
+			switch (v->type) {
+				case VEH_TRAIN:
+					return (facilities & FACIL_TRAIN);
+
+				case VEH_ROAD:
+					return (facilities & (RoadVehicle::From(v)->IsBus() ? FACIL_BUS_STOP : FACIL_TRUCK_STOP));
+
+				case VEH_AIRCRAFT:
+					return (facilities & FACIL_AIRPORT);
+
+				case VEH_SHIP:
+					return (facilities & FACIL_DOCK);
+
+				default:
+					return false;
+			}
+		};
+
+		btree::btree_set<StationID> seen_stations;
+		for (const OrderList *l : OrderList::Iterate()) {
+			if (facilities != (FACIL_TRAIN | FACIL_TRUCK_STOP | FACIL_BUS_STOP | FACIL_AIRPORT | FACIL_DOCK)) {
+				if (!can_vehicle_use_facility(l->GetFirstSharedVehicle())) continue;
+			}
+
+			seen_stations.clear();
+			for (Order *order = l->GetFirstOrder(); order != nullptr; order = order->next) {
+				if (order->IsType(OT_GOTO_STATION) || order->IsType(OT_IMPLICIT)) {
+					seen_stations.insert(order->GetDestination());
+				}
+			}
+			if (!seen_stations.empty()) {
+				uint vehicles = l->GetNumVehicles();
+				for (StationID id : seen_stations) {
+					station_vehicle_calling_counts[id] += vehicles;
+				}
+			}
+		}
+	}
+
+	/** Sort stations by the number of vehicles calling */
+	static bool StationVehiclesCallingSorter(const Station * const &a, const Station * const &b)
+	{
+		auto get_count = [](const Station * const &st) {
+			auto iter = station_vehicle_calling_counts.find(st->index);
+			return iter != station_vehicle_calling_counts.end() ? iter->second : 0;
+		};
+
+		return get_count(a) < get_count(b);
 	}
 
 	/** Sort the stations list */
 	void SortStationsList()
 	{
+		if (this->sorter_funcs[this->stations.SortType()] == &StationVehiclesCallingSorter && this->stations.WouldSort()) {
+			PrepareStationVehiclesCallingSorter(this->facilities);
+		}
 		if (!this->stations.Sort()) return;
-
-		/* Reset name sorter sort cache */
-		this->last_station = NULL;
 
 		/* Set the modified widget dirty */
 		this->SetWidgetDirty(WID_STL_LIST);
@@ -316,10 +419,12 @@ public:
 		this->FinishInitNested(window_number);
 		this->owner = (Owner)this->window_number;
 
-		const CargoSpec *cs;
-		FOR_ALL_SORTED_STANDARD_CARGOSPECS(cs) {
-			if (!HasBit(this->cargo_filter, cs->Index())) continue;
-			this->LowerWidget(WID_STL_CARGOSTART + index);
+		uint8 index = 0;
+		for (const CargoSpec *cs : _sorted_standard_cargo_specs) {
+			if (HasBit(this->cargo_filter, cs->Index())) {
+				this->LowerWidget(WID_STL_CARGOSTART + index);
+			}
+			index++;
 		}
 
 		if (this->cargo_filter == this->cargo_filter_max) this->cargo_filter = _cargo_mask;
@@ -337,7 +442,7 @@ public:
 		this->last_sorting = this->stations.GetListing();
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_STL_SORTBY: {
@@ -360,16 +465,16 @@ public:
 			}
 
 			case WID_STL_LIST:
-				resize->height = FONT_HEIGHT_NORMAL;
+				resize->height = std::max(FONT_HEIGHT_NORMAL, FONT_HEIGHT_SMALL + ScaleFontTrad(3));
 				size->height = WD_FRAMERECT_TOP + 5 * resize->height + WD_FRAMERECT_BOTTOM;
-				break;
 
-			case WID_STL_TRAIN:
-			case WID_STL_TRUCK:
-			case WID_STL_BUS:
-			case WID_STL_AIRPLANE:
-			case WID_STL_SHIP:
-				size->height = max<uint>(FONT_HEIGHT_SMALL, 10) + padding.height;
+				/* Determine appropriate width for mini station rating graph */
+				this->rating_width = 0;
+				for (const CargoSpec *cs : _sorted_standard_cargo_specs) {
+					this->rating_width = std::max(this->rating_width, GetStringBoundingBox(cs->abbrev).width);
+				}
+				/* Approximately match original 16 pixel wide rating bars by multiplying string width by 1.6 */
+				this->rating_width = this->rating_width * 16 / 10;
 				break;
 
 			case WID_STL_CARGOALL:
@@ -393,7 +498,7 @@ public:
 		}
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		this->BuildStationsList((Owner)this->window_number);
 		this->SortStationsList();
@@ -401,7 +506,7 @@ public:
 		this->DrawWidgets();
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
 			case WID_STL_SORTBY:
@@ -411,8 +516,14 @@ public:
 
 			case WID_STL_LIST: {
 				bool rtl = _current_text_dir == TD_RTL;
-				int max = min(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), this->stations.Length());
+				int max = std::min<size_t>(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), this->stations.size());
 				int y = r.top + WD_FRAMERECT_TOP;
+				uint line_height = this->GetWidget<NWidgetBase>(widget)->resize_y;
+				/* Spacing between station name and first rating graph. */
+				int text_spacing = ScaleFontTrad(5);
+				/* Spacing between additional rating graphs. */
+				int rating_spacing = ScaleFontTrad(4);
+
 				for (int i = this->vscroll->GetPosition(); i < max; ++i) { // do until max number of stations of owner
 					const Station *st = this->stations[i];
 					assert(st->xy != INVALID_TILE);
@@ -423,29 +534,29 @@ public:
 
 					SetDParam(0, st->index);
 					SetDParam(1, st->facilities);
-					int x = DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, STR_STATION_LIST_STATION);
-					x += rtl ? -5 : 5;
+					int x = DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y + (line_height - FONT_HEIGHT_NORMAL) / 2, STR_STATION_LIST_STATION);
+					x += rtl ? -text_spacing : text_spacing;
 
 					/* show cargo waiting and station ratings */
-					for (uint j = 0; j < _sorted_standard_cargo_specs_size; j++) {
-						CargoID cid = _sorted_cargo_specs[j]->Index();
+					for (const CargoSpec *cs : _sorted_standard_cargo_specs) {
+						CargoID cid = cs->Index();
 						if (st->goods[cid].cargo.TotalCount() > 0) {
 							/* For RTL we work in exactly the opposite direction. So
 							 * decrement the space needed first, then draw to the left
 							 * instead of drawing to the left and then incrementing
 							 * the space. */
 							if (rtl) {
-								x -= 20;
+								x -= rating_width + rating_spacing;
 								if (x < r.left + WD_FRAMERECT_LEFT) break;
 							}
-							StationsWndShowStationRating(x, x + 16, y, cid, st->goods[cid].cargo.TotalCount(), st->goods[cid].rating);
+							StationsWndShowStationRating(x, x + rating_width, y, cid, st->goods[cid].cargo.TotalCount(), st->goods[cid].rating);
 							if (!rtl) {
-								x += 20;
+								x += rating_width + rating_spacing;
 								if (x > r.right - WD_FRAMERECT_RIGHT) break;
 							}
 						}
 					}
-					y += FONT_HEIGHT_NORMAL;
+					y += line_height;
 				}
 
 				if (this->vscroll->GetCount() == 0) { // company has no stations
@@ -456,36 +567,36 @@ public:
 			}
 
 			case WID_STL_NOCARGOWAITING: {
-				int cg_ofst = this->IsWidgetLowered(widget) ? 2 : 1;
-				DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + cg_ofst, STR_ABBREV_NONE, TC_BLACK, SA_HOR_CENTER);
+				int cg_ofst = this->IsWidgetLowered(widget) ? 1 : 0;
+				DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + (r.bottom - r.top - FONT_HEIGHT_SMALL) / 2 + cg_ofst, STR_ABBREV_NONE, TC_BLACK, SA_HOR_CENTER);
 				break;
 			}
 
 			case WID_STL_CARGOALL: {
-				int cg_ofst = this->IsWidgetLowered(widget) ? 2 : 1;
-				DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + cg_ofst, STR_ABBREV_ALL, TC_BLACK, SA_HOR_CENTER);
+				int cg_ofst = this->IsWidgetLowered(widget) ? 1 : 0;
+				DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + (r.bottom - r.top - FONT_HEIGHT_SMALL) / 2 + cg_ofst, STR_ABBREV_ALL, TC_BLACK, SA_HOR_CENTER);
 				break;
 			}
 
 			case WID_STL_FACILALL: {
-				int cg_ofst = this->IsWidgetLowered(widget) ? 2 : 1;
-				DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + cg_ofst, STR_ABBREV_ALL, TC_BLACK, SA_HOR_CENTER);
+				int cg_ofst = this->IsWidgetLowered(widget) ? 1 : 0;
+				DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + (r.bottom - r.top - FONT_HEIGHT_SMALL) / 2 + cg_ofst, STR_ABBREV_ALL, TC_BLACK, SA_HOR_CENTER);
 				break;
 			}
 
 			default:
 				if (widget >= WID_STL_CARGOSTART) {
 					const CargoSpec *cs = _sorted_cargo_specs[widget - WID_STL_CARGOSTART];
-					int cg_ofst = HasBit(this->cargo_filter, cs->Index()) ? 2 : 1;
-					GfxFillRect(r.left + cg_ofst, r.top + cg_ofst, r.right - 2 + cg_ofst, r.bottom - 2 + cg_ofst, cs->rating_colour);
+					int cg_ofst = HasBit(this->cargo_filter, cs->Index()) ? 1 : 0;
+					GfxFillRect(r.left + cg_ofst + 1, r.top + cg_ofst + 1, r.right - 1 + cg_ofst, r.bottom - 1 + cg_ofst, cs->rating_colour);
 					TextColour tc = GetContrastColour(cs->rating_colour);
-					DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + cg_ofst, cs->abbrev, tc, SA_HOR_CENTER);
+					DrawString(r.left + cg_ofst, r.right + cg_ofst, r.top + (r.bottom - r.top - FONT_HEIGHT_SMALL) / 2 + cg_ofst, cs->abbrev, tc, SA_HOR_CENTER);
 				}
 				break;
 		}
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		if (widget == WID_STL_CAPTION) {
 			SetDParam(0, this->window_number);
@@ -493,19 +604,19 @@ public:
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_STL_LIST: {
-				uint id_v = this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_STL_LIST, 0, FONT_HEIGHT_NORMAL);
-				if (id_v >= this->stations.Length()) return; // click out of list bound
+				uint id_v = this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_STL_LIST);
+				if (id_v >= this->stations.size()) return; // click out of list bound
 
 				const Station *st = this->stations[id_v];
 				/* do not check HasStationInUse - it is slow and may be invalid */
 				assert(st->owner == (Owner)this->window_number || st->owner == OWNER_NONE);
 
 				if (_ctrl_pressed) {
-					ShowExtraViewPortWindow(st->xy);
+					ShowExtraViewportWindow(st->xy);
 				} else {
 					ScrollMainWindowToTile(st->xy);
 				}
@@ -521,8 +632,7 @@ public:
 					ToggleBit(this->facilities, widget - WID_STL_TRAIN);
 					this->ToggleWidgetLoweredState(widget);
 				} else {
-					uint i;
-					FOR_EACH_SET_BIT(i, this->facilities) {
+					for (uint i : SetBitIterator(this->facilities)) {
 						this->RaiseWidget(i + WID_STL_TRAIN);
 					}
 					this->facilities = 1 << (widget - WID_STL_TRAIN);
@@ -543,7 +653,7 @@ public:
 				break;
 
 			case WID_STL_CARGOALL: {
-				for (uint i = 0; i < _sorted_standard_cargo_specs_size; i++) {
+				for (uint i = 0; i < _sorted_standard_cargo_specs.size(); i++) {
 					this->LowerWidget(WID_STL_CARGOSTART + i);
 				}
 				this->LowerWidget(WID_STL_NOCARGOWAITING);
@@ -569,7 +679,7 @@ public:
 					this->include_empty = !this->include_empty;
 					this->ToggleWidgetLoweredState(WID_STL_NOCARGOWAITING);
 				} else {
-					for (uint i = 0; i < _sorted_standard_cargo_specs_size; i++) {
+					for (uint i = 0; i < _sorted_standard_cargo_specs.size(); i++) {
 						this->RaiseWidget(WID_STL_CARGOSTART + i);
 					}
 
@@ -591,7 +701,7 @@ public:
 						ToggleBit(this->cargo_filter, cs->Index());
 						this->ToggleWidgetLoweredState(widget);
 					} else {
-						for (uint i = 0; i < _sorted_standard_cargo_specs_size; i++) {
+						for (uint i = 0; i < _sorted_standard_cargo_specs.size(); i++) {
 							this->RaiseWidget(WID_STL_CARGOSTART + i);
 						}
 						this->RaiseWidget(WID_STL_NOCARGOWAITING);
@@ -609,7 +719,7 @@ public:
 		}
 	}
 
-	virtual void OnDropdownSelect(int widget, int index)
+	void OnDropdownSelect(int widget, int index) override
 	{
 		if (this->stations.SortType() != index) {
 			this->stations.SetSortType(index);
@@ -621,7 +731,7 @@ public:
 		}
 	}
 
-	virtual void OnGameTick()
+	void OnGameTick() override
 	{
 		if (this->stations.NeedResort()) {
 			DEBUG(misc, 3, "Periodic rebuild station list company %d", this->window_number);
@@ -629,7 +739,7 @@ public:
 		}
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
 		this->vscroll->SetCapacityFromWidget(this, WID_STL_LIST, WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM);
 	}
@@ -639,7 +749,7 @@ public:
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (data == 0) {
 			/* This needs to be done in command-scope to enforce rebuilding before resorting invalid data */
@@ -655,7 +765,7 @@ byte CompanyStationsWindow::facilities = FACIL_TRAIN | FACIL_TRUCK_STOP | FACIL_
 bool CompanyStationsWindow::include_empty = true;
 const CargoTypes CompanyStationsWindow::cargo_filter_max = ALL_CARGOTYPES;
 CargoTypes CompanyStationsWindow::cargo_filter = ALL_CARGOTYPES;
-const Station *CompanyStationsWindow::last_station = NULL;
+btree::btree_map<StationID, uint> CompanyStationsWindow::station_vehicle_calling_counts;
 
 /* Available station sorting functions */
 GUIStationList::SortFunction * const CompanyStationsWindow::sorter_funcs[] = {
@@ -664,7 +774,8 @@ GUIStationList::SortFunction * const CompanyStationsWindow::sorter_funcs[] = {
 	&StationWaitingTotalSorter,
 	&StationWaitingAvailableSorter,
 	&StationRatingMaxSorter,
-	&StationRatingMinSorter
+	&StationRatingMinSorter,
+	&StationVehiclesCallingSorter
 };
 
 /* Names of the sorting functions */
@@ -675,6 +786,7 @@ const StringID CompanyStationsWindow::sorter_names[] = {
 	STR_SORT_BY_WAITING_AVAILABLE,
 	STR_SORT_BY_RATING_MAX,
 	STR_SORT_BY_RATING_MIN,
+	STR_SORT_BY_VEHICLES_CALLING,
 	INVALID_STRING_ID
 };
 
@@ -687,15 +799,16 @@ static NWidgetBase *CargoWidgets(int *biggest_index)
 {
 	NWidgetHorizontal *container = new NWidgetHorizontal();
 
-	for (uint i = 0; i < _sorted_standard_cargo_specs_size; i++) {
+	for (uint i = 0; i < _sorted_standard_cargo_specs.size(); i++) {
 		NWidgetBackground *panel = new NWidgetBackground(WWT_PANEL, COLOUR_GREY, WID_STL_CARGOSTART + i);
-		panel->SetMinimalSize(14, 11);
+		panel->SetMinimalSize(14, 0);
+		panel->SetMinimalTextLines(1, 0, FS_NORMAL);
 		panel->SetResize(0, 0);
 		panel->SetFill(0, 1);
 		panel->SetDataTip(0, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE);
 		container->Add(panel);
 	}
-	*biggest_index = WID_STL_CARGOSTART + _sorted_standard_cargo_specs_size;
+	*biggest_index = WID_STL_CARGOSTART + static_cast<int>(_sorted_standard_cargo_specs.size());
 	return container;
 }
 
@@ -708,16 +821,16 @@ static const NWidgetPart _nested_company_stations_widgets[] = {
 		NWidget(WWT_STICKYBOX, COLOUR_GREY),
 	EndContainer(),
 	NWidget(NWID_HORIZONTAL),
-		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_TRAIN), SetMinimalSize(14, 11), SetDataTip(STR_TRAIN, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
-		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_TRUCK), SetMinimalSize(14, 11), SetDataTip(STR_LORRY, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
-		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_BUS), SetMinimalSize(14, 11), SetDataTip(STR_BUS, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
-		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_SHIP), SetMinimalSize(14, 11), SetDataTip(STR_SHIP, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
-		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_AIRPLANE), SetMinimalSize(14, 11), SetDataTip(STR_PLANE, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
-		NWidget(WWT_PUSHBTN, COLOUR_GREY, WID_STL_FACILALL), SetMinimalSize(14, 11), SetDataTip(0x0, STR_STATION_LIST_SELECT_ALL_FACILITIES), SetFill(0, 1),
-		NWidget(WWT_PANEL, COLOUR_GREY), SetMinimalSize(5, 11), SetFill(0, 1), EndContainer(),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_TRAIN), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(STR_TRAIN, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_TRUCK), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(STR_LORRY, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_BUS), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(STR_BUS, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_SHIP), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(STR_SHIP, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_STL_AIRPLANE), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(STR_PLANE, STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE), SetFill(0, 1),
+		NWidget(WWT_PUSHBTN, COLOUR_GREY, WID_STL_FACILALL), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(0x0, STR_STATION_LIST_SELECT_ALL_FACILITIES), SetFill(0, 1),
+		NWidget(WWT_PANEL, COLOUR_GREY), SetMinimalSize(5, 0), SetFill(0, 1), EndContainer(),
 		NWidgetFunction(CargoWidgets),
-		NWidget(WWT_PANEL, COLOUR_GREY, WID_STL_NOCARGOWAITING), SetMinimalSize(14, 11), SetDataTip(0x0, STR_STATION_LIST_NO_WAITING_CARGO), SetFill(0, 1), EndContainer(),
-		NWidget(WWT_PUSHBTN, COLOUR_GREY, WID_STL_CARGOALL), SetMinimalSize(14, 11), SetDataTip(0x0, STR_STATION_LIST_SELECT_ALL_TYPES), SetFill(0, 1),
+		NWidget(WWT_PANEL, COLOUR_GREY, WID_STL_NOCARGOWAITING), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(0x0, STR_STATION_LIST_NO_WAITING_CARGO), SetFill(0, 1), EndContainer(),
+		NWidget(WWT_PUSHBTN, COLOUR_GREY, WID_STL_CARGOALL), SetMinimalSize(14, 0), SetMinimalTextLines(1, 0), SetDataTip(0x0, STR_STATION_LIST_SELECT_ALL_TYPES), SetFill(0, 1),
 		NWidget(WWT_PANEL, COLOUR_GREY), SetDataTip(0x0, STR_NULL), SetResize(1, 0), SetFill(1, 1), EndContainer(),
 	EndContainer(),
 	NWidget(NWID_HORIZONTAL),
@@ -756,35 +869,37 @@ void ShowCompanyStations(CompanyID company)
 static const NWidgetPart _nested_station_view_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
+		NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_SV_RENAME), SetMinimalSize(12, 14), SetDataTip(SPR_RENAME, STR_STATION_VIEW_RENAME_TOOLTIP),
 		NWidget(WWT_CAPTION, COLOUR_GREY, WID_SV_CAPTION), SetDataTip(STR_STATION_VIEW_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_SV_LOCATION), SetMinimalSize(12, 14), SetDataTip(SPR_GOTO_LOCATION, STR_STATION_VIEW_CENTER_TOOLTIP),
+		NWidget(WWT_DEBUGBOX, COLOUR_GREY),
 		NWidget(WWT_SHADEBOX, COLOUR_GREY),
 		NWidget(WWT_DEFSIZEBOX, COLOUR_GREY),
 		NWidget(WWT_STICKYBOX, COLOUR_GREY),
-	EndContainer(),
-	NWidget(NWID_HORIZONTAL),
-		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_SORT_ORDER), SetMinimalSize(81, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
-		NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_SV_SORT_BY), SetMinimalSize(168, 12), SetResize(1, 0), SetFill(0, 1), SetDataTip(0x0, STR_TOOLTIP_SORT_CRITERIA),
 	EndContainer(),
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SV_GROUP), SetMinimalSize(81, 12), SetFill(1, 1), SetDataTip(STR_STATION_VIEW_GROUP, 0x0),
 		NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_SV_GROUP_BY), SetMinimalSize(168, 12), SetResize(1, 0), SetFill(0, 1), SetDataTip(0x0, STR_TOOLTIP_GROUP_ORDER),
 	EndContainer(),
 	NWidget(NWID_HORIZONTAL),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_SORT_ORDER), SetMinimalSize(81, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_SORT_BY, STR_TOOLTIP_SORT_ORDER),
+		NWidget(WWT_DROPDOWN, COLOUR_GREY, WID_SV_SORT_BY), SetMinimalSize(168, 12), SetResize(1, 0), SetFill(0, 1), SetDataTip(0x0, STR_TOOLTIP_SORT_CRITERIA),
+	EndContainer(),
+	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_PANEL, COLOUR_GREY, WID_SV_WAITING), SetMinimalSize(237, 44), SetResize(1, 10), SetScrollbar(WID_SV_SCROLLBAR), EndContainer(),
 		NWidget(NWID_VSCROLLBAR, COLOUR_GREY, WID_SV_SCROLLBAR),
 	EndContainer(),
 	NWidget(WWT_PANEL, COLOUR_GREY, WID_SV_ACCEPT_RATING_LIST), SetMinimalSize(249, 23), SetResize(1, 0), EndContainer(),
-	NWidget(NWID_HORIZONTAL),
-		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_LOCATION), SetMinimalSize(45, 12), SetResize(1, 0), SetFill(1, 1),
-					SetDataTip(STR_BUTTON_LOCATION, STR_STATION_VIEW_CENTER_TOOLTIP),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_ACCEPTS_RATINGS), SetMinimalSize(46, 12), SetResize(1, 0), SetFill(1, 1),
-					SetDataTip(STR_STATION_VIEW_RATINGS_BUTTON, STR_STATION_VIEW_RATINGS_TOOLTIP),
-			NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_RENAME), SetMinimalSize(45, 12), SetResize(1, 0), SetFill(1, 1),
-					SetDataTip(STR_BUTTON_RENAME, STR_STATION_VIEW_RENAME_TOOLTIP),
-		EndContainer(),
+	NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_ACCEPTS_RATINGS), SetMinimalSize(46, 12), SetResize(1, 0), SetFill(1, 1),
+				SetDataTip(STR_STATION_VIEW_RATINGS_BUTTON, STR_STATION_VIEW_RATINGS_TOOLTIP),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_HISTORY), SetMinimalSize(60, 12), SetResize(1, 0), SetFill(1, 1),
+				SetDataTip(STR_STATION_VIEW_HISTORY_BUTTON, STR_STATION_VIEW_HISTORY_TOOLTIP),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_DEPARTURES), SetMinimalSize(46, 12), SetResize(1, 0), SetFill(1, 1),
+				SetDataTip(STR_STATION_VIEW_DEPARTURES_BUTTON, STR_STATION_VIEW_DEPARTURES_TOOLTIP),
 		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SV_CLOSE_AIRPORT), SetMinimalSize(45, 12), SetResize(1, 0), SetFill(1, 1),
 				SetDataTip(STR_STATION_VIEW_CLOSE_AIRPORT, STR_STATION_VIEW_CLOSE_AIRPORT_TOOLTIP),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_SV_CATCHMENT), SetMinimalSize(45, 12), SetResize(1, 0), SetFill(1, 1), SetDataTip(STR_BUTTON_CATCHMENT, STR_TOOLTIP_CATCHMENT),
 		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_TRAINS), SetMinimalSize(14, 12), SetFill(0, 1), SetDataTip(STR_TRAIN, STR_STATION_VIEW_SCHEDULED_TRAINS_TOOLTIP),
 		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_ROADVEHS), SetMinimalSize(14, 12), SetFill(0, 1), SetDataTip(STR_LORRY, STR_STATION_VIEW_SCHEDULED_ROAD_VEHICLES_TOOLTIP),
 		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_SV_SHIPS), SetMinimalSize(14, 12), SetFill(0, 1), SetDataTip(STR_SHIP, STR_STATION_VIEW_SCHEDULED_SHIPS_TOOLTIP),
@@ -805,7 +920,7 @@ static const NWidgetPart _nested_station_view_widgets[] = {
 static void DrawCargoIcons(CargoID i, uint waiting, int left, int right, int y)
 {
 	int width = ScaleGUITrad(10);
-	uint num = min((waiting + (width / 2)) / width, (right - left) / width); // maximum is width / 10 icons so it won't overflow
+	uint num = std::min<uint>((waiting + (width / 2)) / width, (right - left) / width); // maximum is width / 10 icons so it won't overflow
 	if (num == 0) return;
 
 	SpriteID sprite = CargoSpec::Get(i)->GetCargoIcon();
@@ -903,9 +1018,9 @@ public:
 	}
 
 	/**
-	 * Retrieve a child for the given station. Return NULL if it doesn't exist.
+	 * Retrieve a child for the given station. Return nullptr if it doesn't exist.
 	 * @param station ID of the station the child we're looking for is associated with.
-	 * @return a child entry for the given station or NULL.
+	 * @return a child entry for the given station or nullptr.
 	 */
 	CargoDataEntry *Retrieve(StationID station) const
 	{
@@ -914,9 +1029,9 @@ public:
 	}
 
 	/**
-	 * Retrieve a child for the given cargo. Return NULL if it doesn't exist.
+	 * Retrieve a child for the given cargo. Return nullptr if it doesn't exist.
 	 * @param cargo ID of the cargo the child we're looking for is associated with.
-	 * @return a child entry for the given cargo or NULL.
+	 * @return a child entry for the given cargo or nullptr.
 	 */
 	CargoDataEntry *Retrieve(CargoID cargo) const
 	{
@@ -1001,7 +1116,7 @@ private:
 };
 
 CargoDataEntry::CargoDataEntry() :
-	parent(NULL),
+	parent(nullptr),
 	station(INVALID_STATION),
 	num_children(0),
 	count(0),
@@ -1025,19 +1140,19 @@ CargoDataEntry::CargoDataEntry(StationID station, uint count, CargoDataEntry *pa
 {}
 
 CargoDataEntry::CargoDataEntry(StationID station) :
-	parent(NULL),
+	parent(nullptr),
 	station(station),
 	num_children(0),
 	count(0),
-	children(NULL)
+	children(nullptr)
 {}
 
 CargoDataEntry::CargoDataEntry(CargoID cargo) :
-	parent(NULL),
+	parent(nullptr),
 	cargo(cargo),
 	num_children(0),
 	count(0),
-	children(NULL)
+	children(nullptr)
 {}
 
 CargoDataEntry::~CargoDataEntry()
@@ -1051,14 +1166,14 @@ CargoDataEntry::~CargoDataEntry()
  */
 void CargoDataEntry::Clear()
 {
-	if (this->children != NULL) {
+	if (this->children != nullptr) {
 		for (CargoDataSet::iterator i = this->children->begin(); i != this->children->end(); ++i) {
 			assert(*i != this);
 			delete *i;
 		}
 		this->children->clear();
 	}
-	if (this->parent != NULL) this->parent->count -= this->count;
+	if (this->parent != nullptr) this->parent->count -= this->count;
 	this->count = 0;
 	this->num_children = 0;
 }
@@ -1107,7 +1222,7 @@ CargoDataEntry *CargoDataEntry::InsertOrRetrieve(Tid child_id)
 void CargoDataEntry::Update(uint count)
 {
 	this->count += count;
-	if (this->parent != NULL) this->parent->Update(count);
+	if (this->parent != nullptr) this->parent->Update(count);
 }
 
 /**
@@ -1116,7 +1231,7 @@ void CargoDataEntry::Update(uint count)
 void CargoDataEntry::IncrementSize()
 {
 	 ++this->num_children;
-	 if (this->parent != NULL) this->parent->IncrementSize();
+	 if (this->parent != nullptr) this->parent->IncrementSize();
 }
 
 void CargoDataEntry::Resort(CargoSortType type, SortOrder order)
@@ -1129,7 +1244,7 @@ void CargoDataEntry::Resort(CargoSortType type, SortOrder order)
 CargoDataEntry *CargoDataEntry::Retrieve(CargoDataSet::iterator i) const
 {
 	if (i == this->children->end()) {
-		return NULL;
+		return nullptr;
 	} else {
 		assert(this->children->value_comp().GetSortType() != ST_COUNT);
 		return *i;
@@ -1173,21 +1288,13 @@ bool CargoSorter::SortCount(const CargoDataEntry *cd1, const CargoDataEntry *cd2
 
 bool CargoSorter::SortStation(StationID st1, StationID st2) const
 {
-	static char buf1[MAX_LENGTH_STATION_NAME_CHARS];
-	static char buf2[MAX_LENGTH_STATION_NAME_CHARS];
-
 	if (!Station::IsValidID(st1)) {
 		return Station::IsValidID(st2) ? this->order == SO_ASCENDING : this->SortId(st1, st2);
 	} else if (!Station::IsValidID(st2)) {
 		return order == SO_DESCENDING;
 	}
 
-	SetDParam(0, st1);
-	GetString(buf1, STR_STATION_NAME, lastof(buf1));
-	SetDParam(0, st2);
-	GetString(buf2, STR_STATION_NAME, lastof(buf2));
-
-	int res = strnatcmp(buf1, buf2); // Sort by name (natural sorting).
+	int res = strnatcmp(Station::Get(st1)->GetCachedName(), Station::Get(st2)->GetCachedName()); // Sort by name (natural sorting).
 	if (res == 0) {
 		return this->SortId(st1, st2);
 	} else {
@@ -1280,6 +1387,7 @@ struct StationViewWindow : public Window {
 
 	int scroll_to_row;                  ///< If set, scroll the main viewport to the station pointed to by this row.
 	int grouping_index;                 ///< Currently selected entry in the grouping drop down.
+	int ratings_list_y = 0;             ///< Y coordinate of first line in station ratings panel.
 	Mode current_mode;                  ///< Currently selected display mode of cargo view.
 	Grouping groupings[NUM_COLUMNS];    ///< Grouping modes for the different columns.
 
@@ -1305,14 +1413,24 @@ struct StationViewWindow : public Window {
 		this->sort_orders[0] = SO_ASCENDING;
 		this->SelectSortOrder((SortOrder)_settings_client.gui.station_gui_sort_order);
 		this->owner = Station::Get(window_number)->owner;
+		ZoningStationWindowOpenClose(Station::Get(window_number));
 	}
 
 	~StationViewWindow()
 	{
+		ZoningStationWindowOpenClose(Station::Get(window_number));
 		DeleteWindowById(WC_TRAINS_LIST,   VehicleListIdentifier(VL_STATION_LIST, VEH_TRAIN,    this->owner, this->window_number).Pack(), false);
 		DeleteWindowById(WC_ROADVEH_LIST,  VehicleListIdentifier(VL_STATION_LIST, VEH_ROAD,     this->owner, this->window_number).Pack(), false);
 		DeleteWindowById(WC_SHIPS_LIST,    VehicleListIdentifier(VL_STATION_LIST, VEH_SHIP,     this->owner, this->window_number).Pack(), false);
 		DeleteWindowById(WC_AIRCRAFT_LIST, VehicleListIdentifier(VL_STATION_LIST, VEH_AIRCRAFT, this->owner, this->window_number).Pack(), false);
+
+		SetViewportCatchmentStation(Station::Get(this->window_number), false);
+	}
+
+	void OnInit() override
+	{
+		const Station *st = Station::Get(this->window_number);
+		SetWidgetDisabledState(WID_SV_HISTORY, st->station_cargo_history_cargoes == 0);
 	}
 
 	/**
@@ -1330,7 +1448,7 @@ struct StationViewWindow : public Window {
 		if (count == 0) return;
 		bool auto_distributed = _settings_game.linkgraph.GetDistributionType(cargo) != DT_MANUAL;
 		const CargoDataEntry *expand = &this->expanded_rows;
-		for (int i = 0; i < NUM_COLUMNS && expand != NULL; ++i) {
+		for (int i = 0; i < NUM_COLUMNS && expand != nullptr; ++i) {
 			switch (groupings[i]) {
 				case GR_CARGO:
 					assert(i == 0);
@@ -1361,13 +1479,13 @@ struct StationViewWindow : public Window {
 		data->Update(count);
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_SV_WAITING:
 				resize->height = FONT_HEIGHT_NORMAL;
 				size->height = WD_FRAMERECT_TOP + 4 * resize->height + WD_FRAMERECT_BOTTOM;
-				this->expand_shrink_width = max(GetStringBoundingBox("-").width, GetStringBoundingBox("+").width) + WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT;
+				this->expand_shrink_width = std::max(GetStringBoundingBox("-").width, GetStringBoundingBox("+").width) + WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT;
 				break;
 
 			case WID_SV_ACCEPT_RATING_LIST:
@@ -1382,10 +1500,47 @@ struct StationViewWindow : public Window {
 					fill->width = 0;
 				}
 				break;
+
+			case WID_SV_GROUP_BY:
+			case WID_SV_SORT_BY: {
+				uint width = 0;
+				for (const StringID *str = _group_names; *str != INVALID_STRING_ID; str++) {
+					width = std::max(width, GetStringBoundingBox(*str).width);
+				}
+				for (const StringID *str = _sort_names; *str != INVALID_STRING_ID; str++) {
+					width = std::max(width, GetStringBoundingBox(*str).width);
+				}
+				size->width = width + padding.width;
+				break;
+			}
 		}
 	}
 
-	virtual void OnPaint()
+	bool OnTooltip(Point pt, int widget, TooltipCloseCondition close_cond) override
+	{
+		if (widget != WID_SV_ACCEPT_RATING_LIST || this->GetWidget<NWidgetCore>(WID_SV_ACCEPTS_RATINGS)->widget_data == STR_STATION_VIEW_RATINGS_BUTTON ||
+				_settings_client.gui.station_rating_tooltip_mode == SRTM_OFF) {
+			return false;
+		}
+
+		int ofs_y = pt.y - this->ratings_list_y;
+		if (ofs_y < 0) return false;
+
+		const Station *st = Station::Get(this->window_number);
+		for (const CargoSpec *cs : _sorted_standard_cargo_specs) {
+			const GoodsEntry *ge = &st->goods[cs->Index()];
+			if (!ge->HasRating()) continue;
+			ofs_y -= FONT_HEIGHT_NORMAL;
+			if (ofs_y < 0) {
+				GuiShowStationRatingTooltip(this, st, cs);
+				break;
+			}
+		}
+
+		return true;
+	}
+
+	void OnPaint() override
 	{
 		const Station *st = Station::Get(this->window_number);
 		CargoDataEntry cargo;
@@ -1393,21 +1548,31 @@ struct StationViewWindow : public Window {
 
 		this->vscroll->SetCount(cargo.GetNumChildren()); // update scrollbar
 
+		byte have_veh_types = 0;
+		IterateOrderRefcountMapForDestinationID(st->index, [&](CompanyID cid, OrderType order_type, VehicleType veh_type, uint32 refcount) {
+			SetBit(have_veh_types, veh_type);
+			return true;
+		});
+
 		/* disable some buttons */
 		this->SetWidgetDisabledState(WID_SV_RENAME,   st->owner != _local_company);
-		this->SetWidgetDisabledState(WID_SV_TRAINS,   !(st->facilities & FACIL_TRAIN));
-		this->SetWidgetDisabledState(WID_SV_ROADVEHS, !(st->facilities & FACIL_TRUCK_STOP) && !(st->facilities & FACIL_BUS_STOP));
-		this->SetWidgetDisabledState(WID_SV_SHIPS,    !(st->facilities & FACIL_DOCK));
-		this->SetWidgetDisabledState(WID_SV_PLANES,   !(st->facilities & FACIL_AIRPORT));
+		this->SetWidgetDisabledState(WID_SV_TRAINS,   !(st->facilities & FACIL_TRAIN) && !HasBit(have_veh_types, VEH_TRAIN));
+		this->SetWidgetDisabledState(WID_SV_ROADVEHS, !(st->facilities & FACIL_TRUCK_STOP) && !(st->facilities & FACIL_BUS_STOP) && !HasBit(have_veh_types, VEH_ROAD));
+		this->SetWidgetDisabledState(WID_SV_SHIPS,    !(st->facilities & FACIL_DOCK) && !HasBit(have_veh_types, VEH_SHIP));
+		this->SetWidgetDisabledState(WID_SV_PLANES,   !(st->facilities & FACIL_AIRPORT) && !HasBit(have_veh_types, VEH_AIRCRAFT));
 		this->SetWidgetDisabledState(WID_SV_CLOSE_AIRPORT, !(st->facilities & FACIL_AIRPORT) || st->owner != _local_company || st->owner == OWNER_NONE); // Also consider SE, where _local_company == OWNER_NONE
 		this->SetWidgetLoweredState(WID_SV_CLOSE_AIRPORT, (st->facilities & FACIL_AIRPORT) && (st->airport.flags & AIRPORT_CLOSED_block) != 0);
+
+		extern const Station *_viewport_highlight_station;
+		this->SetWidgetDisabledState(WID_SV_CATCHMENT, st->facilities == FACIL_NONE);
+		this->SetWidgetLoweredState(WID_SV_CATCHMENT, _viewport_highlight_station == st);
 
 		this->DrawWidgets();
 
 		if (!this->IsShaded()) {
 			/* Draw 'accepted cargo' or 'cargo ratings'. */
 			const NWidgetBase *wid = this->GetWidget<NWidgetBase>(WID_SV_ACCEPT_RATING_LIST);
-			const Rect r = {(int)wid->pos_x, (int)wid->pos_y, (int)(wid->pos_x + wid->current_x - 1), (int)(wid->pos_y + wid->current_y - 1)};
+			const Rect r = wid->GetCurrentRect();
 			if (this->GetWidget<NWidgetCore>(WID_SV_ACCEPTS_RATINGS)->widget_data == STR_STATION_VIEW_RATINGS_BUTTON) {
 				int lines = this->DrawAcceptedCargo(r);
 				if (lines > this->accepts_lines) { // Resize the widget, and perform re-initialization of the window.
@@ -1435,13 +1600,13 @@ struct StationViewWindow : public Window {
 
 			/* Draw waiting cargo. */
 			NWidgetBase *nwi = this->GetWidget<NWidgetBase>(WID_SV_WAITING);
-			Rect waiting_rect = { (int)nwi->pos_x, (int)nwi->pos_y, (int)(nwi->pos_x + nwi->current_x - 1), (int)(nwi->pos_y + nwi->current_y - 1)};
+			Rect waiting_rect = nwi->GetCurrentRect();
 			this->DrawEntries(&cargo, waiting_rect, pos, maxrows, 0);
 			scroll_to_row = INT_MAX;
 		}
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		const Station *st = Station::Get(this->window_number);
 		SetDParam(0, st->index);
@@ -1461,11 +1626,10 @@ struct StationViewWindow : public Window {
 
 		const FlowStatMap &flows = st->goods[i].flows;
 		for (FlowStatMap::const_iterator it = flows.begin(); it != flows.end(); ++it) {
-			StationID from = it->first;
+			StationID from = it->GetOrigin();
 			CargoDataEntry *source_entry = cargo_entry->InsertOrRetrieve(from);
-			const FlowStat::SharesMap *shares = it->second.GetShares();
 			uint32 prev_count = 0;
-			for (FlowStat::SharesMap::const_iterator flow_it = shares->begin(); flow_it != shares->end(); ++flow_it) {
+			for (FlowStat::const_iterator flow_it = it->begin(); flow_it != it->end(); ++flow_it) {
 				StationID via = flow_it->second;
 				CargoDataEntry *via_entry = source_entry->InsertOrRetrieve(via);
 				if (via == this->window_number) {
@@ -1487,16 +1651,15 @@ struct StationViewWindow : public Window {
 	 * @param count Size of the batch of cargo.
 	 * @param dest CargoDataEntry to save the results in.
 	 */
-	void EstimateDestinations(CargoID cargo, StationID source, StationID next, uint count, CargoDataEntry *dest)
+	void EstimateDestinations(CargoID cargo, StationID source, StationID next, uint count, CargoDataEntry *dest, uint depth = 0)
 	{
-		if (Station::IsValidID(next) && Station::IsValidID(source)) {
+		if (depth <= 128 && Station::IsValidID(next) && Station::IsValidID(source)) {
 			CargoDataEntry tmp;
 			const FlowStatMap &flowmap = Station::Get(next)->goods[cargo].flows;
 			FlowStatMap::const_iterator map_it = flowmap.find(source);
 			if (map_it != flowmap.end()) {
-				const FlowStat::SharesMap *shares = map_it->second.GetShares();
 				uint32 prev_count = 0;
-				for (FlowStat::SharesMap::const_iterator i = shares->begin(); i != shares->end(); ++i) {
+				for (FlowStat::const_iterator i = map_it->begin(); i != map_it->end(); ++i) {
 					tmp.InsertOrRetrieve(i->second)->Update(i->first - prev_count);
 					prev_count = i->first;
 				}
@@ -1522,7 +1685,7 @@ struct StationViewWindow : public Window {
 							if (child->GetStation() == next) {
 								dest->InsertOrRetrieve(next)->Update(estimate);
 							} else {
-								EstimateDestinations(cargo, source, child->GetStation(), estimate, dest);
+								EstimateDestinations(cargo, source, child->GetStation(), estimate, dest, depth + 1);
 							}
 						}
 					}
@@ -1544,10 +1707,10 @@ struct StationViewWindow : public Window {
 	{
 		const CargoDataEntry *source_dest = this->cached_destinations.Retrieve(i);
 		for (FlowStatMap::const_iterator it = flows.begin(); it != flows.end(); ++it) {
-			StationID from = it->first;
+			if (it->IsInvalid()) continue;
+			StationID from = it->GetOrigin();
 			const CargoDataEntry *source_entry = source_dest->Retrieve(from);
-			const FlowStat::SharesMap *shares = it->second.GetShares();
-			for (FlowStat::SharesMap::const_iterator flow_it = shares->begin(); flow_it != shares->end(); ++flow_it) {
+			for (FlowStat::const_iterator flow_it = it->begin(); flow_it != it->end(); ++flow_it) {
 				const CargoDataEntry *via_entry = source_entry->Retrieve(flow_it->second);
 				for (CargoDataSet::iterator dest_it = via_entry->Begin(); dest_it != via_entry->End(); ++dest_it) {
 					CargoDataEntry *dest_entry = *dest_it;
@@ -1571,13 +1734,13 @@ struct StationViewWindow : public Window {
 			StationID next = it.GetKey();
 
 			const CargoDataEntry *source_entry = source_dest->Retrieve(cp->SourceStation());
-			if (source_entry == NULL) {
+			if (source_entry == nullptr) {
 				this->ShowCargo(cargo, i, cp->SourceStation(), next, INVALID_STATION, cp->Count());
 				continue;
 			}
 
 			const CargoDataEntry *via_entry = source_entry->Retrieve(next);
-			if (via_entry == NULL) {
+			if (via_entry == nullptr) {
 				this->ShowCargo(cargo, i, cp->SourceStation(), next, INVALID_STATION, cp->Count());
 				continue;
 			}
@@ -1600,7 +1763,7 @@ struct StationViewWindow : public Window {
 	{
 		for (CargoID i = 0; i < NUM_CARGO; i++) {
 
-			if (this->cached_destinations.Retrieve(i) == NULL) {
+			if (this->cached_destinations.Retrieve(i) == nullptr) {
 				this->RecalcDestinations(i);
 			}
 
@@ -1618,15 +1781,15 @@ struct StationViewWindow : public Window {
 	 */
 	void SetDisplayedRow(const CargoDataEntry *data)
 	{
-		std::list<StationID> stations;
+		std::vector<StationID> stations;
 		const CargoDataEntry *parent = data->GetParent();
-		if (parent->GetParent() == NULL) {
+		if (parent->GetParent() == nullptr) {
 			this->displayed_rows.push_back(RowDisplay(&this->expanded_rows, data->GetCargo()));
 			return;
 		}
 
 		StationID next = data->GetStation();
-		while (parent->GetParent()->GetParent() != NULL) {
+		while (parent->GetParent()->GetParent() != nullptr) {
 			stations.push_back(parent->GetStation());
 			parent = parent->GetParent();
 		}
@@ -1764,7 +1927,7 @@ struct StationViewWindow : public Window {
 				DrawString(text_left, text_right, y, str);
 
 				if (column < NUM_COLUMNS - 1) {
-					const char *sym = NULL;
+					const char *sym = nullptr;
 					if (cd->GetNumChildren() > 0) {
 						sym = "-";
 					} else if (auto_distributed && str != STR_STATION_VIEW_RESERVED) {
@@ -1811,7 +1974,7 @@ struct StationViewWindow : public Window {
 	 * @param r Rectangle of the widget.
 	 * @return Number of lines needed for drawing the cargo ratings.
 	 */
-	int DrawCargoRatings(const Rect &r) const
+	int DrawCargoRatings(const Rect &r)
 	{
 		const Station *st = Station::Get(this->window_number);
 		int y = r.top + WD_FRAMERECT_TOP;
@@ -1825,17 +1988,22 @@ struct StationViewWindow : public Window {
 		DrawString(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, STR_STATION_VIEW_SUPPLY_RATINGS_TITLE);
 		y += FONT_HEIGHT_NORMAL;
 
-		const CargoSpec *cs;
-		FOR_ALL_SORTED_STANDARD_CARGOSPECS(cs) {
+		this->ratings_list_y = y;
+
+		for (const CargoSpec *cs : _sorted_standard_cargo_specs) {
 			const GoodsEntry *ge = &st->goods[cs->Index()];
 			if (!ge->HasRating()) continue;
 
 			const LinkGraph *lg = LinkGraph::GetIfValid(ge->link_graph);
 			SetDParam(0, cs->name);
-			SetDParam(1, lg != NULL ? lg->Monthly((*lg)[ge->node].Supply()) : 0);
+			SetDParam(1, lg != nullptr ? lg->Monthly((*lg)[ge->node].Supply()) : 0);
 			SetDParam(2, STR_CARGO_RATING_APPALLING + (ge->rating >> 5));
 			SetDParam(3, ToPercent8(ge->rating));
-			DrawString(r.left + WD_FRAMERECT_LEFT + 6, r.right - WD_FRAMERECT_RIGHT - 6, y, STR_STATION_VIEW_CARGO_SUPPLY_RATING);
+			int x = DrawString(r.left + WD_FRAMERECT_LEFT + 6, r.right - WD_FRAMERECT_RIGHT - 6, y, STR_STATION_VIEW_CARGO_SUPPLY_RATING);
+			if (!ge->IsSupplyAllowed() && x != 0) {
+				int line_y = y + (FONT_HEIGHT_NORMAL / 2) - 1;
+				GfxDrawLine(r.left + WD_FRAMERECT_LEFT + 6, line_y, x, line_y, PC_WHITE, 1);
+			}
 			y += FONT_HEIGHT_NORMAL;
 		}
 		return CeilDiv(y - r.top - WD_FRAMERECT_TOP, FONT_HEIGHT_NORMAL);
@@ -1849,7 +2017,7 @@ struct StationViewWindow : public Window {
 	template<class Tid>
 	void HandleCargoWaitingClick(CargoDataEntry *filter, Tid next)
 	{
-		if (filter->Retrieve(next) != NULL) {
+		if (filter->Retrieve(next) != nullptr) {
 			filter->Remove(next);
 		} else {
 			filter->InsertOrRetrieve(next);
@@ -1876,16 +2044,20 @@ struct StationViewWindow : public Window {
 		this->SetWidgetDirty(WID_SV_WAITING);
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_SV_WAITING:
-				this->HandleCargoWaitingClick(this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_SV_WAITING, WD_FRAMERECT_TOP, FONT_HEIGHT_NORMAL) - this->vscroll->GetPosition());
+				this->HandleCargoWaitingClick(this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_SV_WAITING, WD_FRAMERECT_TOP) - this->vscroll->GetPosition());
+				break;
+
+			case WID_SV_CATCHMENT:
+				SetViewportCatchmentStation(Station::Get(this->window_number), !this->IsWidgetLowered(WID_SV_CATCHMENT));
 				break;
 
 			case WID_SV_LOCATION:
 				if (_ctrl_pressed) {
-					ShowExtraViewPortWindow(Station::Get(this->window_number)->xy);
+					ShowExtraViewportWindow(Station::Get(this->window_number)->xy);
 				} else {
 					ScrollMainWindowToTile(Station::Get(this->window_number)->xy);
 				}
@@ -1945,6 +2117,32 @@ struct StationViewWindow : public Window {
 				this->SelectSortOrder(this->sort_orders[1] == SO_ASCENDING ? SO_DESCENDING : SO_ASCENDING);
 				this->SetTimeout();
 				this->LowerWidget(WID_SV_SORT_ORDER);
+				break;
+			}
+
+			case WID_SV_HISTORY: {
+				ShowStationCargo((StationID)this->window_number);
+				break;
+			}
+
+			case WID_SV_DEPARTURES: {
+				ShowStationDepartures((StationID)this->window_number);
+				break;
+			}
+
+			case WID_SV_ACCEPT_RATING_LIST: {
+				if (this->owner != _local_company || !_ctrl_pressed || this->GetWidget<NWidgetCore>(WID_SV_ACCEPTS_RATINGS)->widget_data == STR_STATION_VIEW_RATINGS_BUTTON) break;
+				int row = this->GetRowFromWidget(pt.y, WID_SV_ACCEPT_RATING_LIST, WD_FRAMERECT_TOP, FONT_HEIGHT_NORMAL);
+				if (row < 1) break;
+				const Station *st = Station::Get(this->window_number);
+				for (const CargoSpec *cs : _sorted_standard_cargo_specs) {
+					const GoodsEntry *ge = &st->goods[cs->Index()];
+					if (!ge->HasRating()) continue;
+					if (row == 1) {
+						DoCommandP(0, this->window_number, cs->Index() | (ge->IsSupplyAllowed() ? 0 : 1 << 8), CMD_SET_STATION_CARGO_ALLOWED_SUPPLY | CMD_MSG(STR_ERROR_CAN_T_DO_THIS));
+					}
+					row--;
+				}
 				break;
 			}
 		}
@@ -2037,7 +2235,7 @@ struct StationViewWindow : public Window {
 		this->SetDirty();
 	}
 
-	virtual void OnDropdownSelect(int widget, int index)
+	void OnDropdownSelect(int widget, int index) override
 	{
 		if (widget == WID_SV_SORT_BY) {
 			this->SelectSortBy(index);
@@ -2046,14 +2244,14 @@ struct StationViewWindow : public Window {
 		}
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
-		if (str == NULL) return;
+		if (str == nullptr) return;
 
-		DoCommandP(0, this->window_number, 0, CMD_RENAME_STATION | CMD_MSG(STR_ERROR_CAN_T_RENAME_STATION), NULL, str);
+		DoCommandP(0, this->window_number, 0, CMD_RENAME_STATION | CMD_MSG(STR_ERROR_CAN_T_RENAME_STATION), nullptr, str);
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
 		this->vscroll->SetCapacityFromWidget(this, WID_SV_WAITING, WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM);
 	}
@@ -2063,7 +2261,7 @@ struct StationViewWindow : public Window {
 	 * @param data Information about the changed data. If it's a valid cargo ID, invalidate the cargo data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (gui_scope) {
 			if (data >= 0 && data < NUM_CARGO) {
@@ -2072,6 +2270,16 @@ struct StationViewWindow : public Window {
 				this->ReInit();
 			}
 		}
+	}
+
+	bool IsNewGRFInspectable() const override
+	{
+		return ::IsNewGRFInspectable(GSF_FAKE_STATION_STRUCT, this->window_number);
+	}
+
+	void ShowNewGRFInspectWindow() const override
+	{
+		::ShowNewGRFInspectWindow(GSF_FAKE_STATION_STRUCT, this->window_number);
 	}
 };
 
@@ -2116,8 +2324,8 @@ struct TileAndStation {
 	StationID station; ///< StationID
 };
 
-static SmallVector<TileAndStation, 8> _deleted_stations_nearby;
-static SmallVector<StationID, 8> _stations_nearby_list;
+static std::vector<TileAndStation> _deleted_stations_nearby;
+static std::vector<StationID> _stations_nearby_list;
 
 /**
  * Add station on this tile to _stations_nearby_list if it's fully within the
@@ -2132,11 +2340,11 @@ static bool AddNearbyStation(TileIndex tile, void *user_data)
 	TileArea *ctx = (TileArea *)user_data;
 
 	/* First check if there were deleted stations here */
-	for (uint i = 0; i < _deleted_stations_nearby.Length(); i++) {
-		TileAndStation *ts = _deleted_stations_nearby.Get(i);
+	for (uint i = 0; i < _deleted_stations_nearby.size(); i++) {
+		auto ts = _deleted_stations_nearby.begin() + i;
 		if (ts->tile == tile) {
-			*_stations_nearby_list.Append() = _deleted_stations_nearby[i].station;
-			_deleted_stations_nearby.Erase(ts);
+			_stations_nearby_list.push_back(_deleted_stations_nearby[i].station);
+			_deleted_stations_nearby.erase(ts);
 			i--;
 		}
 	}
@@ -2152,10 +2360,10 @@ static bool AddNearbyStation(TileIndex tile, void *user_data)
 	if (!T::IsValidID(sid)) return false;
 
 	T *st = T::Get(sid);
-	if (st->owner != _local_company || _stations_nearby_list.Contains(sid)) return false;
+	if (st->owner != _local_company || std::find(_stations_nearby_list.begin(), _stations_nearby_list.end(), sid) != _stations_nearby_list.end()) return false;
 
 	if (st->rect.BeforeAddRect(ctx->tile, ctx->w, ctx->h, StationRect::ADD_TEST).Succeeded()) {
-		*_stations_nearby_list.Append() = sid;
+		_stations_nearby_list.push_back(sid);
 	}
 
 	return false; // We want to include *all* nearby stations
@@ -2175,25 +2383,21 @@ static const T *FindStationsNearby(TileArea ta, bool distant_join)
 {
 	TileArea ctx = ta;
 
-	_stations_nearby_list.Clear();
-	_deleted_stations_nearby.Clear();
+	_stations_nearby_list.clear();
+	_deleted_stations_nearby.clear();
 
 	/* Check the inside, to return, if we sit on another station */
-	TILE_AREA_LOOP(t, ta) {
-//  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI.
+	for (TileIndex t : ta) {
 		if (t < MapSize() && IsTileType(t, MP_STATION) && T::IsValidID(GetStationIndex(t))) return T::GetByTile(t);
 		// if (t < MapSize() && (IsTileType(t, MP_STATION) || (IsTileType(t, MP_TUNNELBRIDGE) && (GetStationIndex(t) != INVALID_STATION))) && T::IsValidID(GetStationIndex(t))) return T::GetByTile(t);
 	}
 
 	/* Look for deleted stations */
-	const BaseStation *st;
-	FOR_ALL_BASE_STATIONS(st) {
+	for (const BaseStation *st : BaseStation::Iterate()) {
 		if (T::IsExpected(st) && !st->IsInUse() && st->owner == _local_company) {
 			/* Include only within station spread (yes, it is strictly less than) */
-			if (max(DistanceMax(ta.tile, st->xy), DistanceMax(TILE_ADDXY(ta.tile, ta.w - 1, ta.h - 1), st->xy)) < _settings_game.station.station_spread) {
-				TileAndStation *ts = _deleted_stations_nearby.Append();
-				ts->tile = st->xy;
-				ts->station = st->index;
+			if (std::max(DistanceMax(ta.tile, st->xy), DistanceMax(TILE_ADDXY(ta.tile, ta.w - 1, ta.h - 1), st->xy)) < _settings_game.station.station_spread) {
+				_deleted_stations_nearby.push_back({st->xy, st->index});
 
 				/* Add the station when it's within where we're going to build */
 				if (IsInsideBS(TileX(st->xy), TileX(ctx.tile), ctx.w) &&
@@ -2207,13 +2411,13 @@ static const T *FindStationsNearby(TileArea ta, bool distant_join)
 	/* Only search tiles where we have a chance to stay within the station spread.
 	 * The complete check needs to be done in the callback as we don't know the
 	 * extent of the found station, yet. */
-	if (distant_join && min(ta.w, ta.h) >= _settings_game.station.station_spread) return NULL;
-	uint max_dist = distant_join ? _settings_game.station.station_spread - min(ta.w, ta.h) : 1;
+	if (distant_join && std::min(ta.w, ta.h) >= _settings_game.station.station_spread) return nullptr;
+	uint max_dist = distant_join ? _settings_game.station.station_spread - std::min(ta.w, ta.h) : 1;
 
 	TileIndex tile = TileAddByDir(ctx.tile, DIR_N);
 	CircularTileSearch(&tile, max_dist, ta.w, ta.h, AddNearbyStation<T>, &ctx);
 
-	return NULL;
+	return nullptr;
 }
 
 static const NWidgetPart _nested_select_station_widgets[] = {
@@ -2251,15 +2455,24 @@ struct SelectStationWindow : Window {
 		this->GetWidget<NWidgetCore>(WID_JS_CAPTION)->widget_data = T::EXPECTED_FACIL == FACIL_WAYPOINT ? STR_JOIN_WAYPOINT_CAPTION : STR_JOIN_STATION_CAPTION;
 		this->FinishInitNested(0);
 		this->OnInvalidateData(0);
+
+		_thd.freeze = true;
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	~SelectStationWindow()
+	{
+		SetViewportCatchmentStation(nullptr, true);
+
+		_thd.freeze = false;
+	}
+
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget != WID_JS_PANEL) return;
 
 		/* Determine the widest string */
 		Dimension d = GetStringBoundingBox(T::EXPECTED_FACIL == FACIL_WAYPOINT ? STR_JOIN_WAYPOINT_CREATE_SPLITTED_WAYPOINT : STR_JOIN_STATION_CREATE_SPLITTED_STATION);
-		for (uint i = 0; i < _stations_nearby_list.Length(); i++) {
+		for (uint i = 0; i < _stations_nearby_list.size(); i++) {
 			const T *st = T::Get(_stations_nearby_list[i]);
 			SetDParam(0, st->index);
 			SetDParam(1, st->facilities);
@@ -2273,7 +2486,7 @@ struct SelectStationWindow : Window {
 		*size = d;
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_JS_PANEL) return;
 
@@ -2283,7 +2496,7 @@ struct SelectStationWindow : Window {
 			y += this->resize.step_height;
 		}
 
-		for (uint i = max<uint>(1, this->vscroll->GetPosition()); i <= _stations_nearby_list.Length(); ++i, y += this->resize.step_height) {
+		for (uint i = std::max<uint>(1, this->vscroll->GetPosition()); i <= _stations_nearby_list.size(); ++i, y += this->resize.step_height) {
 			/* Don't draw anything if it extends past the end of the window. */
 			if (i - this->vscroll->GetPosition() >= this->vscroll->GetCapacity()) break;
 
@@ -2294,7 +2507,7 @@ struct SelectStationWindow : Window {
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		if (widget != WID_JS_PANEL) return;
 
@@ -2302,7 +2515,7 @@ struct SelectStationWindow : Window {
 		bool distant_join = (st_index > 0);
 		if (distant_join) st_index--;
 
-		if (distant_join && st_index >= _stations_nearby_list.Length()) return;
+		if (distant_join && st_index >= _stations_nearby_list.size()) return;
 
 		/* Insert station to be joined into stored command */
 		SB(this->select_station_cmd.p2, 16, 16,
@@ -2315,7 +2528,7 @@ struct SelectStationWindow : Window {
 		DeleteWindowById(WC_SELECT_STATION, 0);
 	}
 
-	virtual void OnRealtimeTick(uint delta_ms)
+	void OnRealtimeTick(uint delta_ms) override
 	{
 		if (_thd.dirty & 2) {
 			_thd.dirty &= ~2;
@@ -2323,7 +2536,7 @@ struct SelectStationWindow : Window {
 		}
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
 		this->vscroll->SetCapacityFromWidget(this, WID_JS_PANEL, WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM);
 	}
@@ -2333,12 +2546,29 @@ struct SelectStationWindow : Window {
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 		FindStationsNearby<T>(this->area, true);
-		this->vscroll->SetCount(_stations_nearby_list.Length() + 1);
+		this->vscroll->SetCount((uint)_stations_nearby_list.size() + 1);
 		this->SetDirty();
+	}
+
+	void OnMouseOver(Point pt, int widget) override
+	{
+		if (widget != WID_JS_PANEL || T::EXPECTED_FACIL == FACIL_WAYPOINT) {
+			SetViewportCatchmentStation(nullptr, true);
+			return;
+		}
+
+		/* Show coverage area of station under cursor */
+		uint st_index = this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_JS_PANEL, WD_FRAMERECT_TOP);
+		if (st_index == 0 || st_index > _stations_nearby_list.size()) {
+			SetViewportCatchmentStation(nullptr, true);
+		} else {
+			st_index--;
+			SetViewportCatchmentStation(Station::Get(_stations_nearby_list[st_index]), true);
+		}
 	}
 };
 
@@ -2366,7 +2596,7 @@ static bool StationJoinerNeeded(const CommandContainer &cmd, TileArea ta)
 	/* If a window is already opened and we didn't ctrl-click,
 	 * return true (i.e. just flash the old window) */
 	Window *selection_window = FindWindowById(WC_SELECT_STATION, 0);
-	if (selection_window != NULL) {
+	if (selection_window != nullptr) {
 		/* Abort current distant-join and start new one */
 		delete selection_window;
 		UpdateTileSelection();
@@ -2382,7 +2612,7 @@ static bool StationJoinerNeeded(const CommandContainer &cmd, TileArea ta)
 	 * If adjacent-stations is disabled and we are building next to a station, do not show the selection window.
 	 * but join the other station immediately. */
 	const T *st = FindStationsNearby<T>(ta, false);
-	return st == NULL && (_settings_game.station.adjacent_stations || _stations_nearby_list.Length() == 0);
+	return st == nullptr && (_settings_game.station.adjacent_stations || _stations_nearby_list.size() == 0);
 }
 
 /**
@@ -2420,4 +2650,374 @@ void ShowSelectStationIfNeeded(const CommandContainer &cmd, TileArea ta)
 void ShowSelectWaypointIfNeeded(const CommandContainer &cmd, TileArea ta)
 {
 	ShowSelectBaseStationIfNeeded<Waypoint>(cmd, ta);
+}
+
+static const NWidgetPart _nested_station_rating_tooltip_widgets[] = {
+	NWidget(WWT_PANEL, COLOUR_GREY, WID_TT_BACKGROUND), SetMinimalSize(64, 32), EndContainer(),
+};
+
+static WindowDesc _station_rating_tooltip_desc(
+	WDP_MANUAL, nullptr, 0, 0,
+	WC_STATION_RATING_TOOLTIP, WC_NONE,
+	0,
+	_nested_station_rating_tooltip_widgets, lengthof(_nested_station_rating_tooltip_widgets)
+	);
+
+bool GetNewGrfRating(const Station *st, const CargoSpec *cs, const GoodsEntry *ge, int *new_grf_rating);
+int GetSpeedRating(const GoodsEntry *ge);
+int GetWaitTimeRating(const CargoSpec *cs, const GoodsEntry *ge);
+int GetWaitingCargoRating(const Station *st, const GoodsEntry *ge);
+int GetStatueRating(const Station *st);
+int GetVehicleAgeRating(const GoodsEntry *ge);
+
+struct StationRatingTooltipWindow : public Window
+{
+private:
+	const Station *st;
+	const CargoSpec *cs;
+	bool newgrf_rating_used;
+
+	static const uint RATING_TOOLTIP_LINE_BUFF_SIZE = 512;
+	static const uint RATING_TOOLTIP_MAX_LINES = 9;
+	static const uint RATING_TOOLTIP_NEWGRF_INDENT = 20;
+
+public:
+	char data[RATING_TOOLTIP_MAX_LINES + 1][RATING_TOOLTIP_LINE_BUFF_SIZE] {};
+
+	StationRatingTooltipWindow(Window *parent, const Station *st, const CargoSpec *cs) : Window(&_station_rating_tooltip_desc)
+	{
+		this->parent = parent;
+		this->st = st;
+		this->cs = cs;
+		this->newgrf_rating_used = false;
+		this->InitNested();
+		CLRBITS(this->flags, WF_WHITE_BORDER);
+	}
+
+	Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number) override
+	{
+		const int scr_top = GetMainViewTop() + 2;
+		const int scr_bot = GetMainViewBottom() - 2;
+
+		Point pt {};
+		pt.y = Clamp(_cursor.pos.y + _cursor.total_size.y + _cursor.total_offs.y + 5, scr_top, scr_bot);
+		if (pt.y + sm_height > scr_bot) pt.y = std::min(_cursor.pos.y + _cursor.total_offs.y - 5, scr_bot) - sm_height;
+		pt.x = sm_width >= _screen.width ? 0 : Clamp(_cursor.pos.x - (sm_width >> 1), 0, _screen.width - sm_width);
+
+		return pt;
+	}
+
+	static int RoundRating(const int rating) {
+		return RoundDivSU(rating * 101, 256);
+	}
+
+	void OnInit() override
+	{
+		const GoodsEntry *ge = &this->st->goods[this->cs->Index()];
+
+		SetDParam(0, this->cs->name);
+		GetString(this->data[0], STR_STATION_RATING_TOOLTIP_RATING_DETAILS, lastof(this->data[0]));
+
+		if (!ge->HasRating()) {
+			this->data[1][0] = '\0';
+			return;
+		}
+
+		uint line_nr = 1;
+
+		// Calculate target rating.
+		bool skip = false;
+		int total_rating = 0;
+
+		const bool detailed = _settings_client.gui.station_rating_tooltip_mode == SRTM_DETAILED;
+
+		if (_extra_cheats.station_rating.value) {
+			total_rating = 255;
+			skip = true;
+			GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_USING_CHEAT, lastof(this->data[line_nr]));
+			line_nr++;
+		} else if (HasBit(cs->callback_mask, CBM_CARGO_STATION_RATING_CALC)) {
+
+			int new_grf_rating;
+			this->newgrf_rating_used = GetNewGrfRating(st, cs, ge, &new_grf_rating);
+
+			if (this->newgrf_rating_used) {
+				skip = true;
+				total_rating += new_grf_rating;
+				new_grf_rating = RoundRating(new_grf_rating);
+
+				SetDParam(0, STR_STATION_RATING_TOOLTIP_NEWGRF_RATING_0 + (new_grf_rating <= 0 ? 0 : 1));
+				SetDParam(1, new_grf_rating);
+				GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_NEWGRF_RATING, lastof(this->data[line_nr]));
+				line_nr++;
+
+				const uint last_speed = ge->HasVehicleEverTriedLoading() && ge->IsSupplyAllowed() ? ge->last_speed : 0xFF;
+				SetDParam(0, std::min<uint>(last_speed, 0xFFu));
+
+				switch (ge->last_vehicle_type)
+				{
+					case VEH_TRAIN:
+						SetDParam(1, STR_STATION_RATING_TOOLTIP_TRAIN);
+						break;
+					case VEH_ROAD:
+						SetDParam(1, STR_STATION_RATING_TOOLTIP_ROAD_VEHICLE);
+						break;
+					case VEH_SHIP:
+						SetDParam(1, STR_STATION_RATING_TOOLTIP_SHIP);
+						break;
+					case VEH_AIRCRAFT:
+						SetDParam(1, STR_STATION_RATING_TOOLTIP_AIRCRAFT);
+						break;
+					default:
+						SetDParam(1, STR_STATION_RATING_TOOLTIP_INVALID);
+						break;
+				}
+
+				GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_NEWGRF_SPEED, lastof(this->data[line_nr]));
+				line_nr++;
+
+				SetDParam(0, std::min(ge->max_waiting_cargo, 0xFFFFu));
+				GetString(this->data[line_nr],
+					STR_STATION_RATING_TOOLTIP_NEWGRF_WAITUNITS,
+						  lastof(this->data[line_nr]));
+				line_nr++;
+
+				SetDParam(0, ge->time_since_pickup * STATION_RATING_TICKS / (DAY_TICKS * _settings_game.economy.day_length_factor));
+				GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_NEWGRF_WAITTIME, lastof(this->data[line_nr]));
+				line_nr++;
+			}
+		}
+
+		if (!skip) {
+			// Speed
+			{
+				const auto speed_rating = GetSpeedRating(ge);
+				const auto rounded_speed_rating = RoundRating(speed_rating);
+
+				SetDParam(0, detailed ? STR_STATION_RATING_MAX_PERCENTAGE : STR_EMPTY);
+				SetDParam(1, 17);
+
+				if (ge->last_speed == 255) {
+					SetDParam(2, STR_STATION_RATING_TOOLTIP_SPEED_3);
+				}
+				else if (rounded_speed_rating == 0) {
+					SetDParam(2, STR_STATION_RATING_TOOLTIP_SPEED_ZERO);
+				}
+				else {
+					SetDParam(2, STR_STATION_RATING_TOOLTIP_SPEED_0 + std::min(3, speed_rating / 42));
+				}
+
+				SetDParam(3, ge->last_speed);
+				SetDParam(4, detailed ? STR_STATION_RATING_PERCENTAGE_COMMA : STR_EMPTY);
+				SetDParam(5, rounded_speed_rating);
+
+				switch (ge->last_vehicle_type)
+				{
+					case VEH_TRAIN:
+						SetDParam(6, STR_STATION_RATING_TOOLTIP_TRAIN);
+						break;
+					case VEH_ROAD:
+						SetDParam(6, STR_STATION_RATING_TOOLTIP_ROAD_VEHICLE);
+						break;
+					case VEH_SHIP:
+						SetDParam(6, STR_STATION_RATING_TOOLTIP_SHIP);
+						break;
+					case VEH_AIRCRAFT:
+						SetDParam(6, STR_STATION_RATING_TOOLTIP_AIRCRAFT);
+						break;
+					default:
+						SetDParam(6, STR_STATION_RATING_TOOLTIP_INVALID);
+						break;
+				}
+
+				GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_SPEED, lastof(this->data[line_nr]));
+				line_nr++;
+
+				total_rating += speed_rating;
+			}
+
+			// Wait time
+			{
+				const auto wait_time_rating = GetWaitTimeRating(cs, ge);
+
+				int wait_time_stage = 0;
+
+				if (wait_time_rating >= 130) {
+					wait_time_stage = 4;
+				} else if (wait_time_rating >= 95) {
+					wait_time_stage = 3;
+				} else if (wait_time_rating >= 50) {
+					wait_time_stage = 2;
+				} else if (wait_time_rating >= 25) {
+					wait_time_stage = 1;
+				}
+
+				SetDParam(0, detailed ? STR_STATION_RATING_MAX_PERCENTAGE : STR_EMPTY);
+				SetDParam(1, 51);
+				SetDParam(2, STR_STATION_RATING_TOOLTIP_WAITTIME_0 + wait_time_stage);
+				SetDParam(3, ge->max_waiting_cargo);
+				SetDParam(4, detailed ? STR_STATION_RATING_PERCENTAGE_COMMA : STR_EMPTY);
+				SetDParam(5, RoundRating(wait_time_rating));
+				GetString(this->data[line_nr],
+					(ge->last_vehicle_type == VEH_SHIP) ?
+						STR_STATION_RATING_TOOLTIP_WAITTIME_SHIP :
+						STR_STATION_RATING_TOOLTIP_WAITTIME,
+					lastof(this->data[line_nr]));
+				line_nr++;
+
+				total_rating += wait_time_rating;
+			}
+
+			// Waiting cargo
+			{
+				const auto cargo_rating = GetWaitingCargoRating(st, ge);
+
+				int wait_units_stage = 0;
+
+				if (cargo_rating >= 40) {
+					wait_units_stage = 5;
+				} else if (cargo_rating >= 30) {
+					wait_units_stage = 4;
+				} else if (cargo_rating >= 10) {
+					wait_units_stage = 3;
+				} else if (cargo_rating >= 0) {
+					wait_units_stage = 2;
+				} else if (cargo_rating >= -35) {
+					wait_units_stage = 1;
+				}
+
+				SetDParam(0, detailed ? STR_STATION_RATING_MAX_PERCENTAGE_COMMA : STR_EMPTY);
+				SetDParam(1, 16);
+				SetDParam(2, STR_STATION_RATING_TOOLTIP_WAITUNITS_0 + wait_units_stage);
+				SetDParam(3, ge->max_waiting_cargo);
+				SetDParam(4, detailed ? STR_STATION_RATING_PERCENTAGE_COMMA : STR_EMPTY);
+				SetDParam(5, RoundRating(cargo_rating));
+				GetString(this->data[line_nr],
+				          STR_STATION_RATING_TOOLTIP_WAITUNITS,
+				          lastof(this->data[line_nr]));
+				line_nr++;
+
+				total_rating += cargo_rating;
+			}
+		}
+
+		if (!_extra_cheats.station_rating.value) {
+			// Statue
+			const auto statue_rating = GetStatueRating(st);
+			if (statue_rating > 0 || detailed) {
+				SetDParam(0, detailed ? STR_STATION_RATING_MAX_PERCENTAGE : STR_EMPTY);
+				SetDParam(1, 10);
+				SetDParam(2, (statue_rating > 0) ? STR_STATION_RATING_TOOLTIP_STATUE_YES : STR_STATION_RATING_TOOLTIP_STATUE_NO);
+				SetDParam(3, detailed ? STR_STATION_RATING_PERCENTAGE_COMMA : STR_EMPTY);
+				SetDParam(4, (statue_rating > 0) ? 10 : 0);
+				GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_STATUE, lastof(this->data[line_nr]));
+				line_nr++;
+
+				total_rating += statue_rating;
+			}
+
+			// Vehicle age
+			{
+				const auto age_rating = GetVehicleAgeRating(ge);
+
+				int age_stage = 0;
+
+				if (age_rating >= 33) {
+					age_stage = 3;
+				} else if (age_rating >= 20) {
+					age_stage = 2;
+				} else if (age_rating >= 10) {
+					age_stage = 1;
+				}
+
+				SetDParam(0, detailed ? STR_STATION_RATING_MAX_PERCENTAGE : STR_EMPTY);
+				SetDParam(1, 13);
+				SetDParam(2, STR_STATION_RATING_TOOLTIP_AGE_0 + age_stage);
+				SetDParam(3, ge->last_age);
+				SetDParam(4, detailed ? STR_STATION_RATING_PERCENTAGE_COMMA : STR_EMPTY);
+				SetDParam(5, RoundRating(age_rating));
+				GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_AGE, lastof(this->data[line_nr]));
+				line_nr++;
+
+				total_rating += age_rating;
+			}
+		}
+
+		total_rating = Clamp(total_rating, 0, 255);
+
+		if (detailed) {
+			SetDParam(0, ToPercent8(total_rating));
+			GetString(this->data[line_nr], STR_STATION_RATING_TOOLTIP_TOTAL_RATING, lastof(this->data[line_nr]));
+			line_nr++;
+		}
+
+		this->data[line_nr][0] = '\0';
+	}
+
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
+	{
+		if (widget != 0) return;
+
+		size->height = WD_FRAMETEXT_TOP + WD_FRAMETEXT_BOTTOM + 2;
+
+		for (uint i = 0; i <= RATING_TOOLTIP_MAX_LINES; i++) {
+			if (StrEmpty(this->data[i])) break;
+
+			uint width = GetStringBoundingBox(this->data[i]).width + WD_FRAMETEXT_LEFT + WD_FRAMETEXT_RIGHT + 2;
+			if (this->newgrf_rating_used && i >= 2 && i <= 4) {
+				width += RATING_TOOLTIP_NEWGRF_INDENT;
+			}
+			size->width = std::max(size->width, width);
+			size->height += FONT_HEIGHT_NORMAL + WD_PAR_VSEP_NORMAL;
+		}
+
+		size->height -= WD_PAR_VSEP_NORMAL;
+	}
+
+	void DrawWidget(const Rect &r, int widget) const override
+	{
+		GfxDrawLine(r.left, r.top, r.right, r.top, PC_BLACK);
+		GfxDrawLine(r.left, r.bottom, r.right, r.bottom, PC_BLACK);
+		GfxDrawLine(r.left, r.top, r.left, r.bottom, PC_BLACK);
+		GfxDrawLine(r.right, r.top, r.right, r.bottom, PC_BLACK);
+
+		int y = r.top + WD_FRAMETEXT_TOP + 1;
+		const int left0 = r.left + WD_FRAMETEXT_LEFT + 1;
+		const int right0 = r.right - WD_FRAMETEXT_RIGHT - 1;
+
+		DrawString(left0, right0, y, this->data[0], TC_LIGHT_BLUE, SA_CENTER);
+
+		y += FONT_HEIGHT_NORMAL + WD_PAR_VSEP_NORMAL;
+
+		for (uint i = 1; i <= RATING_TOOLTIP_MAX_LINES; i++) {
+			if (StrEmpty(this->data[i])) break;
+
+			int left = left0, right = right0;
+
+			if (this->newgrf_rating_used && i >= 2 && i <= 4) {
+				if (_current_text_dir == TD_RTL) {
+					right -= RATING_TOOLTIP_NEWGRF_INDENT;
+				}
+				else {
+					left += RATING_TOOLTIP_NEWGRF_INDENT;
+				}
+			}
+
+			DrawString(left, right, y, this->data[i], TC_BLACK);
+
+			y += FONT_HEIGHT_NORMAL + WD_PAR_VSEP_NORMAL;
+		}
+	}
+
+	void OnMouseLoop() override
+	{
+		if (!_cursor.in_window || !(_settings_client.gui.hover_delay_ms == 0 ? _right_button_down : _mouse_hovering)) {
+			delete this;
+		}
+	}
+};
+
+void GuiShowStationRatingTooltip(Window *parent, const Station *st, const CargoSpec *cs) {
+	DeleteWindowById(WC_STATION_RATING_TOOLTIP, 0);
+	new StationRatingTooltipWindow(parent, st, cs);
 }

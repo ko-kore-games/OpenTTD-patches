@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -13,6 +11,7 @@
 #include "../linkgraph/linkgraph.h"
 #include "../linkgraph/linkgraphjob.h"
 #include "../linkgraph/linkgraphschedule.h"
+#include "../network/network.h"
 #include "../settings_internal.h"
 #include "saveload.h"
 
@@ -29,15 +28,21 @@ static uint16 _num_nodes;
  * Get a SaveLoad array for a link graph.
  * @return SaveLoad array for link graph.
  */
-const SaveLoad *GetLinkGraphDesc()
+SaveLoadTable GetLinkGraphDesc()
 {
 	static const SaveLoad link_graph_desc[] = {
 		 SLE_VAR(LinkGraph, last_compression, SLE_INT32),
 		SLEG_VAR(_num_nodes,                  SLE_UINT16),
 		 SLE_VAR(LinkGraph, cargo,            SLE_UINT8),
-		 SLE_END()
 	};
 	return link_graph_desc;
+}
+
+void GetLinkGraphJobDayLengthScaleAfterLoad(LinkGraphJob *lgj)
+{
+	lgj->join_date_ticks *= DAY_TICKS;
+	lgj->join_date_ticks += LinkGraphSchedule::SPAWN_JOIN_TICK;
+	lgj->start_date_ticks = lgj->join_date_ticks - (lgj->Settings().recalc_time * DAY_TICKS);
 }
 
 /**
@@ -49,13 +54,13 @@ const SaveLoad *GetLinkGraphDesc()
  * Of course the settings have to be saved and loaded, too, to avoid desyncs.
  * @return Array of SaveLoad structs.
  */
-const SaveLoad *GetLinkGraphJobDesc()
+SaveLoadTable GetLinkGraphJobDesc()
 {
-	static SmallVector<SaveLoad, 16> saveloads;
+	static std::vector<SaveLoad> saveloads;
 	static const char *prefix = "linkgraph.";
 
 	/* Build the SaveLoad array on first call and don't touch it later on */
-	if (saveloads.Length() == 0) {
+	if (saveloads.size() == 0) {
 		size_t offset_gamesettings = cpp_offsetof(GameSettings, linkgraph);
 		size_t offset_component = cpp_offsetof(LinkGraphJob, settings);
 
@@ -63,42 +68,40 @@ const SaveLoad *GetLinkGraphJobDesc()
 
 		int setting = 0;
 		const SettingDesc *desc = GetSettingDescription(setting);
-		while (desc->save.cmd != SL_END) {
-			if (desc->desc.name != NULL && strncmp(desc->desc.name, prefix, prefixlen) == 0) {
+		while (desc != nullptr) {
+			if (desc->name != nullptr && strncmp(desc->name, prefix, prefixlen) == 0) {
 				SaveLoad sl = desc->save;
 				char *&address = reinterpret_cast<char *&>(sl.address);
 				address -= offset_gamesettings;
 				address += offset_component;
-				*(saveloads.Append()) = sl;
+				saveloads.push_back(sl);
 			}
 			desc = GetSettingDescription(++setting);
 		}
 
 		const SaveLoad job_desc[] = {
-			SLE_VAR(LinkGraphJob, join_date,        SLE_INT32),
+			SLE_VAR(LinkGraphJob, join_date_ticks,  SLE_INT32),
+			SLE_CONDVAR_X(LinkGraphJob, start_date_ticks,  SLE_INT32, SL_MIN_VERSION, SL_MAX_VERSION, SlXvFeatureTest(XSLFTO_AND, XSLFI_LINKGRAPH_DAY_SCALE)),
 			SLE_VAR(LinkGraphJob, link_graph.index, SLE_UINT16),
-			SLE_END()
 		};
 
-		int i = 0;
-		do {
-			*(saveloads.Append()) = job_desc[i++];
-		} while (saveloads[saveloads.Length() - 1].cmd != SL_END);
+		for (auto &sld : job_desc) {
+			saveloads.push_back(sld);
+		}
 	}
 
-	return &saveloads[0];
+	return saveloads;
 }
 
 /**
  * Get a SaveLoad array for the link graph schedule.
  * @return SaveLoad array for the link graph schedule.
  */
-const SaveLoad *GetLinkGraphScheduleDesc()
+SaveLoadTable GetLinkGraphScheduleDesc()
 {
 	static const SaveLoad schedule_desc[] = {
-		SLE_LST(LinkGraphSchedule, schedule, REF_LINK_GRAPH),
-		SLE_LST(LinkGraphSchedule, running,  REF_LINK_GRAPH_JOB),
-		SLE_END()
+		SLE_REFLIST(LinkGraphSchedule, schedule, REF_LINK_GRAPH),
+		SLE_REFLIST(LinkGraphSchedule, running,  REF_LINK_GRAPH_JOB),
 	};
 	return schedule_desc;
 }
@@ -114,7 +117,6 @@ static const SaveLoad _node_desc[] = {
 	    SLE_VAR(Node, demand,      SLE_UINT32),
 	    SLE_VAR(Node, station,     SLE_UINT16),
 	    SLE_VAR(Node, last_update, SLE_INT32),
-	    SLE_END()
 };
 
 /**
@@ -127,28 +129,56 @@ static const SaveLoad _edge_desc[] = {
 	     SLE_VAR(Edge, last_unrestricted_update, SLE_INT32),
 	 SLE_CONDVAR(Edge, last_restricted_update,   SLE_INT32, SLV_187, SL_MAX_VERSION),
 	     SLE_VAR(Edge, next_edge,                SLE_UINT16),
-	     SLE_END()
 };
 
+std::vector<SaveLoad> _filtered_node_desc;
+std::vector<SaveLoad> _filtered_edge_desc;
+std::vector<SaveLoad> _filtered_job_desc;
+
+static void FilterDescs()
+{
+	_filtered_node_desc = SlFilterObject(_node_desc);
+	_filtered_edge_desc = SlFilterObject(_edge_desc);
+	_filtered_job_desc = SlFilterObject(GetLinkGraphJobDesc());
+}
+
 /**
- * Save/load a link graph.
+ * Save a link graph.
  * @param lg Link graph to be saved or loaded.
  */
-void SaveLoad_LinkGraph(LinkGraph &lg)
+void Save_LinkGraph(LinkGraph &lg)
+{
+	uint16 size = lg.Size();
+	for (NodeID from = 0; from < size; ++from) {
+		Node *node = &lg.nodes[from];
+		SlObjectSaveFiltered(node, _filtered_node_desc);
+		/* ... but as that wasted a lot of space we save a sparse matrix now. */
+		for (NodeID to = from; to != INVALID_NODE; to = lg.edges[from][to].next_edge) {
+			SlObjectSaveFiltered(&lg.edges[from][to], _filtered_edge_desc);
+		}
+	}
+}
+
+/**
+ * Load a link graph.
+ * @param lg Link graph to be saved or loaded.
+ */
+void Load_LinkGraph(LinkGraph &lg)
 {
 	uint size = lg.Size();
 	for (NodeID from = 0; from < size; ++from) {
 		Node *node = &lg.nodes[from];
-		SlObject(node, _node_desc);
+		SlObjectLoadFiltered(node, _filtered_node_desc);
 		if (IsSavegameVersionBefore(SLV_191)) {
 			/* We used to save the full matrix ... */
 			for (NodeID to = 0; to < size; ++to) {
-				SlObject(&lg.edges[from][to], _edge_desc);
+				SlObjectLoadFiltered(&lg.edges[from][to], _filtered_edge_desc);
 			}
 		} else {
 			/* ... but as that wasted a lot of space we save a sparse matrix now. */
 			for (NodeID to = from; to != INVALID_NODE; to = lg.edges[from][to].next_edge) {
-				SlObject(&lg.edges[from][to], _edge_desc);
+				if (to >= size) SlErrorCorrupt("Link graph structure overflow");
+				SlObjectLoadFiltered(&lg.edges[from][to], _filtered_edge_desc);
 			}
 		}
 	}
@@ -160,10 +190,10 @@ void SaveLoad_LinkGraph(LinkGraph &lg)
  */
 static void DoSave_LGRJ(LinkGraphJob *lgj)
 {
-	SlObject(lgj, GetLinkGraphJobDesc());
+	SlObjectSaveFiltered(lgj, _filtered_job_desc);
 	_num_nodes = lgj->Size();
-	SlObject(const_cast<LinkGraph *>(&lgj->Graph()), GetLinkGraphDesc());
-	SaveLoad_LinkGraph(const_cast<LinkGraph &>(lgj->Graph()));
+	SlObjectSaveFiltered(const_cast<LinkGraph *>(&lgj->Graph()), GetLinkGraphDesc()); // GetLinkGraphDesc has no conditionals
+	Save_LinkGraph(const_cast<LinkGraph &>(lgj->Graph()));
 }
 
 /**
@@ -173,8 +203,8 @@ static void DoSave_LGRJ(LinkGraphJob *lgj)
 static void DoSave_LGRP(LinkGraph *lg)
 {
 	_num_nodes = lg->Size();
-	SlObject(lg, GetLinkGraphDesc());
-	SaveLoad_LinkGraph(*lg);
+	SlObjectSaveFiltered(lg, GetLinkGraphDesc()); // GetLinkGraphDesc has no conditionals
+	Save_LinkGraph(*lg);
 }
 
 /**
@@ -182,6 +212,7 @@ static void DoSave_LGRP(LinkGraph *lg)
  */
 static void Load_LGRP()
 {
+	FilterDescs();
 	int index;
 	while ((index = SlIterateArray()) != -1) {
 		if (!LinkGraph::CanAllocateItem()) {
@@ -189,9 +220,9 @@ static void Load_LGRP()
 			NOT_REACHED();
 		}
 		LinkGraph *lg = new (index) LinkGraph();
-		SlObject(lg, GetLinkGraphDesc());
+		SlObjectLoadFiltered(lg, GetLinkGraphDesc()); // GetLinkGraphDesc has no conditionals
 		lg->Init(_num_nodes);
-		SaveLoad_LinkGraph(*lg);
+		Load_LinkGraph(*lg);
 	}
 }
 
@@ -200,6 +231,7 @@ static void Load_LGRP()
  */
 static void Load_LGRJ()
 {
+	FilterDescs();
 	int index;
 	while ((index = SlIterateArray()) != -1) {
 		if (!LinkGraphJob::CanAllocateItem()) {
@@ -207,11 +239,15 @@ static void Load_LGRJ()
 			NOT_REACHED();
 		}
 		LinkGraphJob *lgj = new (index) LinkGraphJob();
-		SlObject(lgj, GetLinkGraphJobDesc());
+		SlObjectLoadFiltered(lgj, _filtered_job_desc);
+		if (SlXvIsFeatureMissing(XSLFI_LINKGRAPH_DAY_SCALE)) {
+			extern void GetLinkGraphJobDayLengthScaleAfterLoad(LinkGraphJob *lgj);
+			GetLinkGraphJobDayLengthScaleAfterLoad(lgj);
+		}
 		LinkGraph &lg = const_cast<LinkGraph &>(lgj->Graph());
-		SlObject(&lg, GetLinkGraphDesc());
+		SlObjectLoadFiltered(&lg, GetLinkGraphDesc()); // GetLinkGraphDesc has no conditionals
 		lg.Init(_num_nodes);
-		SaveLoad_LinkGraph(lg);
+		Load_LinkGraph(lg);
 	}
 }
 
@@ -230,23 +266,27 @@ static void Load_LGRS()
 void AfterLoadLinkGraphs()
 {
 	if (IsSavegameVersionBefore(SLV_191)) {
-		LinkGraph *lg;
-		FOR_ALL_LINK_GRAPHS(lg) {
+		for (LinkGraph *lg : LinkGraph::Iterate()) {
 			for (NodeID node_id = 0; node_id < lg->Size(); ++node_id) {
-				(*lg)[node_id].UpdateLocation(Station::Get((*lg)[node_id].Station())->xy);
+				const Station *st = Station::GetIfValid((*lg)[node_id].Station());
+				if (st != nullptr) (*lg)[node_id].UpdateLocation(st->xy);
 			}
 		}
 
-		LinkGraphJob *lgj;
-		FOR_ALL_LINK_GRAPH_JOBS(lgj) {
-			lg = &(const_cast<LinkGraph &>(lgj->Graph()));
+		for (LinkGraphJob *lgj : LinkGraphJob::Iterate()) {
+			LinkGraph *lg = &(const_cast<LinkGraph &>(lgj->Graph()));
 			for (NodeID node_id = 0; node_id < lg->Size(); ++node_id) {
-				(*lg)[node_id].UpdateLocation(Station::Get((*lg)[node_id].Station())->xy);
+				const Station *st = Station::GetIfValid((*lg)[node_id].Station());
+				if (st != nullptr) (*lg)[node_id].UpdateLocation(st->xy);
 			}
 		}
 	}
 
 	LinkGraphSchedule::instance.SpawnAll();
+
+	if (!_networking || _network_server) {
+		AfterLoad_LinkGraphPauseControl();
+	}
 }
 
 /**
@@ -254,8 +294,8 @@ void AfterLoadLinkGraphs()
  */
 static void Save_LGRP()
 {
-	LinkGraph *lg;
-	FOR_ALL_LINK_GRAPHS(lg) {
+	FilterDescs();
+	for (LinkGraph *lg : LinkGraph::Iterate()) {
 		SlSetArrayIndex(lg->index);
 		SlAutolength((AutolengthProc*)DoSave_LGRP, lg);
 	}
@@ -266,8 +306,8 @@ static void Save_LGRP()
  */
 static void Save_LGRJ()
 {
-	LinkGraphJob *lgj;
-	FOR_ALL_LINK_GRAPH_JOBS(lgj) {
+	FilterDescs();
+	for (LinkGraphJob *lgj : LinkGraphJob::Iterate()) {
 		SlSetArrayIndex(lgj->index);
 		SlAutolength((AutolengthProc*)DoSave_LGRJ, lgj);
 	}
@@ -289,8 +329,10 @@ static void Ptrs_LGRS()
 	SlObject(&LinkGraphSchedule::instance, GetLinkGraphScheduleDesc());
 }
 
-extern const ChunkHandler _linkgraph_chunk_handlers[] = {
-	{ 'LGRP', Save_LGRP, Load_LGRP, NULL,      NULL, CH_ARRAY },
-	{ 'LGRJ', Save_LGRJ, Load_LGRJ, NULL,      NULL, CH_ARRAY },
-	{ 'LGRS', Save_LGRS, Load_LGRS, Ptrs_LGRS, NULL, CH_LAST  }
+static const ChunkHandler linkgraph_chunk_handlers[] = {
+	{ 'LGRP', Save_LGRP, Load_LGRP, nullptr,   nullptr, CH_ARRAY },
+	{ 'LGRJ', Save_LGRJ, Load_LGRJ, nullptr,   nullptr, CH_ARRAY },
+	{ 'LGRS', Save_LGRS, Load_LGRS, Ptrs_LGRS, nullptr, CH_RIFF  }
 };
+
+extern const ChunkHandlerTable _linkgraph_chunk_handlers(linkgraph_chunk_handlers);

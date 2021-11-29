@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -52,12 +50,12 @@ public:
 	 * Find a library.
 	 * @param library The library name to find.
 	 * @param version The version the library should have.
-	 * @return The library if found, NULL otherwise.
+	 * @return The library if found, nullptr otherwise.
 	 */
 	virtual class ScriptInfo *FindLibrary(const char *library, int version) = 0;
 
 	/**
-	 * A script in multiplayer waits for the server to handle his DoCommand.
+	 * A script in multiplayer waits for the server to handle its DoCommand.
 	 *  It keeps waiting for this until this function is called.
 	 */
 	void Continue();
@@ -70,7 +68,7 @@ public:
 	/**
 	 * Let the VM collect any garbage.
 	 */
-	void CollectGarbage() const;
+	void CollectGarbage();
 
 	/**
 	 * Get the storage of this script.
@@ -176,14 +174,19 @@ public:
 	 */
 	SQInteger GetOpsTillSuspend();
 
+	void LimitOpsTillSuspend(SQInteger suspend);
+
 	/**
 	 * DoCommand callback function for all commands executed by scripts.
 	 * @param result The result of the command.
 	 * @param tile The tile on which the command was executed.
 	 * @param p1 p1 as given to DoCommandPInternal.
 	 * @param p2 p2 as given to DoCommandPInternal.
+	 * @param p3 p3 as given to DoCommandPInternal.
+	 * @param cmd cmd as given to DoCommandPInternal.
+	 * @return true if we handled result.
 	 */
-	void DoCommandCallback(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2);
+	bool DoCommandCallback(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd);
 
 	/**
 	 * Insert an event for this script.
@@ -197,6 +200,21 @@ public:
 	 *  paused.
 	 */
 	bool IsSleeping() { return this->suspend != 0; }
+
+	size_t GetAllocatedMemory() const;
+
+	void SetMemoryAllocationLimit(size_t limit) const;
+
+	/**
+	 * Indicate whether this instance is currently being destroyed.
+	 */
+	inline bool InShutdown() const { return this->in_shutdown; }
+
+	/**
+	 * Decrease the ref count of a squirrel object.
+	 * @param obj The object to release.
+	 **/
+	void ReleaseSQObject(HSQOBJECT *obj);
 
 protected:
 	class Squirrel *engine;               ///< A wrapper around the squirrel vm.
@@ -240,7 +258,10 @@ private:
 	bool is_save_data_on_stack;           ///< Is the save data still on the squirrel stack?
 	int suspend;                          ///< The amount of ticks to suspend this script before it's allowed to continue.
 	bool is_paused;                       ///< Is the script paused? (a paused script will not be executed until unpaused)
+	bool in_shutdown;                     ///< Is this instance currently being destructed?
 	Script_SuspendCallbackProc *callback; ///< Callback that should be called in the next tick the script runs.
+	size_t last_allocated_memory;         ///< Last known allocated memory value (for display for crashed scripts)
+	const char *APIName;                  ///< Name of the API used for this squirrel.
 
 	/**
 	 * Call the script Load function if it exists and data was loaded

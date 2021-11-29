@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -26,7 +24,7 @@ struct Tile {
 	byte   m5;          ///< General purpose
 };
 
-assert_compile(sizeof(Tile) == 8);
+static_assert(sizeof(Tile) == 8);
 
 /**
  * Data that is stored per tile. Also used Tile for this.
@@ -63,9 +61,11 @@ struct TileIndexDiffC {
 
 /** Minimal and maximal map width and height */
 static const uint MIN_MAP_SIZE_BITS = 6;                      ///< Minimal size of map is equal to 2 ^ MIN_MAP_SIZE_BITS
-static const uint MAX_MAP_SIZE_BITS = 12;                     ///< Maximal size of map is equal to 2 ^ MAX_MAP_SIZE_BITS
+static const uint MAX_MAP_SIZE_BITS = 20;                     ///< Maximal size of map is equal to 2 ^ MAX_MAP_SIZE_BITS
+static const uint MAX_MAP_TILES_BITS = 28;                    ///< Maximal number of tiles in a map is equal to 2 ^ MAX_MAP_TILES_BITS.
 static const uint MIN_MAP_SIZE      = 1 << MIN_MAP_SIZE_BITS; ///< Minimal map size = 64
-static const uint MAX_MAP_SIZE      = 1 << MAX_MAP_SIZE_BITS; ///< Maximal map size = 4096
+static const uint MAX_MAP_SIZE      = 1 << MAX_MAP_SIZE_BITS; ///< Maximal map size = 1M
+static const uint MAX_MAP_TILES     = 1 << MAX_MAP_TILES_BITS;///< Maximal number of tiles in a map = 256M (16k x 16k)
 
 /**
  * Approximation of the length of a straight track, relative to a diagonal

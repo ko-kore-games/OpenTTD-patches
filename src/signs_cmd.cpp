@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,6 +14,7 @@
 #include "signs_func.h"
 #include "command_func.h"
 #include "tilehighlight_func.h"
+#include "viewport_kdtree.h"
 #include "window_func.h"
 #include "string_func.h"
 
@@ -55,7 +54,7 @@ CommandCost CmdPlaceSign(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 
 		si->y = y;
 		si->z = GetSlopePixelZ(x, y);
 		if (!StrEmpty(text)) {
-			si->name = stredup(text);
+			si->name = text;
 		}
 		si->UpdateVirtCoord();
 		InvalidateWindowData(WC_SIGN_LIST, 0, 0);
@@ -79,7 +78,7 @@ CommandCost CmdPlaceSign(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 
 CommandCost CmdRenameSign(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const char *text)
 {
 	Sign *si = Sign::GetIfValid(p1);
-	if (si == NULL) return CMD_ERROR;
+	if (si == nullptr) return CMD_ERROR;
 	if (si->owner == OWNER_DEITY && _current_company != OWNER_DEITY && _game_mode != GM_EDITOR) return CMD_ERROR;
 
 	/* Rename the signs when empty, otherwise remove it */
@@ -87,10 +86,8 @@ CommandCost CmdRenameSign(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 		if (Utf8StringLength(text) >= MAX_LENGTH_SIGN_NAME_CHARS) return CMD_ERROR;
 
 		if (flags & DC_EXEC) {
-			/* Delete the old name */
-			free(si->name);
 			/* Assign the new one */
-			si->name = stredup(text);
+			si->name = text;
 			if (_game_mode != GM_EDITOR) si->owner = _current_company;
 
 			si->UpdateVirtCoord();
@@ -98,7 +95,10 @@ CommandCost CmdRenameSign(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
 		}
 	} else { // Delete sign
 		if (flags & DC_EXEC) {
-			si->sign.MarkDirty();
+			if (HasBit(_display_opt, DO_SHOW_SIGNS) && !(si->IsCompetitorOwned() && !HasBit(_display_opt, DO_SHOW_COMPETITOR_SIGNS))) {
+				si->sign.MarkDirty(ZOOM_LVL_DRAW_SPR);
+			}
+			if (_viewport_sign_kdtree_valid && si->sign.kdtree_valid) _viewport_sign_kdtree.Remove(ViewportSignKdtreeItem::MakeSign(si->index));
 			delete si;
 
 			InvalidateWindowData(WC_SIGN_LIST, 0, 0);
@@ -114,8 +114,9 @@ CommandCost CmdRenameSign(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32
  * @param tile unused
  * @param p1 unused
  * @param p2 unused
+ * @param cmd unused
  */
-void CcPlaceSign(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2)
+void CcPlaceSign(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint64 p3, uint32 cmd)
 {
 	if (result.Failed()) return;
 

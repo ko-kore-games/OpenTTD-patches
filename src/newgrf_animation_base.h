@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -39,7 +37,7 @@ struct AnimationBase {
 	 */
 	static void AnimateTile(const Tspec *spec, Tobj *obj, TileIndex tile, bool random_animation, Textra extra_data = 0)
 	{
-		assert(spec != NULL);
+		assert(spec != nullptr);
 
 		/* Acquire the animation speed from the NewGRF. */
 		uint8 animation_speed = spec->animation.speed;
@@ -55,7 +53,7 @@ struct AnimationBase {
 		 * increasing this value by one doubles the wait. 0 is the minimum value
 		 * allowed for animation_speed, which corresponds to 30ms, and 16 is the
 		 * maximum, corresponding to around 33 minutes. */
-		if (_tick_counter % (1 << animation_speed) != 0) return;
+		if (_scaled_tick_counter % (1 << animation_speed) != 0) return;
 
 		uint8 frame      = GetAnimationFrame(tile);
 		uint8 num_frames = spec->animation.frames;
@@ -101,7 +99,7 @@ struct AnimationBase {
 		}
 
 		SetAnimationFrame(tile, frame);
-		MarkTileDirtyByTile(tile);
+		MarkTileDirtyByTile(tile, VMDF_NOT_MAP_MODE);
 	}
 
 	/**
@@ -134,5 +132,11 @@ struct AnimationBase {
 		/* If the lower 7 bits of the upper byte of the callback
 		 * result are not empty, it is a sound effect. */
 		if (GB(callback, 8, 7) != 0 && _settings_client.sound.ambient) PlayTileSound(spec->grf_prop.grffile, GB(callback, 8, 7), tile);
+	}
+
+	static uint8 GetAnimationSpeed(const Tspec *spec)
+	{
+		if (HasBit(spec->callback_mask, Tbase::cbm_animation_speed)) return 0;
+		return spec->animation.speed;
 	}
 };

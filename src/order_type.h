@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,13 +12,14 @@
 
 #include "core/enum_type.hpp"
 
-typedef byte VehicleOrderID;  ///< The index of an order within its current vehicle (not pool related)
+typedef uint16 VehicleOrderID;  ///< The index of an order within its current vehicle (not pool related)
 typedef uint32 OrderID;
 typedef uint16 OrderListID;
 typedef uint16 DestinationID;
+typedef uint32 TimetableTicks;
 
 /** Invalid vehicle order index (sentinel) */
-static const VehicleOrderID INVALID_VEH_ORDER_ID = 0xFF;
+static const VehicleOrderID INVALID_VEH_ORDER_ID = 0xFFFF;
 /** Last valid VehicleOrderID. */
 static const VehicleOrderID MAX_VEH_ORDER_ID     = INVALID_VEH_ORDER_ID - 1;
 
@@ -33,8 +32,8 @@ static const OrderID INVALID_ORDER = 0xFFFFFF;
  */
 static const uint IMPLICIT_ORDER_ONLY_CAP = 32;
 
-/** Order types */
-enum OrderType {
+/** Order types. It needs to be 8bits, because we save and load it as such */
+enum OrderType : byte {
 	OT_BEGIN         = 0,
 	OT_NOTHING       = 0,
 	OT_GOTO_STATION  = 1,
@@ -44,13 +43,12 @@ enum OrderType {
 	OT_DUMMY         = 5,
 	OT_GOTO_WAYPOINT = 6,
 	OT_CONDITIONAL   = 7,
-	OT_IMPLICIT     = 8,
+	OT_IMPLICIT      = 8,
+	OT_WAITING       = 9,
+	OT_LOADING_ADVANCE = 10,
+	OT_RELEASE_SLOT  = 11,
 	OT_END
 };
-
-/** It needs to be 8bits, because we save and load it as such */
-typedef SimpleTinyEnumT<OrderType, byte> OrderTypeByte;
-
 
 /**
  * Flags related to the unloading order.
@@ -60,6 +58,8 @@ enum OrderUnloadFlags {
 	OUFB_UNLOAD            = 1 << 0, ///< Force unloading all cargo onto the platform, possibly not getting paid.
 	OUFB_TRANSFER          = 1 << 1, ///< Transfer all cargo onto the platform.
 	OUFB_NO_UNLOAD         = 1 << 2, ///< Totally no unloading will be done.
+	OUFB_CARGO_TYPE_UNLOAD = 1 << 3, ///< Unload actions are defined per cargo type.
+	OUFB_CARGO_TYPE_UNLOAD_ENCODING = (1 << 0) | (1 << 2), ///< Raw encoding of OUFB_CARGO_TYPE_UNLOAD
 };
 
 /**
@@ -70,6 +70,8 @@ enum OrderLoadFlags {
 	OLFB_FULL_LOAD       = 1 << 1, ///< Full load all cargoes of the consist.
 	OLF_FULL_LOAD_ANY    = 3,      ///< Full load a single cargo of the consist.
 	OLFB_NO_LOAD         = 4,      ///< Do not load anything.
+	OLFB_CARGO_TYPE_LOAD = 1 << 3, ///< Load actions are defined per cargo type.
+	OLFB_CARGO_TYPE_LOAD_ENCODING = (1 << 1) | 4, ///< Raw encoding of OLFB_CARGO_TYPE_LOAD
 };
 
 /**
@@ -90,6 +92,7 @@ enum OrderStopLocation {
 	OSL_PLATFORM_NEAR_END = 0, ///< Stop at the near end of the platform
 	OSL_PLATFORM_MIDDLE   = 1, ///< Stop at the middle of the platform
 	OSL_PLATFORM_FAR_END  = 2, ///< Stop at the far end of the platform
+	OSL_PLATFORM_THROUGH  = 3, ///< Load/unload through the platform
 	OSL_END
 };
 
@@ -100,6 +103,7 @@ enum OrderDepotTypeFlags {
 	ODTF_MANUAL          = 0,      ///< Manually initiated order.
 	ODTFB_SERVICE        = 1 << 0, ///< This depot order is because of the servicing limit.
 	ODTFB_PART_OF_ORDERS = 1 << 1, ///< This depot order is because of a regular order.
+	ODTFB_BREAKDOWN      = 1 << 2, ///< This depot order is because of a breakdown.
 };
 
 /**
@@ -109,8 +113,27 @@ enum OrderDepotActionFlags {
 	ODATF_SERVICE_ONLY   = 0,      ///< Only service the vehicle.
 	ODATFB_HALT          = 1 << 0, ///< Service the vehicle and then halt it.
 	ODATFB_NEAREST_DEPOT = 1 << 1, ///< Send the vehicle to the nearest depot.
+	ODATFB_SELL          = 1 << 2, ///< Sell the vehicle on arrival at the depot.
 };
 DECLARE_ENUM_AS_BIT_SET(OrderDepotActionFlags)
+
+/**
+ * Extra depot flags.
+ */
+enum OrderDepotExtraFlags {
+	ODEF_NONE           = 0,      ///< No flags.
+	ODEFB_SPECIFIC      = 1 << 0, ///< This order is for a specific depot.
+};
+DECLARE_ENUM_AS_BIT_SET(OrderDepotExtraFlags)
+
+/**
+ * Flags for go to waypoint orders
+ */
+enum OrderWaypointFlags {
+	OWF_DEFAULT          = 0,      ///< Default waypoint behaviour
+	OWF_REVERSE          = 1 << 0, ///< Reverse train at the waypoint
+};
+DECLARE_ENUM_AS_BIT_SET(OrderWaypointFlags)
 
 /**
  * Variables (of a vehicle) to 'cause' skipping on.
@@ -124,6 +147,17 @@ enum OrderConditionVariable {
 	OCV_UNCONDITIONALLY,    ///< Always skip
 	OCV_REMAINING_LIFETIME, ///< Skip based on the remaining lifetime
 	OCV_MAX_RELIABILITY,    ///< Skip based on the maximum reliability
+	OCV_CARGO_WAITING,      ///< Skip if specified cargo is waiting at next station
+	OCV_CARGO_ACCEPTANCE,   ///< Skip if specified cargo is accepted at next station
+	OCV_FREE_PLATFORMS,     ///< Skip based on free platforms at next station
+	OCV_PERCENT,            ///< Skip xx percent of times
+	OCV_SLOT_OCCUPANCY,     ///< Test if train slot is fully occupied
+	OCV_TRAIN_IN_SLOT,      ///< Test if train is in slot
+	OCV_CARGO_LOAD_PERCENTAGE, ///< Skip based on the amount of load of a specific cargo
+	OCV_CARGO_WAITING_AMOUNT,  ///< Skip based on the amount of a specific cargo waiting at next station
+	OCV_COUNTER_VALUE,      ///< Skip based on counter value
+	OCV_TIME_DATE,          ///< Skip based on current time/date
+	OCV_TIMETABLE,          ///< Skip based on timetable state
 	OCV_END
 };
 
@@ -155,7 +189,13 @@ enum ModifyOrderFlags {
 	MOF_COND_VARIABLE,   ///< A conditional variable changes.
 	MOF_COND_COMPARATOR, ///< A comparator changes.
 	MOF_COND_VALUE,      ///< The value to set the condition to.
+	MOF_COND_VALUE_2,    ///< The secondary value to set the condition to.
+	MOF_COND_VALUE_3,    ///< The tertiary value to set the condition to.
 	MOF_COND_DESTINATION,///< Change the destination of a conditional order.
+	MOF_WAYPOINT_FLAGS,  ///< Change the waypoint flags
+	MOF_CARGO_TYPE_UNLOAD, ///< Passes an OrderUnloadType and a CargoID.
+	MOF_CARGO_TYPE_LOAD,   ///< Passes an OrderLoadType and a CargoID.
+	MOF_SLOT,            ///< Change the slot value
 	MOF_END
 };
 template <> struct EnumPropsT<ModifyOrderFlags> : MakeEnumPropsT<ModifyOrderFlags, byte, MOF_NON_STOP, MOF_END, MOF_END, 4> {};
@@ -167,7 +207,25 @@ enum OrderDepotAction {
 	DA_ALWAYS_GO, ///< Always go to the depot
 	DA_SERVICE,   ///< Service only if needed
 	DA_STOP,      ///< Go to the depot and stop there
+	DA_SELL,      ///< Go to the depot and sell vehicle
 	DA_END
+};
+
+/**
+ * When to leave the station/waiting point.
+ */
+enum OrderLeaveType {
+	OLT_NORMAL               = 0, ///< Leave when timetabled
+	OLT_LEAVE_EARLY          = 1, ///< Leave as soon as possible
+	OLT_LEAVE_EARLY_FULL_ANY = 2, ///< Leave as soon as possible, if any cargoes fully loaded
+	OLT_LEAVE_EARLY_FULL_ALL = 3, ///< Leave as soon as possible, if all cargoes fully loaded
+	OLT_END
+};
+
+enum OrderTimetableConditionMode {
+	OTCM_LATENESS            = 0, ///< Test timetable lateness
+	OTCM_EARLINESS           = 1, ///< Test timetable earliness
+	OTCM_END
 };
 
 /**
@@ -177,9 +235,12 @@ enum ModifyTimetableFlags {
 	MTF_WAIT_TIME,    ///< Set wait time.
 	MTF_TRAVEL_TIME,  ///< Set travel time.
 	MTF_TRAVEL_SPEED, ///< Set max travel speed.
+	MTF_SET_WAIT_FIXED,///< Set wait time fixed flag state.
+	MTF_SET_TRAVEL_FIXED,///< Set travel time fixed flag state.
+	MTF_SET_LEAVE_TYPE,///< Passes an OrderLeaveType.
 	MTF_END
 };
-template <> struct EnumPropsT<ModifyTimetableFlags> : MakeEnumPropsT<ModifyTimetableFlags, byte, MTF_WAIT_TIME, MTF_END, MTF_END, 2> {};
+template <> struct EnumPropsT<ModifyTimetableFlags> : MakeEnumPropsT<ModifyTimetableFlags, byte, MTF_WAIT_TIME, MTF_END, MTF_END, 3> {};
 
 
 /** Clone actions. */

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -19,14 +17,16 @@
 #include <map>
 #include <string>
 #include <stack>
+#include <string_view>
+#include <type_traits>
 #include <vector>
 
-#ifdef WITH_ICU_LAYOUT
+#ifdef WITH_ICU_LX
 #include "layout/ParagraphLayout.h"
 #define ICU_FONTINSTANCE : public icu::LEFontInstance
-#else /* WITH_ICU_LAYOUT */
+#else /* WITH_ICU_LX */
 #define ICU_FONTINSTANCE
-#endif /* WITH_ICU_LAYOUT */
+#endif /* WITH_ICU_LX */
 
 /**
  * Text drawing parameters, which can change while drawing a line, but are kept between multiple parts
@@ -48,7 +48,7 @@ struct FontState {
 	inline void SetColour(TextColour c)
 	{
 		assert(c >= TC_BLUE && c <= TC_BLACK);
-		this->cur_colour = c;
+		if ((this->cur_colour & TC_FORCED) == 0) this->cur_colour = c;
 	}
 
 	/**
@@ -66,7 +66,7 @@ struct FontState {
 	 */
 	inline void PushColour()
 	{
-		colour_stack.push(this->cur_colour);
+		colour_stack.push(this->cur_colour & ~TC_FORCED);
 	}
 
 	/**
@@ -89,7 +89,7 @@ public:
 
 	Font(FontSize size, TextColour colour);
 
-#ifdef WITH_ICU_LAYOUT
+#ifdef WITH_ICU_LX
 	/* Implementation details of LEFontInstance */
 
 	le_int32 getUnitsPerEM() const;
@@ -105,7 +105,7 @@ public:
 	LEGlyphID mapCharToGlyph(LEUnicode32 ch) const;
 	void getGlyphAdvance(LEGlyphID glyph, LEPoint &advance) const;
 	le_bool getGlyphPoint(LEGlyphID glyph, le_int32 pointNumber, LEPoint &point) const;
-#endif /* WITH_ICU_LAYOUT */
+#endif /* WITH_ICU_LX */
 };
 
 /** Mapping from index to font. */
@@ -137,12 +137,12 @@ public:
 		virtual int GetLeading() const = 0;
 		virtual int GetWidth() const = 0;
 		virtual int CountRuns() const = 0;
-		virtual const VisualRun *GetVisualRun(int run) const = 0;
+		virtual const VisualRun &GetVisualRun(int run) const = 0;
 		virtual int GetInternalCharLength(WChar c) const = 0;
 	};
 
 	virtual void Reflow() = 0;
-	virtual const Line *NextLine(int max_width) = 0;
+	virtual std::unique_ptr<const Line> NextLine(int max_width) = 0;
 };
 
 /**
@@ -150,21 +150,32 @@ public:
  *
  * It also accounts for the memory allocations and frees.
  */
-class Layouter : public AutoDeleteSmallVector<const ParagraphLayouter::Line *, 4> {
+class Layouter : public std::vector<std::unique_ptr<const ParagraphLayouter::Line>> {
 	const char *string; ///< Pointer to the original string.
 
 	/** Key into the linecache */
 	struct LineCacheKey {
 		FontState state_before;  ///< Font state at the beginning of the line.
 		std::string str;         ///< Source string of the line (including colour and font size codes).
+	};
 
-		/** Comparison operator for std::map */
-		bool operator<(const LineCacheKey &other) const
+	struct LineCacheQuery {
+		FontState state_before;  ///< Font state at the beginning of the line.
+		std::string_view str;    ///< Source string of the line (including colour and font size codes).
+	};
+
+	/** Comparator for std::map */
+	struct LineCacheCompare {
+		using is_transparent = void; ///< Enable map queries with various key types
+
+		/** Comparison operator for LineCacheKey and LineCacheQuery */
+		template<typename Key1, typename Key2>
+		bool operator()(const Key1 &lhs, const Key2 &rhs) const
 		{
-			if (this->state_before.fontsize != other.state_before.fontsize) return this->state_before.fontsize < other.state_before.fontsize;
-			if (this->state_before.cur_colour != other.state_before.cur_colour) return this->state_before.cur_colour < other.state_before.cur_colour;
-			if (this->state_before.colour_stack != other.state_before.colour_stack) return this->state_before.colour_stack < other.state_before.colour_stack;
-			return this->str < other.str;
+			if (lhs.state_before.fontsize != rhs.state_before.fontsize) return lhs.state_before.fontsize < rhs.state_before.fontsize;
+			if (lhs.state_before.cur_colour != rhs.state_before.cur_colour) return lhs.state_before.cur_colour < rhs.state_before.cur_colour;
+			if (lhs.state_before.colour_stack != rhs.state_before.colour_stack) return lhs.state_before.colour_stack < rhs.state_before.colour_stack;
+			return lhs.str < rhs.str;
 		}
 	};
 public:
@@ -177,11 +188,11 @@ public:
 		FontState state_after;     ///< Font state after the line.
 		ParagraphLayouter *layout; ///< Layout of the line.
 
-		LineCacheItem() : buffer(NULL), layout(NULL) {}
+		LineCacheItem() : buffer(nullptr), layout(nullptr) {}
 		~LineCacheItem() { delete layout; free(buffer); }
 	};
 private:
-	typedef std::map<LineCacheKey, LineCacheItem> LineCache;
+	typedef std::map<LineCacheKey, LineCacheItem, LineCacheCompare> LineCache;
 	static LineCache *linecache;
 
 	static LineCacheItem &GetCachedParagraphLayout(const char *str, size_t len, const FontState &state);

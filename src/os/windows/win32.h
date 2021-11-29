@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,34 +16,30 @@ bool MyShowCursor(bool show, bool toggle = false);
 typedef void (*Function)(int);
 bool LoadLibraryList(Function proc[], const char *dll);
 
-char *convert_from_fs(const TCHAR *name, char *utf8_buf, size_t buflen);
-TCHAR *convert_to_fs(const char *name, TCHAR *utf16_buf, size_t buflen, bool console_cp = false);
+char *convert_from_fs(const wchar_t *name, char *utf8_buf, size_t buflen);
+wchar_t *convert_to_fs(const char *name, wchar_t *utf16_buf, size_t buflen);
 
-/* Function shortcuts for UTF-8 <> UNICODE conversion. When unicode is not
- * defined these macros return the string passed to them, with UNICODE
- * they return a pointer to the converted string. These functions use an
- * internal buffer of max 512 characters. */
-#if defined(UNICODE)
-# define MB_TO_WIDE(str) OTTD2FS(str)
-# define WIDE_TO_MB(str) FS2OTTD(str)
-#else
-# define MB_TO_WIDE(str) (str)
-# define WIDE_TO_MB(str) (str)
-#endif
-
-HRESULT OTTDSHGetFolderPath(HWND, int, HANDLE, DWORD, LPTSTR);
-
-#if defined(__MINGW32__) && !defined(__MINGW64__)
+#if defined(__MINGW32__) && !defined(__MINGW64__) && !(_WIN32_IE >= 0x0500)
 #define SHGFP_TYPE_CURRENT 0
 #endif /* __MINGW32__ */
 
-#ifdef _MSC_VER
-void SetWin32ThreadName(DWORD dwThreadID, const char* threadName);
-#else
-static inline void SetWin32ThreadName(DWORD dwThreadID, const char* threadName) {}
-#endif
-
 void Win32SetCurrentLocaleName(const char *iso_code);
 int OTTDStringCompare(const char *s1, const char *s2);
+
+#ifdef __MINGW32__
+			/* GCC doesn't understand the expected usage of GetProcAddress(). */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif /* __MINGW32__ */
+
+template <typename T>
+T GetProcAddressT(HMODULE hModule, LPCSTR lpProcName)
+{
+	return reinterpret_cast<T>(GetProcAddress(hModule, lpProcName));
+}
+
+#ifdef __MINGW32__
+#pragma GCC diagnostic pop
+#endif
 
 #endif /* WIN32_H */

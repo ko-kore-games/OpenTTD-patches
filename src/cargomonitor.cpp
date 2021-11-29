@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -32,12 +30,11 @@ static void ClearCargoMonitoring(CargoMonitorMap &cargo_monitor_map, CompanyID c
 		return;
 	}
 
-	CargoMonitorMap::iterator next;
-	for (CargoMonitorMap::iterator it = cargo_monitor_map.begin(); it != cargo_monitor_map.end(); it = next) {
-		next = it;
-		next++;
+	for (CargoMonitorMap::iterator it = cargo_monitor_map.begin(); it != cargo_monitor_map.end();) {
 		if (DecodeMonitorCompany(it->first) == company) {
-			cargo_monitor_map.erase(it);
+			it = cargo_monitor_map.erase(it);
+		} else {
+			++it;
 		}
 	}
 }
@@ -151,9 +148,9 @@ void AddCargoDelivery(CargoID cargo_type, CompanyID company, uint32 amount, Sour
 	if (iter != _cargo_deliveries.end()) iter->second += amount;
 
 	/* Industry delivery. */
-	for (const Industry * const *ip = st->industries_near.Begin(); ip != st->industries_near.End(); ip++) {
-		if ((*ip)->index != dest) continue;
-		CargoMonitorID num = EncodeCargoIndustryMonitor(company, cargo_type, (*ip)->index);
+	for (Industry *ind : st->industries_near) {
+		if (ind->index != dest) continue;
+		CargoMonitorID num = EncodeCargoIndustryMonitor(company, cargo_type, ind->index);
 		CargoMonitorMap::iterator iter = _cargo_deliveries.find(num);
 		if (iter != _cargo_deliveries.end()) iter->second += amount;
 	}

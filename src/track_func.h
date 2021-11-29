@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,16 +15,7 @@
 #include "direction_func.h"
 #include "slope_func.h"
 
-/**
- * Iterate through each set Track in a TrackBits value.
- * For more informations see FOR_EACH_SET_BIT_EX.
- *
- * @param var Loop index variable that stores fallowing set track. Must be of type Track.
- * @param track_bits The value to iterate through (any expression).
- *
- * @see FOR_EACH_SET_BIT_EX
- */
-#define FOR_EACH_SET_TRACK(var, track_bits) FOR_EACH_SET_BIT_EX(Track, var, TrackBits, track_bits)
+using SetTrackBitIterator = SetBitIterator<Track, TrackBits>;
 
 /**
  * Checks if a Track is valid.
@@ -61,7 +50,7 @@ static inline bool IsValidTrackdirForRoadVehicle(Trackdir trackdir)
  */
 static inline bool IsValidTrackdir(Trackdir trackdir)
 {
-	return trackdir != INVALID_TRACKDIR && ((1 << trackdir & TRACKDIR_BIT_MASK) != TRACKDIR_BIT_NONE);
+	return trackdir < TRACKDIR_END && ((1 << trackdir & TRACKDIR_BIT_MASK) != TRACKDIR_BIT_NONE);
 }
 
 /**
@@ -127,7 +116,7 @@ static inline TrackdirBits TrackdirToTrackdirBits(Trackdir trackdir)
 /**
  * Removes first Track from TrackBits and returns it
  *
- * This function searchs for the first bit in the TrackBits,
+ * This function searches for the first bit in the TrackBits,
  * remove this bit from the parameter and returns the found
  * bit as Track value. It returns INVALID_TRACK if the
  * parameter was TRACK_BIT_NONE or INVALID_TRACK_BIT. This
@@ -647,7 +636,7 @@ static inline bool IsDiagonalTrackdir(Trackdir trackdir)
 
 /**
  * Checks if the given tracks overlap, ie form a crossing. Basically this
- * means when there is more than one track on the tile, exept when there are
+ * means when there is more than one track on the tile, except when there are
  * two parallel tracks.
  * @param  bits The tracks present.
  * @return Whether the tracks present overlap in any way.
@@ -733,6 +722,31 @@ static inline DiagDirection VehicleExitDir(Direction direction, TrackBits track)
 	}
 
 	return diagdir;
+}
+
+/**
+ * Get the direction which corresponds to a track direction
+ *
+ * @param td track direction
+ * @return direction
+ */
+static inline Direction TrackdirToDirection(Trackdir td)
+{
+	switch (td) {
+		case TRACKDIR_X_NE: return DIR_NE;
+		case TRACKDIR_Y_SE: return DIR_SE;
+		case TRACKDIR_UPPER_E: return DIR_E;
+		case TRACKDIR_LOWER_E: return DIR_E;
+		case TRACKDIR_LEFT_S: return DIR_S;
+		case TRACKDIR_RIGHT_S: return DIR_S;
+		case TRACKDIR_X_SW: return DIR_SW;
+		case TRACKDIR_Y_NW: return DIR_NW;
+		case TRACKDIR_UPPER_W: return DIR_W;
+		case TRACKDIR_LOWER_W: return DIR_W;
+		case TRACKDIR_LEFT_N: return DIR_N;
+		case TRACKDIR_RIGHT_N: return DIR_N;
+		default: NOT_REACHED();
+	}
 }
 
 #endif /* TRACK_FUNC_H */

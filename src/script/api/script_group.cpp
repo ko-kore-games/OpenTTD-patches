@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -25,12 +23,12 @@
 /* static */ bool ScriptGroup::IsValidGroup(GroupID group_id)
 {
 	const Group *g = ::Group::GetIfValid(group_id);
-	return g != NULL && g->owner == ScriptObject::GetCompany();
+	return g != nullptr && g->owner == ScriptObject::GetCompany();
 }
 
 /* static */ ScriptGroup::GroupID ScriptGroup::CreateGroup(ScriptVehicle::VehicleType vehicle_type, GroupID parent_group_id)
 {
-	if (!ScriptObject::DoCommand(0, (::VehicleType)vehicle_type, parent_group_id, CMD_CREATE_GROUP, NULL, &ScriptInstance::DoCommandReturnGroupID)) return GROUP_INVALID;
+	if (!ScriptObject::DoCommand(0, (::VehicleType)vehicle_type, parent_group_id, CMD_CREATE_GROUP, nullptr, &ScriptInstance::DoCommandReturnGroupID)) return GROUP_INVALID;
 
 	/* In case of test-mode, we return GroupID 0 */
 	return (ScriptGroup::GroupID)0;
@@ -55,7 +53,7 @@
 	CCountedPtr<Text> counter(name);
 
 	EnforcePrecondition(false, IsValidGroup(group_id));
-	EnforcePrecondition(false, name != NULL);
+	EnforcePrecondition(false, name != nullptr);
 	const char *text = name->GetDecodedText();
 	EnforcePreconditionEncodedText(false, text);
 	EnforcePreconditionCustomError(false, ::Utf8StringLength(text) < MAX_LENGTH_GROUP_NAME_CHARS, ScriptError::ERR_PRECONDITION_STRING_TOO_LONG);
@@ -65,7 +63,7 @@
 
 /* static */ char *ScriptGroup::GetName(GroupID group_id)
 {
-	if (!IsValidGroup(group_id)) return NULL;
+	if (!IsValidGroup(group_id)) return nullptr;
 
 	::SetDParam(0, group_id);
 	return GetString(STR_GROUP_NAME);
@@ -91,14 +89,14 @@
 {
 	EnforcePrecondition(false, IsValidGroup(group_id));
 
-	return ScriptObject::DoCommand(0, group_id, enable ? 1 : 0, CMD_SET_GROUP_REPLACE_PROTECTION);
+	return ScriptObject::DoCommand(0, group_id | GroupFlags::GF_REPLACE_PROTECTION, enable ? 1 : 0, CMD_SET_GROUP_FLAG);
 }
 
 /* static */ bool ScriptGroup::GetAutoReplaceProtection(GroupID group_id)
 {
 	if (!IsValidGroup(group_id)) return false;
 
-	return ::Group::Get(group_id)->replace_protection;
+	return HasBit(::Group::Get(group_id)->flags, GroupFlags::GF_REPLACE_PROTECTION);
 }
 
 /* static */ int32 ScriptGroup::GetNumEngines(GroupID group_id, EngineID engine_id)
@@ -106,6 +104,15 @@
 	if (!IsValidGroup(group_id) && group_id != GROUP_DEFAULT && group_id != GROUP_ALL) return -1;
 
 	return GetGroupNumEngines(ScriptObject::GetCompany(), group_id, engine_id);
+}
+
+/* static */ int32 ScriptGroup::GetNumVehicles(GroupID group_id, ScriptVehicle::VehicleType vehicle_type)
+{
+	bool valid_group = IsValidGroup(group_id);
+	if (!valid_group && group_id != GROUP_DEFAULT && group_id != GROUP_ALL) return -1;
+	if (!valid_group && (vehicle_type < ScriptVehicle::VT_RAIL || vehicle_type > ScriptVehicle::VT_AIR)) return -1;
+
+	return GetGroupNumVehicle(ScriptObject::GetCompany(), group_id, valid_group ? ::Group::Get(group_id)->vehicle_type : (::VehicleType)vehicle_type);
 }
 
 /* static */ bool ScriptGroup::MoveVehicle(GroupID group_id, VehicleID vehicle_id)
@@ -120,7 +127,7 @@
 {
 	if (HasWagonRemoval() == enable_removal) return true;
 
-	return ScriptObject::DoCommand(0, ::GetCompanySettingIndex("company.renew_keep_length"), enable_removal ? 1 : 0, CMD_CHANGE_COMPANY_SETTING);
+	return ScriptObject::DoCommand(0, 0, enable_removal ? 1 : 0, CMD_CHANGE_COMPANY_SETTING, "company.renew_keep_length");
 }
 
 /* static */ bool ScriptGroup::HasWagonRemoval()
@@ -156,8 +163,7 @@
 
 	Money profit = 0;
 
-	const Vehicle *v;
-	FOR_ALL_VEHICLES(v) {
+	for (const Vehicle *v : Vehicle::Iterate()) {
 		if (v->group_id != group_id) continue;
 		if (!v->IsPrimaryVehicle()) continue;
 
@@ -181,8 +187,7 @@
 	uint32 occupancy = 0;
 	uint32 vehicle_count = 0;
 
-	const Vehicle *v;
-	FOR_ALL_VEHICLES(v) {
+	for (const Vehicle *v : Vehicle::Iterate()) {
 		if (v->group_id != group_id) continue;
 		if (!v->IsPrimaryVehicle()) continue;
 
@@ -193,4 +198,36 @@
 	if (vehicle_count == 0) return -1;
 
 	return occupancy / vehicle_count;
+}
+
+/* static */ bool ScriptGroup::SetPrimaryColour(GroupID group_id, ScriptCompany::Colours colour)
+{
+	EnforcePrecondition(false, IsValidGroup(group_id));
+
+	return ScriptObject::DoCommand(0, group_id, colour << 16, CMD_SET_GROUP_LIVERY);
+}
+
+/* static */ bool ScriptGroup::SetSecondaryColour(GroupID group_id, ScriptCompany::Colours colour)
+{
+	EnforcePrecondition(false, IsValidGroup(group_id));
+
+	return ScriptObject::DoCommand(0, group_id, (1 << 8) | (colour << 16), CMD_SET_GROUP_LIVERY);
+}
+
+/* static */ ScriptCompany::Colours ScriptGroup::GetPrimaryColour(GroupID group_id)
+{
+	EnforcePrecondition(ScriptCompany::Colours::COLOUR_INVALID, IsValidGroup(group_id));
+
+	const Group *g = ::Group::GetIfValid(group_id);
+	if (!HasBit(g->livery.in_use, 0)) return ScriptCompany::Colours::COLOUR_INVALID;
+	return (ScriptCompany::Colours)g->livery.colour1;
+}
+
+/* static */ ScriptCompany::Colours ScriptGroup::GetSecondaryColour(GroupID group_id)
+{
+	EnforcePrecondition(ScriptCompany::Colours::COLOUR_INVALID, IsValidGroup(group_id));
+
+	const Group *g = ::Group::GetIfValid(group_id);
+	if (!HasBit(g->livery.in_use, 1)) return ScriptCompany::Colours::COLOUR_INVALID;
+	return (ScriptCompany::Colours)g->livery.colour2;
 }

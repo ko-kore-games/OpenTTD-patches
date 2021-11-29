@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,6 +9,7 @@
 
 #include "../stdafx.h"
 #include "../video/video_driver.hpp"
+#include "../zoom_func.h"
 #include "32bpp_anim.hpp"
 #include "common.hpp"
 
@@ -26,10 +25,11 @@ Blitter_32bppAnim::~Blitter_32bppAnim()
 	free(this->anim_alloc);
 }
 
-template <BlitterMode mode>
+template <BlitterMode mode, bool fast_path>
 inline void Blitter_32bppAnim::Draw(const Blitter::BlitterParams *bp, ZoomLevel zoom)
 {
 	const SpriteData *src = (const SpriteData *)bp->sprite;
+	const BlitterSpriteFlags sprite_flags = src->flags;
 
 	const Colour *src_px = (const Colour *)(src->data + src->offset[zoom][0]);
 	const uint16 *src_n  = (const uint16 *)(src->data + src->offset[zoom][1]);
@@ -42,11 +42,16 @@ inline void Blitter_32bppAnim::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 	Colour *dst = (Colour *)bp->dst + bp->top * bp->pitch + bp->left;
 	uint16 *anim = this->anim_buf + this->ScreenToAnimOffset((uint32 *)bp->dst) + bp->top * this->anim_buf_pitch + bp->left;
 
-	const byte *remap = bp->remap; // store so we don't have to access it via bp everytime
+	const byte *remap = bp->remap; // store so we don't have to access it via bp every time
+	const int width = bp->width;
+	const int pitch = bp->pitch;
+	const int anim_pitch = this->anim_buf_pitch;
+	const int skip_left = bp->skip_left;
+	const int height = bp->height;
 
-	for (int y = 0; y < bp->height; y++) {
-		Colour *dst_ln = dst + bp->pitch;
-		uint16 *anim_ln = anim + this->anim_buf_pitch;
+	for (int y = 0; y < height; y++) {
+		Colour *dst_ln = dst + pitch;
+		uint16 *anim_ln = anim + anim_pitch;
 
 		const Colour *src_px_ln = (const Colour *)((const byte *)src_px + *(const uint32 *)src_px);
 		src_px++;
@@ -54,44 +59,52 @@ inline void Blitter_32bppAnim::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 		const uint16 *src_n_ln = (const uint16 *)((const byte *)src_n + *(const uint32 *)src_n);
 		src_n += 2;
 
-		Colour *dst_end = dst + bp->skip_left;
+		Colour *dst_end = dst;
 
 		uint n;
 
-		while (dst < dst_end) {
-			n = *src_n++;
+		if (!fast_path) {
+			dst_end += skip_left;
 
-			if (src_px->a == 0) {
-				dst += n;
-				src_px ++;
-				src_n++;
+			while (dst < dst_end) {
+				n = *src_n++;
 
-				if (dst > dst_end) anim += dst - dst_end;
-			} else {
-				if (dst + n > dst_end) {
-					uint d = dst_end - dst;
-					src_px += d;
-					src_n += d;
+				if (src_px->a == 0) {
+					dst += n;
+					src_px ++;
+					src_n++;
 
-					dst = dst_end - bp->skip_left;
-					dst_end = dst + bp->width;
+					if (dst > dst_end) anim += dst - dst_end;
+				} else {
+					if (dst + n > dst_end) {
+						uint d = dst_end - dst;
+						src_px += d;
+						src_n += d;
 
-					n = min<uint>(n - d, (uint)bp->width);
-					goto draw;
+						dst = dst_end - skip_left;
+						dst_end = dst + width;
+
+						n = std::min<uint>(n - d, (uint)width);
+						goto draw;
+					}
+					dst += n;
+					src_px += n;
+					src_n += n;
 				}
-				dst += n;
-				src_px += n;
-				src_n += n;
 			}
+
+			dst -= skip_left;
+			dst_end -= skip_left;
 		}
 
-		dst -= bp->skip_left;
-		dst_end -= bp->skip_left;
-
-		dst_end += bp->width;
+		dst_end += width;
 
 		while (dst < dst_end) {
-			n = min<uint>(*src_n++, (uint)(dst_end - dst));
+			if (fast_path) {
+				n = *src_n++;
+			} else {
+				n = std::min<uint>(*src_n++, (uint)(dst_end - dst));
+			}
 
 			if (src_px->a == 0) {
 				anim += n;
@@ -105,17 +118,27 @@ inline void Blitter_32bppAnim::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 
 			switch (mode) {
 				case BM_COLOUR_REMAP:
+				case BM_COLOUR_REMAP_WITH_BRIGHTNESS:
 					if (src_px->a == 255) {
 						do {
 							uint m = *src_n;
 							/* In case the m-channel is zero, do not remap this pixel in any way */
 							if (m == 0) {
-								*dst = src_px->data;
+								Colour c = *src_px;
+								if (mode == BM_COLOUR_REMAP_WITH_BRIGHTNESS) c = AdjustBrightness(c, DEFAULT_BRIGHTNESS + bp->brightness_adjust);
+								*dst = c;
 								*anim = 0;
 							} else {
 								uint r = remap[GB(m, 0, 8)];
+								if (r != 0) {
+									uint8 brightness = GB(m, 8, 8);
+									if (mode == BM_COLOUR_REMAP_WITH_BRIGHTNESS) {
+										brightness = Clamp(brightness + bp->brightness_adjust, 0, 255);
+										SB(m, 8, 8, brightness);
+									}
+									*dst = this->AdjustBrightness(this->LookupColourInPalette(r), brightness);
+								}
 								*anim = r | (m & 0xFF00);
-								if (r != 0) *dst = this->AdjustBrightness(this->LookupColourInPalette(r), GB(m, 8, 8));
 							}
 							anim++;
 							dst++;
@@ -126,12 +149,18 @@ inline void Blitter_32bppAnim::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 						do {
 							uint m = *src_n;
 							if (m == 0) {
-								*dst = ComposeColourRGBANoCheck(src_px->r, src_px->g, src_px->b, src_px->a, *dst);
+								Colour c = *src_px;
+								if (mode == BM_COLOUR_REMAP_WITH_BRIGHTNESS) c = AdjustBrightness(c, DEFAULT_BRIGHTNESS + bp->brightness_adjust);
+								*dst = ComposeColourRGBANoCheck(c.r, c.g, c.b, c.a, *dst);
 								*anim = 0;
 							} else {
 								uint r = remap[GB(m, 0, 8)];
 								*anim = 0;
-								if (r != 0) *dst = ComposeColourPANoCheck(this->AdjustBrightness(this->LookupColourInPalette(r), GB(m, 8, 8)), src_px->a, *dst);
+								if (r != 0) {
+									uint8 brightness = GB(m, 8, 8);
+									if (mode == BM_COLOUR_REMAP_WITH_BRIGHTNESS) brightness = Clamp(brightness + bp->brightness_adjust, 0, 255);
+									*dst = ComposeColourPANoCheck(this->AdjustBrightness(this->LookupColourInPalette(r), brightness), src_px->a, *dst);
+								}
 							}
 							anim++;
 							dst++;
@@ -218,13 +247,30 @@ inline void Blitter_32bppAnim::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 					break;
 
 				default:
-					if (src_px->a == 255) {
+					if (fast_path || (src_px->a == 255 && (sprite_flags & BSF_NO_ANIM))) {
+						do {
+							*anim++ = 0;
+							Colour c = *src_px;
+							if (mode == BM_NORMAL_WITH_BRIGHTNESS) c = AdjustBrightness(c, DEFAULT_BRIGHTNESS + bp->brightness_adjust);
+							*dst++ = c;
+							src_px++;
+							src_n++;
+						} while (--n != 0);
+					} else if (src_px->a == 255) {
 						do {
 							/* Compiler assumes pointer aliasing, can't optimise this on its own */
-							uint m = GB(*src_n, 0, 8);
+							uint16 mv = *src_n;
+							uint m = GB(mv, 0, 8);
 							/* Above PALETTE_ANIM_START is palette animation */
-							*anim++ = *src_n;
-							*dst++ = (m >= PALETTE_ANIM_START) ? this->AdjustBrightness(this->LookupColourInPalette(m), GB(*src_n, 8, 8)) : src_px->data;
+							if (m >= PALETTE_ANIM_START) {
+								if (mode == BM_NORMAL_WITH_BRIGHTNESS) SB(mv, 8, 8, Clamp(GB(mv, 8, 8) + bp->brightness_adjust, 0, 255));
+								*dst++ = this->AdjustBrightness(this->LookupColourInPalette(m), GB(mv, 8, 8));
+							} else if (mode == BM_NORMAL_WITH_BRIGHTNESS) {
+								*dst++ = AdjustBrightness(src_px->data, DEFAULT_BRIGHTNESS + bp->brightness_adjust);
+							} else {
+								*dst++ = src_px->data;
+							}
+							*anim++ = mv;
 							src_px++;
 							src_n++;
 						} while (--n != 0);
@@ -233,9 +279,13 @@ inline void Blitter_32bppAnim::Draw(const Blitter::BlitterParams *bp, ZoomLevel 
 							uint m = GB(*src_n, 0, 8);
 							*anim++ = 0;
 							if (m >= PALETTE_ANIM_START) {
-								*dst = ComposeColourPANoCheck(this->AdjustBrightness(this->LookupColourInPalette(m), GB(*src_n, 8, 8)), src_px->a, *dst);
+								uint8 brightness = GB(*src_n, 8, 8);
+								if (mode == BM_NORMAL_WITH_BRIGHTNESS) brightness = Clamp(brightness + bp->brightness_adjust, 0, 255);
+								*dst = ComposeColourPANoCheck(this->AdjustBrightness(this->LookupColourInPalette(m), brightness), src_px->a, *dst);
 							} else {
-								*dst = ComposeColourRGBANoCheck(src_px->r, src_px->g, src_px->b, src_px->a, *dst);
+								Colour c = *src_px;
+								if (mode == BM_NORMAL_WITH_BRIGHTNESS) c = AdjustBrightness(c, DEFAULT_BRIGHTNESS + bp->brightness_adjust);
+								*dst = ComposeColourRGBANoCheck(c.r, c.g, c.b, c.a, *dst);
 							}
 							dst++;
 							src_px++;
@@ -261,13 +311,41 @@ void Blitter_32bppAnim::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomL
 		return;
 	}
 
+	const BlitterSpriteFlags sprite_flags = ((const SpriteData *) bp->sprite)->flags;
+
 	switch (mode) {
 		default: NOT_REACHED();
-		case BM_NORMAL:       Draw<BM_NORMAL>      (bp, zoom); return;
-		case BM_COLOUR_REMAP: Draw<BM_COLOUR_REMAP>(bp, zoom); return;
-		case BM_TRANSPARENT:  Draw<BM_TRANSPARENT> (bp, zoom); return;
-		case BM_CRASH_REMAP:  Draw<BM_CRASH_REMAP> (bp, zoom); return;
-		case BM_BLACK_REMAP:  Draw<BM_BLACK_REMAP> (bp, zoom); return;
+
+		case BM_COLOUR_REMAP_WITH_BRIGHTNESS:
+			if (!(sprite_flags & BSF_NO_REMAP)) {
+				Draw<BM_COLOUR_REMAP_WITH_BRIGHTNESS, false>(bp, zoom);
+				return;
+			}
+			/* FALL THROUGH */
+
+		case BM_NORMAL_WITH_BRIGHTNESS:
+			Draw<BM_NORMAL_WITH_BRIGHTNESS, false>(bp, zoom);
+			return;
+
+		case BM_COLOUR_REMAP:
+			if (!(sprite_flags & BSF_NO_REMAP)) {
+				Draw<BM_COLOUR_REMAP, false>(bp, zoom);
+				return;
+			}
+			/* FALL THROUGH */
+
+		case BM_NORMAL:
+			if ((sprite_flags & (BSF_NO_ANIM | BSF_TRANSLUCENT)) == BSF_NO_ANIM &&
+					bp->skip_left == 0 && bp->width == UnScaleByZoom(bp->sprite_width, zoom)) {
+				Draw<BM_NORMAL, true>(bp, zoom);
+			} else {
+				Draw<BM_NORMAL, false>(bp, zoom);
+			}
+			return;
+
+		case BM_TRANSPARENT:  Draw<BM_TRANSPARENT, false> (bp, zoom); return;
+		case BM_CRASH_REMAP:  Draw<BM_CRASH_REMAP, false> (bp, zoom); return;
+		case BM_BLACK_REMAP:  Draw<BM_BLACK_REMAP, false> (bp, zoom); return;
 	}
 }
 
@@ -318,7 +396,6 @@ void Blitter_32bppAnim::SetPixel(void *video, int x, int y, uint8 colour)
 
 	/* Set the colour in the anim-buffer too, if we are rendering to the screen */
 	if (_screen_disable_anim) return;
-
 	this->anim_buf[this->ScreenToAnimOffset((uint32 *)video) + x + y * this->anim_buf_pitch] = colour | (DEFAULT_BRIGHTNESS << 8);
 }
 
@@ -337,6 +414,61 @@ void Blitter_32bppAnim::DrawLine(void *video, int x, int y, int x2, int y2, int 
 			*((Colour *)video + x + y * _screen.pitch) = c;
 			offset_anim_buf[x + y * this->anim_buf_pitch] = anim_colour;
 		});
+	}
+}
+
+void Blitter_32bppAnim::SetRect(void *video, int x, int y, const uint8 *colours, uint lines, uint width, uint pitch)
+{
+	Colour *dst = (Colour *)video + x + y * _screen.pitch;
+
+	if (_screen_disable_anim) {
+		do {
+			uint w = width;
+			do {
+				*dst = LookupColourInPalette(*colours);
+				dst++;
+				colours++;
+			} while (--w);
+			dst += _screen.pitch - width;
+			colours += pitch - width;
+		} while (--lines);
+	} else {
+		uint16 *dstanim = (uint16 *)(&this->anim_buf[this->ScreenToAnimOffset((uint32 *)video) + x + y * this->anim_buf_pitch]);
+		do {
+			uint w = width;
+			do {
+				*dstanim = *colours | (DEFAULT_BRIGHTNESS << 8);
+				*dst = LookupColourInPalette(*colours);
+				dst++;
+				dstanim++;
+				colours++;
+			} while (--w);
+			dst += _screen.pitch - width;
+			dstanim += this->anim_buf_pitch - width;
+			colours += pitch - width;
+		} while (--lines);
+	}
+}
+
+void Blitter_32bppAnim::SetRect32(void *video, int x, int y, const uint32 *colours, uint lines, uint width, uint pitch)
+{
+	uint32 *dst = (uint32 *)video + x + y * _screen.pitch;
+
+	if (_screen_disable_anim) {
+		do {
+			memcpy(dst, colours, width * sizeof(uint32));
+			dst += _screen.pitch;
+			colours += pitch;
+		} while (--lines);
+	} else {
+		uint16 *dstanim = (uint16 *)(&this->anim_buf[this->ScreenToAnimOffset((uint32 *)video) + x + y * this->anim_buf_pitch]);
+		do {
+			memcpy(dst, colours, width * sizeof(uint32));
+			memset(dstanim, 0, width * sizeof(uint16));
+			dst += _screen.pitch;
+			dstanim += this->anim_buf_pitch;
+			colours += pitch;
+		} while (--lines);
 	}
 }
 
@@ -414,7 +546,7 @@ void Blitter_32bppAnim::CopyToBuffer(const void *video, void *dst, int width, in
 	uint32 *udst = (uint32 *)dst;
 	const uint32 *src = (const uint32 *)video;
 
-	if (this->anim_buf == NULL) return;
+	if (this->anim_buf == nullptr) return;
 
 	const uint16 *anim_line = this->ScreenToAnimOffset((const uint32 *)video) + this->anim_buf;
 
@@ -429,7 +561,7 @@ void Blitter_32bppAnim::CopyToBuffer(const void *video, void *dst, int width, in
 	}
 }
 
-void Blitter_32bppAnim::ScrollBuffer(void *video, int &left, int &top, int &width, int &height, int scroll_x, int scroll_y)
+void Blitter_32bppAnim::ScrollBuffer(void *video, int left, int top, int width, int height, int scroll_x, int scroll_y)
 {
 	assert(!_screen_disable_anim);
 	assert(video >= _screen.dst_ptr && video <= (uint32 *)_screen.dst_ptr + _screen.width + _screen.height * _screen.pitch);
@@ -528,8 +660,7 @@ Blitter::PaletteAnimation Blitter_32bppAnim::UsePaletteAnimation()
 
 void Blitter_32bppAnim::PostResize()
 {
-	if (_screen.width != this->anim_buf_width || _screen.height != this->anim_buf_height ||
-			_screen.pitch != this->anim_buf_pitch) {
+	if (_screen.width != this->anim_buf_width || _screen.height != this->anim_buf_height) {
 		/* The size of the screen changed; we can assume we can wipe all data from our buffer */
 		free(this->anim_alloc);
 		this->anim_buf_width = _screen.width;

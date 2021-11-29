@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -54,7 +52,7 @@ static inline bool IsDepotTile(TileIndex tile)
 static inline DepotID GetDepotIndex(TileIndex t)
 {
 	/* Hangars don't have a Depot class, thus store no DepotID. */
-	assert(IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t));
+	assert_tile(IsRailDepotTile(t) || IsRoadDepotTile(t) || IsShipDepotTile(t), t);
 	return _m[t].m2;
 }
 

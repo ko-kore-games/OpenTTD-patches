@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -21,6 +19,7 @@ enum RailToolbarWidgets {
 	WID_RAT_BUILD_EW,       ///< Build rail along the game view X axis.
 	WID_RAT_BUILD_Y,        ///< Build rail along the game grid Y axis.
 	WID_RAT_AUTORAIL,       ///< Autorail tool.
+	WID_RAT_POLYRAIL,       ///< Polyline rail tool.
 	WID_RAT_DEMOLISH,       ///< Destroy something with dynamite!
 	WID_RAT_BUILD_DEPOT,    ///< Build a depot.
 	WID_RAT_BUILD_WAYPOINT, ///< Build a waypoint.
@@ -64,6 +63,8 @@ enum BuildRailStationWidgets {
 	WID_BRAS_IMAGE,                ///< Panel used at each cell of the matrix.
 	WID_BRAS_MATRIX_SCROLL,        ///< Scrollbar of the matrix widget.
 
+	WID_BRAS_FILTER_CONTAINER,     ///< Container for the filter text box for the station class list.
+	WID_BRAS_FILTER_EDITBOX,       ///< Filter text box for the station class list.
 	WID_BRAS_SHOW_NEWST_DEFSIZE,   ///< Selection for default-size button for newstation.
 	WID_BRAS_SHOW_NEWST_ADDITIONS, ///< Selection for newstation class selection list.
 	WID_BRAS_SHOW_NEWST_MATRIX,    ///< Selection for newstation image matrix.
@@ -78,22 +79,44 @@ enum BuildRailStationWidgets {
 
 /** Widgets of the #BuildSignalWindow class. */
 enum BuildSignalWidgets {
+	WID_BS_CAPTION,            ///< Caption for the Signal Selection window.
+	WID_BS_TOGGLE_SIZE,        ///< Toggle showing advanced signal types.
 	WID_BS_SEMAPHORE_NORM,     ///< Build a semaphore normal block signal
 	WID_BS_SEMAPHORE_ENTRY,    ///< Build a semaphore entry block signal
 	WID_BS_SEMAPHORE_EXIT,     ///< Build a semaphore exit block signal
 	WID_BS_SEMAPHORE_COMBO,    ///< Build a semaphore combo block signal
+	WID_BS_SEMAPHORE_PROG,     ///< Build a semahore programmable pre-signal
 	WID_BS_SEMAPHORE_PBS,      ///< Build a semaphore path signal.
 	WID_BS_SEMAPHORE_PBS_OWAY, ///< Build a semaphore one way path signal.
+	WID_BS_SEMAPHORE_NO_ENTRY, ///< Build a semaphore no-entry signal.
 	WID_BS_ELECTRIC_NORM,      ///< Build an electric normal block signal
 	WID_BS_ELECTRIC_ENTRY,     ///< Build an electric entry block signal
 	WID_BS_ELECTRIC_EXIT,      ///< Build an electric exit block signal
 	WID_BS_ELECTRIC_COMBO,     ///< Build an electric combo block signal
+	WID_BS_ELECTRIC_PROG,      ///< Build an electric programmable pre-signal
 	WID_BS_ELECTRIC_PBS,       ///< Build an electric path signal.
 	WID_BS_ELECTRIC_PBS_OWAY,  ///< Build an electric one way path signal.
+	WID_BS_ELECTRIC_NO_ENTRY,  ///< Build an electric no-entry signal.
 	WID_BS_CONVERT,            ///< Convert the signal.
+	WID_BS_TRACE_RESTRICT,     ///< Open trace restrict window.
+	WID_BS_PROGRAM,            ///< Enter program to prog signal
 	WID_BS_DRAG_SIGNALS_DENSITY_LABEL,    ///< The current signal density.
 	WID_BS_DRAG_SIGNALS_DENSITY_DECREASE, ///< Decrease the signal density.
 	WID_BS_DRAG_SIGNALS_DENSITY_INCREASE, ///< Increase the signal density.
+	WID_BS_TOGGLE_SIZE_SEL,     ///< NWID_SELECTION for WID_BS_TOGGLE_SIZE
+	WID_BS_SEMAPHORE_NORM_SEL,  ///< NWID_SELECTION for WID_BS_SEMAPHORE_NORM
+	WID_BS_ELECTRIC_NORM_SEL,   ///< NWID_SELECTION for WID_BS_ELECTRIC_NORM
+	WID_BS_SEMAPHORE_ENTRY_SEL, ///< NWID_SELECTION for WID_BS_SEMAPHORE_ENTRY
+	WID_BS_ELECTRIC_ENTRY_SEL,  ///< NWID_SELECTION for WID_BS_ELECTRIC_ENTRY
+	WID_BS_SEMAPHORE_EXIT_SEL, ///< NWID_SELECTION for WID_BS_SEMAPHORE_EXIT
+	WID_BS_ELECTRIC_EXIT_SEL,  ///< NWID_SELECTION for WID_BS_ELECTRIC_EXIT
+	WID_BS_SEMAPHORE_COMBO_SEL, ///< NWID_SELECTION for WID_BS_SEMAPHORE_COMBO
+	WID_BS_ELECTRIC_COMBO_SEL,  ///< NWID_SELECTION for WID_BS_ELECTRIC_COMBO
+	WID_BS_SEMAPHORE_PROG_SEL, ///< NWID_SELECTION for WID_BS_SEMAPHORE_PROG
+	WID_BS_ELECTRIC_PROG_SEL,  ///< NWID_SELECTION for WID_BS_ELECTRIC_PROG
+	WID_BS_SEMAPHORE_NOEN_SEL, ///< NWID_SELECTION for WID_BS_SEMAPHORE_NO_ENTRY
+	WID_BS_ELECTRIC_NOEN_SEL,  ///< NWID_SELECTION for WID_BS_ELECTRIC_NO_ENTRY
+	WID_BS_PROGRAM_SEL,        ///< NWID_SELECTION for WID_BS_PROGRAM
 };
 
 /** Widgets of the #BuildRailDepotWindow class. */

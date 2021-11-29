@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,6 +15,7 @@
 #include "core/pool_func.hpp"
 #include "vehicle_gui.h"
 #include "vehiclelist.h"
+#include "tracerestrict.h"
 
 #include "safeguards.h"
 
@@ -41,6 +40,8 @@ Depot::~Depot()
 
 	/* Clear the depot from all order-lists */
 	RemoveOrderFromAllVehicles(OT_GOTO_DEPOT, this->index);
+
+	TraceRestrictRemoveDestinationID(TROCAF_DEPOT, this->index);
 
 	/* Delete the depot-window */
 	DeleteWindowById(WC_VEHICLE_DEPOT, this->xy);

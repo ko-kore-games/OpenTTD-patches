@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -20,14 +18,28 @@
 #include "rail_gui.h"
 #include "linkgraph/linkgraph.h"
 #include "saveload/saveload.h"
+#include "newgrf_profiling.h"
+#include "console_func.h"
+#include "debug.h"
+#include "landscape.h"
+#include "widgets/statusbar_widget.h"
 
 #include "safeguards.h"
 
-Year      _cur_year;   ///< Current year, starting at 0
-Month     _cur_month;  ///< Current month (0..11)
+YearMonthDay _cur_date_ymd; ///< Current date as YearMonthDay struct
 Date      _date;       ///< Current date in days (day counter)
 DateFract _date_fract; ///< Fractional part of the day.
 uint16 _tick_counter;  ///< Ever incrementing (and sometimes wrapping) tick counter for setting off various events
+uint8 _tick_skip_counter; ///< Counter for ticks, when only vehicles are moving and nothing else happens
+uint32 _scaled_tick_counter; ///< Tick counter in daylength-scaled ticks
+DateTicksScaled _scaled_date_ticks; ///< Date as ticks in daylength-scaled ticks
+uint32    _quit_after_days;  ///< Quit after this many days of run time
+
+YearMonthDay _game_load_cur_date_ymd;
+DateFract _game_load_date_fract;
+uint8 _game_load_tick_skip_counter;
+
+extern void ClearOutOfDateSignalSpeedRestrictions();
 
 /**
  * Set the date.
@@ -43,8 +55,15 @@ void SetDate(Date date, DateFract fract)
 	_date = date;
 	_date_fract = fract;
 	ConvertDateToYMD(date, &ymd);
-	_cur_year = ymd.year;
-	_cur_month = ymd.month;
+	_cur_date_ymd = ymd;
+	SetScaledTickVariables();
+	UpdateCachedSnowLine();
+}
+
+void SetScaledTickVariables()
+{
+	_scaled_date_ticks = ((((DateTicksScaled)_date * DAY_TICKS) + _date_fract) * _settings_game.economy.day_length_factor) + _tick_skip_counter;
+	_scaled_tick_counter = (((uint32)_tick_counter) * _settings_game.economy.day_length_factor) + _tick_skip_counter;
 }
 
 #define M(a, b) ((a << 5) | b)
@@ -167,6 +186,7 @@ extern void CompaniesMonthlyLoop();
 extern void EnginesMonthlyLoop();
 extern void TownsMonthlyLoop();
 extern void IndustryMonthlyLoop();
+extern void StationDailyLoop();
 extern void StationMonthlyLoop();
 extern void SubsidyMonthlyLoop();
 
@@ -195,36 +215,33 @@ static void OnNewYear()
 	VehiclesYearlyLoop();
 	TownsYearlyLoop();
 	InvalidateWindowClassesData(WC_BUILD_STATION);
-#ifdef ENABLE_NETWORK
 	if (_network_server) NetworkServerYearlyLoop();
-#endif /* ENABLE_NETWORK */
 
-	if (_cur_year == _settings_client.gui.semaphore_build_before) ResetSignalVariant();
+	if (_cur_date_ymd.year == _settings_client.gui.semaphore_build_before) ResetSignalVariant();
 
-	/* check if we reached end of the game */
-	if (_cur_year == ORIGINAL_END_YEAR) {
+	/* check if we reached end of the game (end of ending year); 0 = never */
+	if (_cur_date_ymd.year == _settings_game.game_creation.ending_year + 1 && _settings_game.game_creation.ending_year != 0) {
 		ShowEndGameChart();
+	}
+
 	/* check if we reached the maximum year, decrement dates by a year */
-	} else if (_cur_year == MAX_YEAR + 1) {
-		Vehicle *v;
+	if (_cur_date_ymd.year == MAX_YEAR + 1) {
 		int days_this_year;
 
-		_cur_year--;
-		days_this_year = IsLeapYear(_cur_year) ? DAYS_IN_LEAP_YEAR : DAYS_IN_YEAR;
+		_cur_date_ymd.year--;
+		days_this_year = IsLeapYear(_cur_date_ymd.year) ? DAYS_IN_LEAP_YEAR : DAYS_IN_YEAR;
 		_date -= days_this_year;
-		FOR_ALL_VEHICLES(v) v->date_of_last_service -= days_this_year;
+		for (LinkGraph *lg : LinkGraph::Iterate()) lg->ShiftDates(-days_this_year);
+		ShiftOrderDates(-days_this_year);
+		ShiftVehicleDates(-days_this_year);
 
-		LinkGraph *lg;
-		FOR_ALL_LINK_GRAPHS(lg) lg->ShiftDates(-days_this_year);
-
-#ifdef ENABLE_NETWORK
 		/* Because the _date wraps here, and text-messages expire by game-days, we have to clean out
 		 *  all of them if the date is set back, else those messages will hang for ever */
 		NetworkInitChatMessage();
-#endif /* ENABLE_NETWORK */
 	}
 
 	if (_settings_client.gui.auto_euro) CheckSwitchToEuro();
+	IConsoleCmdExec("exec scripts/on_newyear.scr 0");
 }
 
 /**
@@ -232,8 +249,9 @@ static void OnNewYear()
  */
 static void OnNewMonth()
 {
-	if (_settings_client.gui.autosave != 0 && (_cur_month % _autosave_months[_settings_client.gui.autosave]) == 0) {
+	if (_settings_client.gui.autosave != 0 && (_cur_date_ymd.month % _autosave_months[_settings_client.gui.autosave]) == 0) {
 		_do_autosave = true;
+		_check_special_modes = true;
 		SetWindowDirty(WC_STATUS_BAR, 0);
 	}
 
@@ -244,9 +262,8 @@ static void OnNewMonth()
 	IndustryMonthlyLoop();
 	SubsidyMonthlyLoop();
 	StationMonthlyLoop();
-#ifdef ENABLE_NETWORK
 	if (_network_server) NetworkServerMonthlyLoop();
-#endif /* ENABLE_NETWORK */
+	IConsoleCmdExec("exec scripts/on_newmonth.scr 0");
 }
 
 /**
@@ -254,18 +271,32 @@ static void OnNewMonth()
  */
 static void OnNewDay()
 {
-#ifdef ENABLE_NETWORK
+	if (!_newgrf_profilers.empty() && _newgrf_profile_end_date <= _date) {
+		NewGRFProfiler::FinishAll();
+	}
+
 	if (_network_server) NetworkServerDailyLoop();
-#endif /* ENABLE_NETWORK */
 
 	DisasterDailyLoop();
 	IndustryDailyLoop();
+	StationDailyLoop();
 
-	SetWindowWidgetDirty(WC_STATUS_BAR, 0, 0);
+	if (!_settings_time.time_in_minutes || _settings_client.gui.date_with_time > 0) {
+		SetWindowWidgetDirty(WC_STATUS_BAR, 0, WID_S_LEFT);
+	}
 	EnginesDailyLoop();
+	ClearOutOfDateSignalSpeedRestrictions();
 
 	/* Refresh after possible snowline change */
 	SetWindowClassesDirty(WC_TOWN_VIEW);
+	IConsoleCmdExec("exec scripts/on_newday.scr 0");
+
+	if (_quit_after_days > 0) {
+		if (--_quit_after_days == 0) {
+			DEBUG(misc, 0, "Quitting as day limit reached");
+			_exit_game = true;
+		}
+	}
 }
 
 /**
@@ -277,7 +308,7 @@ void IncreaseDate()
 	/* increase day, and check if a new day is there? */
 	_tick_counter++;
 
-	if (_game_mode == GM_MENU) return;
+	if (_game_mode == GM_MENU || _game_mode == GM_BOOTSTRAP) return;
 
 	_date_fract++;
 	if (_date_fract < DAY_TICKS) return;
@@ -290,14 +321,15 @@ void IncreaseDate()
 	ConvertDateToYMD(_date, &ymd);
 
 	/* check if we entered a new month? */
-	bool new_month = ymd.month != _cur_month;
+	bool new_month = ymd.month != _cur_date_ymd.month;
 
 	/* check if we entered a new year? */
-	bool new_year = ymd.year != _cur_year;
+	bool new_year = ymd.year != _cur_date_ymd.year;
 
 	/* update internal variables before calling the daily/monthly/yearly loops */
-	_cur_month = ymd.month;
-	_cur_year  = ymd.year;
+	_cur_date_ymd = ymd;
+
+	UpdateCachedSnowLine();
 
 	/* yes, call various daily loops */
 	OnNewDay();

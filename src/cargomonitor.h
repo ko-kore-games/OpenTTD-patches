@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,8 +15,7 @@
 #include "industry.h"
 #include "town.h"
 #include "core/overflowsafe_type.hpp"
-#include <map>
-
+#include "3rdparty/cpp-btree/btree_map.h"
 struct Station;
 
 /**
@@ -32,7 +29,7 @@ struct Station;
 typedef uint32 CargoMonitorID; ///< Type of the cargo monitor number.
 
 /** Map type for storing and updating active cargo monitor numbers and their amounts. */
-typedef std::map<CargoMonitorID, OverflowSafeInt32> CargoMonitorMap;
+typedef btree::btree_map<CargoMonitorID, OverflowSafeInt32> CargoMonitorMap;
 
 extern CargoMonitorMap _cargo_pickups;
 extern CargoMonitorMap _cargo_deliveries;
@@ -50,8 +47,8 @@ enum CargoCompanyBits {
 	CCB_COMPANY_LENGTH         = 4,  ///< Number of bits of the company field.
 };
 
-assert_compile(NUM_CARGO     <= (1 << CCB_CARGO_TYPE_LENGTH));
-assert_compile(MAX_COMPANIES <= (1 << CCB_COMPANY_LENGTH));
+static_assert(NUM_CARGO     <= (1 << CCB_CARGO_TYPE_LENGTH));
+static_assert(MAX_COMPANIES <= (1 << CCB_COMPANY_LENGTH));
 
 
 /**

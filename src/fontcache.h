@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -19,6 +17,10 @@
 typedef uint32 GlyphID;
 static const GlyphID SPRITE_GLYPH = 1U << 30;
 
+extern int font_height_cache[FS_END]; ///< Cache of font heights
+
+void UpdateFontHeightCache();
+
 /** Font cache for basic fonts. */
 class FontCache {
 private:
@@ -30,6 +32,9 @@ protected:
 	int ascender;                     ///< The ascender value of the font.
 	int descender;                    ///< The descender value of the font.
 	int units_per_em;                 ///< The units per EM value of the font.
+
+	static int GetDefaultFontHeight(FontSize fs);
+
 public:
 	FontCache(FontSize fs);
 	virtual ~FontCache();
@@ -44,7 +49,7 @@ public:
 	 * Get the height of the font.
 	 * @return The height of the font.
 	 */
-	virtual int GetHeight() const { return this->height; }
+	inline int GetHeight() const { return this->height; }
 
 	/**
 	 * Get the ascender value of the font.
@@ -126,6 +131,15 @@ public:
 	virtual const void *GetFontTable(uint32 tag, size_t &length) = 0;
 
 	/**
+	 * Get the native OS font handle, if there is one.
+	 * @return Opaque OS font handle.
+	 */
+	virtual const void *GetOSHandle()
+	{
+		return nullptr;
+	}
+
+	/**
 	 * Get the name of this font.
 	 * @return The name of the font.
 	 */
@@ -147,7 +161,7 @@ public:
 	 */
 	inline bool HasParent()
 	{
-		return this->parent != NULL;
+		return this->parent != nullptr;
 	}
 
 	/**
@@ -202,13 +216,13 @@ static inline bool GetDrawGlyphShadow(FontSize size)
 	return FontCache::Get(size)->GetDrawGlyphShadow();
 }
 
-#ifdef WITH_FREETYPE
-
 /** Settings for a single freetype font. */
 struct FreeTypeSubSetting {
-	char font[MAX_PATH]; ///< The name of the font, or path to the font.
-	uint size;           ///< The (requested) size of the font.
-	bool aa;             ///< Whether to do anti aliasing or not.
+	std::string font; ///< The name of the font, or path to the font.
+	uint size;        ///< The (requested) size of the font.
+	bool aa;          ///< Whether to do anti aliasing or not.
+
+	const void *os_handle = nullptr; ///< Optional native OS font info. Only valid during font search.
 };
 
 /** Settings for the freetype fonts. */
@@ -221,9 +235,8 @@ struct FreeTypeSettings {
 
 extern FreeTypeSettings _freetype;
 
-#endif /* WITH_FREETYPE */
-
 void InitFreeType(bool monospace);
 void UninitFreeType();
+bool HasAntialiasedFonts();
 
 #endif /* FONTCACHE_H */

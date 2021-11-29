@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,10 +14,6 @@
 
 #include "safeguards.h"
 
-BaseConsist::~BaseConsist()
-{
-	free(this->name);
-}
 
 /**
  * Copy properties of other BaseConsist.
@@ -29,17 +23,18 @@ void BaseConsist::CopyConsistPropertiesFrom(const BaseConsist *src)
 {
 	if (this == src) return;
 
-	free(this->name);
-	this->name = src->name != NULL ? stredup(src->name) : NULL;
+	this->name = src->name;
 
 	this->current_order_time = src->current_order_time;
 	this->lateness_counter = src->lateness_counter;
 	this->timetable_start = src->timetable_start;
+	this->timetable_start_subticks = src->timetable_start_subticks;
 
 	this->service_interval = src->service_interval;
 
 	this->cur_real_order_index = src->cur_real_order_index;
 	this->cur_implicit_order_index = src->cur_implicit_order_index;
+	this->cur_timetable_order_index = src->cur_timetable_order_index;
 
 	if (HasBit(src->vehicle_flags, VF_TIMETABLE_STARTED)) SetBit(this->vehicle_flags, VF_TIMETABLE_STARTED);
 	if (HasBit(src->vehicle_flags, VF_AUTOFILL_TIMETABLE)) SetBit(this->vehicle_flags, VF_AUTOFILL_TIMETABLE);
@@ -48,4 +43,17 @@ void BaseConsist::CopyConsistPropertiesFrom(const BaseConsist *src)
 		ToggleBit(this->vehicle_flags, VF_SERVINT_IS_PERCENT);
 	}
 	if (HasBit(src->vehicle_flags, VF_SERVINT_IS_CUSTOM)) SetBit(this->vehicle_flags, VF_SERVINT_IS_CUSTOM);
+
+	if (HasBit(src->vehicle_flags, VF_AUTOMATE_TIMETABLE)) {
+		SetBit(this->vehicle_flags, VF_AUTOMATE_TIMETABLE);
+		ClrBit(this->vehicle_flags, VF_AUTOFILL_TIMETABLE);
+		ClrBit(this->vehicle_flags, VF_AUTOFILL_PRES_WAIT_TIME);
+	} else {
+		ClrBit(this->vehicle_flags, VF_AUTOMATE_TIMETABLE);
+	}
+	if (HasBit(src->vehicle_flags, VF_TIMETABLE_SEPARATION)) {
+		SetBit(this->vehicle_flags, VF_TIMETABLE_SEPARATION);
+	} else {
+		ClrBit(this->vehicle_flags, VF_TIMETABLE_SEPARATION);
+	}
 }

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,6 +12,11 @@
 #include "core/alloc_func.hpp"
 #include "water_map.h"
 #include "string_func.h"
+#include "rail_map.h"
+#include "tunnelbridge_map.h"
+#include "3rdparty/cpp-btree/btree_map.h"
+#include <array>
+#include <deque>
 
 #include "safeguards.h"
 
@@ -29,9 +32,28 @@ uint _map_size_y;    ///< Size of the map along the Y
 uint _map_size;      ///< The number of tiles on the map
 uint _map_tile_mask; ///< _map_size - 1 (to mask the mapsize)
 
-Tile *_m = NULL;          ///< Tiles of the map
-TileExtended *_me = NULL; ///< Extended Tiles of the map
+Tile *_m = nullptr;          ///< Tiles of the map
+TileExtended *_me = nullptr; ///< Extended Tiles of the map
 
+/**
+ * Validates whether a map with the given dimension is valid
+ * @param size_x the width of the map along the NE/SW edge
+ * @param size_y the 'height' of the map along the SE/NW edge
+ * @return true if valid, or false if not valid
+ */
+bool ValidateMapSize(uint size_x, uint size_y)
+{
+	/* Make sure that the map size is within the limits and that
+	 * size of both axes is a power of 2. */
+	if (size_x * size_y > MAX_MAP_TILES ||
+			size_x < MIN_MAP_SIZE ||
+			size_y < MIN_MAP_SIZE ||
+			(size_x & (size_x - 1)) != 0 ||
+			(size_y & (size_y - 1)) != 0) {
+		return false;
+	}
+	return true;
+}
 
 /**
  * (Re)allocates a map with the given dimension
@@ -40,16 +62,12 @@ TileExtended *_me = NULL; ///< Extended Tiles of the map
  */
 void AllocateMap(uint size_x, uint size_y)
 {
-	/* Make sure that the map size is within the limits and that
-	 * size of both axes is a power of 2. */
-	if (!IsInsideMM(size_x, MIN_MAP_SIZE, MAX_MAP_SIZE + 1) ||
-			!IsInsideMM(size_y, MIN_MAP_SIZE, MAX_MAP_SIZE + 1) ||
-			(size_x & (size_x - 1)) != 0 ||
-			(size_y & (size_y - 1)) != 0) {
+	DEBUG(map, 2, "Min/max map size %d/%d, max map tiles %d", MIN_MAP_SIZE, MAX_MAP_SIZE, MAX_MAP_TILES);
+	DEBUG(map, 1, "Allocating map of size %dx%d", size_x, size_y);
+
+	if (!ValidateMapSize(size_x, size_y)) {
 		error("Invalid map size");
 	}
-
-	DEBUG(map, 1, "Allocating map of size %dx%d", size_x, size_y);
 
 	_map_log_x = FindFirstBit(size_x);
 	_map_log_y = FindFirstBit(size_y);
@@ -127,6 +145,26 @@ TileIndex TileAddWrap(TileIndex tile, int addx, int addy)
 	return TileXY(x, y);
 }
 
+/**
+ * This function checks if we add addx/addy to tile, if we
+ * do wrap around the edges. Instead of wrapping, saturate at the map edge.
+ *
+ * @param tile the 'starting' point of the adding
+ * @param addx the amount of tiles in the X direction to add
+ * @param addy the amount of tiles in the Y direction to add
+ * @return translated tile
+ */
+TileIndex TileAddSaturating(TileIndex tile, int addx, int addy)
+{
+	int x = TileX(tile) + addx;
+	int y = TileY(tile) + addy;
+
+	auto clamp = [&](int coord, int map_max) -> uint {
+		return Clamp<int>(coord, _settings_game.construction.freeform_edges ? 1 : 0, map_max - 1);
+	};
+	return TileXY(clamp(x,  MapMaxX()), clamp(y,  MapMaxY()));
+}
+
 /** 'Lookup table' for tile offsets given a DiagDirection */
 extern const TileIndexDiffC _tileoffs_by_diagdir[] = {
 	{-1,  0}, ///< DIAGDIR_NE
@@ -192,7 +230,7 @@ uint DistanceMax(TileIndex t0, TileIndex t1)
 {
 	const uint dx = Delta(TileX(t0), TileX(t1));
 	const uint dy = Delta(TileY(t0), TileY(t1));
-	return max(dx, dy);
+	return std::max(dx, dy);
 }
 
 
@@ -222,9 +260,9 @@ uint DistanceFromEdge(TileIndex tile)
 	const uint yl = TileY(tile);
 	const uint xh = MapSizeX() - 1 - xl;
 	const uint yh = MapSizeY() - 1 - yl;
-	const uint minl = min(xl, yl);
-	const uint minh = min(xh, yh);
-	return min(minl, minh);
+	const uint minl = std::min(xl, yl);
+	const uint minh = std::min(xh, yh);
+	return std::min(minl, minh);
 }
 
 /**
@@ -254,12 +292,12 @@ uint DistanceFromEdgeDir(TileIndex tile, DiagDirection dir)
  * @param proc: callback testing function pointer.
  * @param user_data to be passed to the callback function. Depends on the implementation
  * @return result of the search
- * @pre proc != NULL
+ * @pre proc != nullptr
  * @pre size > 0
  */
 bool CircularTileSearch(TileIndex *tile, uint size, TestTileOnSearchProc proc, void *user_data)
 {
-	assert(proc != NULL);
+	assert(proc != nullptr);
 	assert(size > 0);
 
 	if (size % 2 == 1) {
@@ -292,12 +330,12 @@ bool CircularTileSearch(TileIndex *tile, uint size, TestTileOnSearchProc proc, v
  * @param proc callback testing function pointer.
  * @param user_data to be passed to the callback function. Depends on the implementation
  * @return result of the search
- * @pre proc != NULL
+ * @pre proc != nullptr
  * @pre radius > 0
  */
 bool CircularTileSearch(TileIndex *tile, uint radius, uint w, uint h, TestTileOnSearchProc proc, void *user_data)
 {
-	assert(proc != NULL);
+	assert(proc != nullptr);
 	assert(radius > 0);
 
 	uint x = TileX(*tile) + w + 1;
@@ -331,6 +369,58 @@ bool CircularTileSearch(TileIndex *tile, uint radius, uint w, uint h, TestTileOn
 
 	*tile = INVALID_TILE;
 	return false;
+}
+
+/**
+ * Generalized contiguous matching tile area size threshold function.
+ * Contiguous means directly adjacent by DiagDirection directions.
+ *
+ * @param tile to start the search from.
+ * @param threshold minimum number of matching tiles for success, searching is halted when this is reached.
+ * @param proc callback testing function pointer.
+ * @param user_data to be passed to the callback function. Depends on the implementation
+ * @return whether the contiguous tile area size is >= threshold
+ * @pre proc != nullptr
+ */
+bool EnoughContiguousTilesMatchingCondition(TileIndex tile, uint threshold, TestTileOnSearchProc proc, void *user_data)
+{
+	assert(proc != nullptr);
+	if (threshold == 0) return true;
+
+	static_assert(MAX_MAP_TILES_BITS <= 30);
+
+	btree::btree_set<uint32> processed_tiles;
+	std::deque<uint32> candidates;
+	uint matching_count = 0;
+
+	auto process_tile = [&](TileIndex t, DiagDirection exclude_onward_dir) {
+		auto iter = processed_tiles.lower_bound(t);
+		if (iter != processed_tiles.end() && *iter == t) {
+			/* done this tile already */
+		} else {
+			if (proc(t, user_data)) {
+				matching_count++;
+				for (DiagDirection dir = DIAGDIR_BEGIN; dir < DIAGDIR_END; dir++) {
+					if (dir == exclude_onward_dir) continue;
+					TileIndex neighbour_tile = AddTileIndexDiffCWrap(t, TileIndexDiffCByDiagDir(dir));
+					if (IsValidTile(neighbour_tile)) {
+						candidates.push_back(neighbour_tile | (ReverseDiagDir(dir) << 30));
+					}
+				}
+			}
+			processed_tiles.insert(iter, t);
+		}
+	};
+	process_tile(tile, INVALID_DIAGDIR);
+
+	while (matching_count < threshold && !candidates.empty()) {
+		uint32 next = candidates.front();
+		candidates.pop_front();
+		TileIndex t = GB(next, 0, 30);
+		DiagDirection exclude_onward_dir = (DiagDirection)GB(next, 30, 2);
+		process_tile(t, exclude_onward_dir);
+	}
+	return matching_count >= threshold;
 }
 
 /**
@@ -386,4 +476,136 @@ uint GetClosestWaterDistance(TileIndex tile, bool water)
 	}
 
 	return max_dist;
+}
+
+static const char *tile_type_names[16] = {
+	"MP_CLEAR",
+	"MP_RAILWAY",
+	"MP_ROAD",
+	"MP_HOUSE",
+	"MP_TREES",
+	"MP_STATION",
+	"MP_WATER",
+	"MP_VOID",
+	"MP_INDUSTRY",
+	"MP_TUNNELBRIDGE",
+	"MP_OBJECT",
+	"INVALID_B",
+	"INVALID_C",
+	"INVALID_D",
+	"INVALID_E",
+	"INVALID_F",
+};
+
+char *DumpTileInfo(char *b, const char *last, TileIndex tile)
+{
+	if (tile == INVALID_TILE) {
+		b += seprintf(b, last, "tile: %X (INVALID_TILE)", tile);
+	} else {
+		b += seprintf(b, last, "tile: %X (%u x %u)", tile, TileX(tile), TileY(tile));
+	}
+	if (!_m || !_me) {
+		b += seprintf(b, last, ", NO MAP ALLOCATED");
+	} else {
+		if (tile >= MapSize()) {
+			b += seprintf(b, last, ", TILE OUTSIDE MAP");
+		} else {
+			b += seprintf(b, last, ", type: %02X (%s), height: %02X, data: %02X %04X %02X %02X %02X %02X %02X %04X",
+					_m[tile].type, tile_type_names[GB(_m[tile].type, 4, 4)], _m[tile].height,
+					_m[tile].m1, _m[tile].m2, _m[tile].m3, _m[tile].m4, _m[tile].m5, _me[tile].m6, _me[tile].m7, _me[tile].m8);
+		}
+	}
+	return b;
+}
+
+void DumpMapStats(char *b, const char *last)
+{
+	std::array<uint, 16> tile_types;
+	uint restricted_signals = 0;
+	uint prog_signals = 0;
+	uint dual_rail_type = 0;
+	uint road_works = 0;
+
+	enum TunnelBridgeBits {
+		TBB_BRIDGE            = 1 << 0,
+		TBB_ROAD              = 1 << 1,
+		TBB_TRAM              = 1 << 2,
+		TBB_RAIL              = 1 << 3,
+		TBB_WATER             = 1 << 4,
+		TBB_CUSTOM_HEAD       = 1 << 5,
+		TBB_DUAL_RT           = 1 << 6,
+		TBB_SIGNALLED         = 1 << 7,
+		TBB_SIGNALLED_BIDI    = 1 << 8,
+	};
+	btree::btree_map<uint, uint> tunnel_bridge_stats;
+
+	for (uint type = 0; type < 16; type++) {
+		tile_types[type] = 0;
+	}
+
+	for (TileIndex t = 0; t < MapSize(); t++) {
+		tile_types[GetTileType(t)]++;
+
+		if (IsTileType(t, MP_RAILWAY)) {
+			if (GetRailTileType(t) == RAIL_TILE_SIGNALS) {
+				if (IsRestrictedSignal(t)) restricted_signals++;
+				if (HasSignalOnTrack(t, TRACK_LOWER) && GetSignalType(t, TRACK_LOWER) == SIGTYPE_PROG) prog_signals++;
+				if (HasSignalOnTrack(t, TRACK_UPPER) && GetSignalType(t, TRACK_UPPER) == SIGTYPE_PROG) prog_signals++;
+			}
+		}
+
+		bool dual_rt = false;
+		RailType rt1 = GetTileRailType(t);
+		if (rt1 != INVALID_RAILTYPE) {
+			RailType rt2 = GetTileSecondaryRailTypeIfValid(t);
+			if (rt2 != INVALID_RAILTYPE && rt1 != rt2) {
+				dual_rail_type++;
+				dual_rt = true;
+			}
+		}
+
+		if (IsNormalRoadTile(t) && HasRoadWorks(t)) road_works++;
+
+		if (IsTileType(t, MP_TUNNELBRIDGE)) {
+			uint bucket = 0;
+			if (IsBridge(t)) bucket |= TBB_BRIDGE;
+			if (IsTunnelBridgeWithSignalSimulation(t)) {
+				bucket |= TBB_SIGNALLED;
+				if (IsTunnelBridgeSignalSimulationBidirectional(t)) bucket |= TBB_SIGNALLED_BIDI;
+			}
+			if (GetTunnelBridgeTransportType(t) == TRANSPORT_ROAD) {
+				if (HasTileRoadType(t, RTT_ROAD)) bucket |= TBB_ROAD;
+				if (HasTileRoadType(t, RTT_TRAM)) bucket |= TBB_TRAM;
+			}
+			if (GetTunnelBridgeTransportType(t) == TRANSPORT_RAIL) bucket |= TBB_RAIL;
+			if (GetTunnelBridgeTransportType(t) == TRANSPORT_WATER) bucket |= TBB_WATER;
+			if (IsCustomBridgeHeadTile(t)) bucket |= TBB_CUSTOM_HEAD;
+			if (dual_rt) bucket |= TBB_DUAL_RT;
+			tunnel_bridge_stats[bucket]++;
+		}
+	}
+
+	for (uint type = 0; type < 16; type++) {
+		if (tile_types[type]) b += seprintf(b, last, "%-20s %20u\n", tile_type_names[type], tile_types[type]);
+	}
+
+	b += seprintf(b, last, "\n");
+
+	if (restricted_signals) b += seprintf(b, last, "restricted signals   %20u\n", restricted_signals);
+	if (prog_signals)       b += seprintf(b, last, "prog signals         %20u\n", prog_signals);
+	if (dual_rail_type)     b += seprintf(b, last, "dual rail type       %20u\n", dual_rail_type);
+	if (road_works)         b += seprintf(b, last, "road works           %20u\n", road_works);
+
+	for (auto it : tunnel_bridge_stats) {
+		b = strecpy(b, it.first & TBB_BRIDGE ? "bridge" : "tunnel", last, true);
+		if (it.first & TBB_ROAD) b = strecpy(b, ", road", last, true);
+		if (it.first & TBB_TRAM) b = strecpy(b, ", tram", last, true);
+		if (it.first & TBB_RAIL) b = strecpy(b, ", rail", last, true);
+		if (it.first & TBB_WATER) b = strecpy(b, ", water", last, true);
+		if (it.first & TBB_CUSTOM_HEAD) b = strecpy(b, ", custom head", last, true);
+		if (it.first & TBB_DUAL_RT) b = strecpy(b, ", dual rail type", last, true);
+		if (it.first & TBB_SIGNALLED) b = strecpy(b, ", signalled", last, true);
+		if (it.first & TBB_SIGNALLED_BIDI) b = strecpy(b, ", bidi", last, true);
+		b += seprintf(b, last, ": %u\n", it.second);
+	}
 }

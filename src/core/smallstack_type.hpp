@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -13,7 +11,6 @@
 #define SMALLSTACK_TYPE_HPP
 
 #include "smallvec_type.hpp"
-#include "../thread/thread.h"
 
 /**
  * A simplified pool which stores values instead of pointers and doesn't
@@ -23,15 +20,7 @@
 template<typename Titem, typename Tindex, Tindex Tgrowth_step, Tindex Tmax_size>
 class SimplePool {
 public:
-	inline SimplePool() : first_unused(0), first_free(0), mutex(ThreadMutex::New()) {}
-	inline ~SimplePool() { delete this->mutex; }
-
-	/**
-	 * Get the mutex. We don't lock the mutex in the pool methods as the
-	 * SmallStack isn't necessarily in a consistent state after each method.
-	 * @return Mutex.
-	 */
-	inline ThreadMutex *GetMutex() { return this->mutex; }
+	inline SimplePool() : first_unused(0), first_free(0) {}
 
 	/**
 	 * Get the item at position index.
@@ -49,7 +38,7 @@ public:
 		if (index < Tmax_size) {
 			this->data[index].valid = true;
 			this->first_free = index + 1;
-			this->first_unused = max(this->first_unused, this->first_free);
+			this->first_unused = std::max(this->first_unused, this->first_free);
 		}
 		return index;
 	}
@@ -61,7 +50,7 @@ public:
 	inline void Destroy(Tindex index)
 	{
 		this->data[index].valid = false;
-		this->first_free = min(this->first_free, index);
+		this->first_free = std::min(this->first_free, index);
 	}
 
 private:
@@ -73,8 +62,8 @@ private:
 			if (!this->data[index].valid) return index;
 		}
 
-		if (index >= this->data.Length() && index < Tmax_size) {
-			this->data.Resize(index + 1);
+		if (index >= this->data.size() && index < Tmax_size) {
+			this->data.resize(index + 1);
 		}
 		return index;
 	}
@@ -86,8 +75,7 @@ private:
 	Tindex first_unused;
 	Tindex first_free;
 
-	ThreadMutex *mutex;
-	SmallVector<SimplePoolPoolItem, Tgrowth_step> data;
+	std::vector<SimplePoolPoolItem> data;
 };
 
 /**
@@ -106,6 +94,7 @@ struct SmallStackItem {
 	 */
 	inline SmallStackItem(const Titem &value, Tindex next) :
 		next(next), value(value) {}
+	SmallStackItem() = default;
 };
 
 /**
@@ -124,10 +113,8 @@ struct SmallStackItem {
  * 5. You can choose your own index type, so that you can align it with your
  *    value type. E.G. value types of 16 bits length like to be combined with
  *    index types of the same length.
- * 6. All accesses to the underlying pool are guarded by a mutex and atomic in
- *    the sense that the mutex stays locked until the pool has reacquired a
- *    consistent state. This means that even though a common data structure is
- *    used the SmallStack is still reentrant.
+ * 6. This data structure is only ever used from the main thread, so
+ *    accesses to the underlying pool are not guarded by locks.
  * @tparam Titem Value type to be used.
  * @tparam Tindex Index type to use for the pool.
  * @tparam Tinvalid Invalid item to keep at the bottom of each stack.
@@ -195,7 +182,6 @@ public:
 	inline void Push(const Titem &item)
 	{
 		if (this->value != Tinvalid) {
-			ThreadMutexLocker lock(SmallStack::GetPool().GetMutex());
 			Tindex new_item = SmallStack::GetPool().Create();
 			if (new_item != Tmax_size) {
 				PooledSmallStack &pushed = SmallStack::GetPool().Get(new_item);
@@ -218,14 +204,12 @@ public:
 		if (this->next == Tmax_size) {
 			this->value = Tinvalid;
 		} else {
-			ThreadMutexLocker lock(SmallStack::GetPool().GetMutex());
 			PooledSmallStack &popped = SmallStack::GetPool().Get(this->next);
 			this->value = popped.value;
 			if (popped.branch_count == 0) {
 				SmallStack::GetPool().Destroy(this->next);
 			} else {
 				--popped.branch_count;
-				/* We can't use Branch() here as we already have the mutex.*/
 				if (popped.next != Tmax_size) {
 					++(SmallStack::GetPool().Get(popped.next).branch_count);
 				}
@@ -257,7 +241,6 @@ public:
 	{
 		if (item == Tinvalid || item == this->value) return true;
 		if (this->next != Tmax_size) {
-			ThreadMutexLocker lock(SmallStack::GetPool().GetMutex());
 			const SmallStack *in_list = this;
 			do {
 				in_list = static_cast<const SmallStack *>(
@@ -281,7 +264,6 @@ protected:
 	inline void Branch()
 	{
 		if (this->next != Tmax_size) {
-			ThreadMutexLocker lock(SmallStack::GetPool().GetMutex());
 			++(SmallStack::GetPool().Get(this->next).branch_count);
 		}
 	}

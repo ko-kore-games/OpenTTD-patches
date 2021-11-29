@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -23,14 +21,14 @@ class Text : public ScriptObject {
 public:
 	/**
 	 * Convert a ScriptText to a normal string.
-	 * @return A string (in a static buffer), or NULL.
+	 * @return A string (in a static buffer), or nullptr.
 	 * @api -all
 	 */
 	virtual const char *GetEncodedText() = 0;
 
 	/**
 	 * Convert a #ScriptText into a decoded normal string.
-	 * @return A string (in a static buffer), or NULL.
+	 * @return A string (in a static buffer), or nullptr.
 	 * @api -all
 	 */
 	const char *GetDecodedText();
@@ -45,7 +43,7 @@ public:
 	RawText(const char *text);
 	~RawText();
 
-	/* virtual */ const char *GetEncodedText() { return this->text; }
+	const char *GetEncodedText() override { return this->text; }
 private:
 	const char *text;
 };
@@ -73,7 +71,7 @@ private:
  *
  * @api game
  */
-class ScriptText : public Text , public ZeroedMemoryAllocator {
+class ScriptText : public Text {
 public:
 	static const int SCRIPT_TEXT_MAX_PARAMETERS = 20; ///< The maximum amount of parameters you can give to one object.
 
@@ -90,7 +88,7 @@ public:
 	 * @param ... Optional arguments for this string.
 	 */
 	ScriptText(StringID string, ...);
-#endif
+#endif /* DOXYGEN_API */
 	~ScriptText();
 
 #ifndef DOXYGEN_API

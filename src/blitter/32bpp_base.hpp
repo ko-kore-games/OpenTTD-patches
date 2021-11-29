@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -20,19 +18,21 @@
 /** Base for all 32bpp blitters. */
 class Blitter_32bppBase : public Blitter {
 public:
-	/* virtual */ uint8 GetScreenDepth() { return 32; }
-	/* virtual */ void *MoveTo(void *video, int x, int y);
-	/* virtual */ void SetPixel(void *video, int x, int y, uint8 colour);
-	/* virtual */ void DrawLine(void *video, int x, int y, int x2, int y2, int screen_width, int screen_height, uint8 colour, int width, int dash);
-	/* virtual */ void DrawRect(void *video, int width, int height, uint8 colour);
-	/* virtual */ void CopyFromBuffer(void *video, const void *src, int width, int height);
-	/* virtual */ void CopyToBuffer(const void *video, void *dst, int width, int height);
-	/* virtual */ void CopyImageToBuffer(const void *video, void *dst, int width, int height, int dst_pitch);
-	/* virtual */ void ScrollBuffer(void *video, int &left, int &top, int &width, int &height, int scroll_x, int scroll_y);
-	/* virtual */ int BufferSize(int width, int height);
-	/* virtual */ void PaletteAnimate(const Palette &palette);
-	/* virtual */ Blitter::PaletteAnimation UsePaletteAnimation();
-	/* virtual */ int GetBytesPerPixel() { return 4; }
+	uint8 GetScreenDepth() override { return 32; }
+	void *MoveTo(void *video, int x, int y) override;
+	void SetPixel(void *video, int x, int y, uint8 colour) override;
+	void DrawLine(void *video, int x, int y, int x2, int y2, int screen_width, int screen_height, uint8 colour, int width, int dash) override;
+	void SetRect(void *video, int x, int y, const uint8 *colours, uint lines, uint width, uint pitch) override;
+	void SetRect32(void *video, int x, int y, const uint32 *colours, uint lines, uint width, uint pitch) override;
+	void DrawRect(void *video, int width, int height, uint8 colour) override;
+	void CopyFromBuffer(void *video, const void *src, int width, int height) override;
+	void CopyToBuffer(const void *video, void *dst, int width, int height) override;
+	void CopyImageToBuffer(const void *video, void *dst, int width, int height, int dst_pitch) override;
+	void ScrollBuffer(void *video, int left, int top, int width, int height, int scroll_x, int scroll_y) override;
+	int BufferSize(int width, int height) override;
+	void PaletteAnimate(const Palette &palette) override;
+	Blitter::PaletteAnimation UsePaletteAnimation() override;
+	int GetBytesPerPixel() override { return 4; }
 
 	/**
 	 * Look up the colour in the current palette.
@@ -127,6 +127,18 @@ public:
 	}
 
 	/**
+	 * Make a colour dark grey, for specialized 32bpp remapping.
+	 * @param colour the colour to make dark.
+	 * @return the new colour, now darker.
+	 */
+	static inline Colour MakeDark(Colour colour)
+	{
+		uint8 d = MakeDark(colour.r, colour.g, colour.b);
+
+		return Colour(d, d, d);
+	}
+
+	/**
 	 * Make a colour grey - based.
 	 * @param colour the colour to make grey.
 	 * @return the new colour, now grey.
@@ -152,9 +164,19 @@ public:
 	static inline Colour AdjustBrightness(Colour colour, uint8 brightness)
 	{
 		/* Shortcut for normal brightness */
-		if (brightness == DEFAULT_BRIGHTNESS) return colour;
+		if (likely(brightness == DEFAULT_BRIGHTNESS)) return colour;
 
 		return ReallyAdjustBrightness(colour, brightness);
+	}
+
+	static inline uint8 GetColourBrightness(Colour colour)
+	{
+		uint8 rgb_max = std::max(colour.r, std::max(colour.g, colour.b));
+
+		/* Black pixel (8bpp or old 32bpp image), so use default value */
+		if (rgb_max == 0) rgb_max = DEFAULT_BRIGHTNESS;
+
+		return rgb_max;
 	}
 };
 

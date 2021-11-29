@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -13,10 +11,14 @@
 #define REV_H
 
 extern const char _openttd_revision[];
+extern const char _openttd_release_version[];
 extern const char _openttd_build_date[];
 extern const char _openttd_revision_hash[];
+extern const char _openttd_revision_year[];
+extern const char _openttd_build_configure_defines[];
 extern const byte _openttd_revision_modified;
 extern const byte _openttd_revision_tagged;
+extern const char _openttd_content_version[];
 extern const uint32 _openttd_newgrf_version;
 
 bool IsReleasedVersion();

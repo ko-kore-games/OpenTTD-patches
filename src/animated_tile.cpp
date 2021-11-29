@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -10,16 +8,19 @@
 /** @file animated_tile.cpp Everything related to animated tiles. */
 
 #include "stdafx.h"
+#include "animated_tile.h"
 #include "core/alloc_func.hpp"
 #include "core/smallvec_type.hpp"
 #include "tile_cmd.h"
 #include "viewport_func.h"
 #include "framerate_type.h"
+#include "date_func.h"
+#include "3rdparty/cpp-btree/btree_map.h"
 
 #include "safeguards.h"
 
 /** The table/list with animated tiles. */
-SmallVector<TileIndex, 256> _animated_tiles;
+btree::btree_map<TileIndex, AnimatedTileInfo> _animated_tiles;
 
 /**
  * Removes the given tile from the animated tile table.
@@ -27,11 +28,40 @@ SmallVector<TileIndex, 256> _animated_tiles;
  */
 void DeleteAnimatedTile(TileIndex tile)
 {
-	TileIndex *to_remove = _animated_tiles.Find(tile);
-	if (to_remove != _animated_tiles.End()) {
-		/* The order of the remaining elements must stay the same, otherwise the animation loop may miss a tile. */
-		_animated_tiles.ErasePreservingOrder(to_remove);
-		MarkTileDirtyByTile(tile);
+	auto to_remove = _animated_tiles.find(tile);
+	if (to_remove != _animated_tiles.end() && !to_remove->second.pending_deletion) {
+		to_remove->second.pending_deletion = true;
+		MarkTileDirtyByTile(tile, VMDF_NOT_MAP_MODE);
+	}
+}
+
+static void UpdateAnimatedTileSpeed(TileIndex tile, AnimatedTileInfo &info)
+{
+	extern uint8 GetAnimatedTileSpeed_Town(TileIndex tile);
+	extern uint8 GetAnimatedTileSpeed_Station(TileIndex tile);
+	extern uint8 GetAnimatedTileSpeed_Industry(TileIndex tile);
+	extern uint8 GetNewObjectTileAnimationSpeed(TileIndex tile);
+
+	switch (GetTileType(tile)) {
+		case MP_HOUSE:
+			info.speed = GetAnimatedTileSpeed_Town(tile);
+			break;
+
+		case MP_STATION:
+			info.speed = GetAnimatedTileSpeed_Station(tile);
+			break;
+
+		case MP_INDUSTRY:
+			info.speed = GetAnimatedTileSpeed_Industry(tile);
+			break;
+
+		case MP_OBJECT:
+			info.speed = GetNewObjectTileAnimationSpeed(tile);
+			break;
+
+		default:
+			info.speed = 0;
+			break;
 	}
 }
 
@@ -42,8 +72,19 @@ void DeleteAnimatedTile(TileIndex tile)
  */
 void AddAnimatedTile(TileIndex tile)
 {
-	MarkTileDirtyByTile(tile);
-	_animated_tiles.Include(tile);
+	MarkTileDirtyByTile(tile, VMDF_NOT_MAP_MODE);
+	AnimatedTileInfo &info = _animated_tiles[tile];
+	UpdateAnimatedTileSpeed(tile, info);
+	info.pending_deletion = false;
+}
+
+int GetAnimatedTileSpeed(TileIndex tile)
+{
+	const auto iter = _animated_tiles.find(tile);
+	if (iter != _animated_tiles.end() && !iter->second.pending_deletion) {
+		return iter->second.speed;
+	}
+	return -1;
 }
 
 /**
@@ -51,22 +92,60 @@ void AddAnimatedTile(TileIndex tile)
  */
 void AnimateAnimatedTiles()
 {
+	extern void AnimateTile_Town(TileIndex tile);
+	extern void AnimateTile_Station(TileIndex tile);
+	extern void AnimateTile_Industry(TileIndex tile);
+	extern void AnimateTile_Object(TileIndex tile);
+
 	PerformanceAccumulator framerate(PFE_GL_LANDSCAPE);
 
-	const TileIndex *ti = _animated_tiles.Begin();
-	while (ti < _animated_tiles.End()) {
-		const TileIndex curr = *ti;
-		AnimateTile(curr);
-		/* During the AnimateTile call, DeleteAnimatedTile could have been called,
-		 * deleting an element we've already processed and pushing the rest one
-		 * slot to the left. We can detect this by checking whether the index
-		 * in the current slot has changed - if it has, an element has been deleted,
-		 * and we should process the current slot again instead of going forward.
-		 * NOTE: this will still break if more than one animated tile is being
-		 *       deleted during the same AnimateTile call, but no code seems to
-		 *       be doing this anyway.
-		 */
-		if (*ti == curr) ++ti;
+	const uint32 ticks = (uint) _scaled_tick_counter;
+	const uint8 max_speed = (ticks == 0) ? 32 : FindFirstBit(ticks);
+
+	auto iter = _animated_tiles.begin();
+	while (iter != _animated_tiles.end()) {
+		if (iter->second.pending_deletion) {
+			iter = _animated_tiles.erase(iter);
+			continue;
+		}
+
+		if (iter->second.speed <= max_speed) {
+			const TileIndex curr = iter->first;
+			switch (GetTileType(curr)) {
+				case MP_HOUSE:
+					AnimateTile_Town(curr);
+					break;
+
+				case MP_STATION:
+					AnimateTile_Station(curr);
+					break;
+
+				case MP_INDUSTRY:
+					AnimateTile_Industry(curr);
+					break;
+
+				case MP_OBJECT:
+					AnimateTile_Object(curr);
+					break;
+
+				default:
+					NOT_REACHED();
+			}
+		}
+		++iter;
+	}
+}
+
+void UpdateAllAnimatedTileSpeeds()
+{
+	auto iter = _animated_tiles.begin();
+	while (iter != _animated_tiles.end()) {
+		if (iter->second.pending_deletion) {
+			iter = _animated_tiles.erase(iter);
+			continue;
+		}
+		UpdateAnimatedTileSpeed(iter->first, iter->second);
+		++iter;
 	}
 }
 
@@ -75,5 +154,5 @@ void AnimateAnimatedTiles()
  */
 void InitializeAnimatedTiles()
 {
-	_animated_tiles.Clear();
+	_animated_tiles.clear();
 }

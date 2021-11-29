@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,10 +12,14 @@
 
 #include "cargotype.h"
 #include "rail_type.h"
+#include "road_type.h"
 #include "fileio_type.h"
+#include "debug.h"
 #include "core/bitmath_func.hpp"
 #include "core/alloc_type.hpp"
 #include "core/smallvec_type.hpp"
+#include "3rdparty/cpp-btree/btree_map.h"
+#include <bitset>
 
 /**
  * List of different canal 'features'.
@@ -83,9 +85,12 @@ enum GrfSpecFeature {
 	GSF_OBJECTS,
 	GSF_RAILTYPES,
 	GSF_AIRPORTTILES,
+	GSF_ROADTYPES,
+	GSF_TRAMTYPES,
 	GSF_END,
 
 	GSF_FAKE_TOWNS = GSF_END, ///< Fake town GrfSpecFeature for NewGRF debugging (parent scope)
+	GSF_FAKE_STATION_STRUCT,  ///< Fake station struct GrfSpecFeature for NewGRF debugging
 	GSF_FAKE_END,             ///< End of the fake features
 
 	GSF_INVALID = 0xFF,       ///< An invalid spec feature
@@ -98,6 +103,142 @@ struct GRFLabel {
 	uint32 nfo_line;
 	size_t pos;
 	struct GRFLabel *next;
+};
+
+enum Action0RemapPropertyIds {
+	A0RPI_CHECK_PROPERTY_LENGTH = 0x10000,
+	A0RPI_UNKNOWN_IGNORE = 0x200,
+	A0RPI_UNKNOWN_ERROR,
+
+	A0RPI_STATION_MIN_BRIDGE_HEIGHT,
+	A0RPI_STATION_DISALLOWED_BRIDGE_PILLARS,
+	A0RPI_BRIDGE_MENU_ICON,
+	A0RPI_BRIDGE_PILLAR_FLAGS,
+	A0RPI_BRIDGE_AVAILABILITY_FLAGS,
+	A0RPI_RAILTYPE_ENABLE_PROGRAMMABLE_SIGNALS,
+	A0RPI_RAILTYPE_ENABLE_NO_ENTRY_SIGNALS,
+	A0RPI_RAILTYPE_ENABLE_RESTRICTED_SIGNALS,
+	A0RPI_RAILTYPE_DISABLE_REALISTIC_BRAKING,
+	A0RPI_RAILTYPE_ENABLE_SIGNAL_RECOLOUR,
+	A0RPI_RAILTYPE_EXTRA_ASPECTS,
+	A0RPI_ROADTYPE_EXTRA_FLAGS,
+	A0RPI_GLOBALVAR_EXTRA_STATION_NAMES,
+	A0RPI_SIGNALS_ENABLE_PROGRAMMABLE_SIGNALS,
+	A0RPI_SIGNALS_ENABLE_NO_ENTRY_SIGNALS,
+	A0RPI_SIGNALS_ENABLE_RESTRICTED_SIGNALS,
+	A0RPI_SIGNALS_ENABLE_SIGNAL_RECOLOUR,
+	A0RPI_SIGNALS_EXTRA_ASPECTS,
+};
+
+enum GRFPropertyMapFallbackMode {
+	GPMFM_IGNORE,
+	GPMFM_ERROR_ON_USE,
+	GPMFM_ERROR_ON_DEFINITION,
+	GPMFM_END,
+};
+
+struct GRFPropertyMapDefinition {
+	const char *name; // nullptr indicates the end of the list
+	int id;
+	uint8 feature;
+
+	/** Create empty object used to identify the end of a list. */
+	GRFPropertyMapDefinition() :
+		name(nullptr),
+		id(0),
+		feature(0)
+	{}
+
+	GRFPropertyMapDefinition(uint8 feature, int id, const char *name) :
+		name(name),
+		id(id),
+		feature(feature)
+	{}
+};
+
+struct GRFFilePropertyRemapEntry {
+	const char *name = nullptr;
+	int id = 0;
+	uint8 feature = 0;
+	uint8 property_id = 0;
+};
+
+struct GRFFilePropertyRemapSet {
+	std::bitset<256> remapped_ids;
+	btree::btree_map<uint8, GRFFilePropertyRemapEntry> mapping;
+
+	GRFFilePropertyRemapEntry &Entry(uint8 property)
+	{
+		this->remapped_ids.set(property);
+		return this->mapping[property];
+	}
+};
+
+/** The type of action 5 type. */
+enum Action5BlockType {
+	A5BLOCK_FIXED,                ///< Only allow replacing a whole block of sprites. (TTDP compatible)
+	A5BLOCK_ALLOW_OFFSET,         ///< Allow replacing any subset by specifiing an offset.
+	A5BLOCK_INVALID,              ///< unknown/not-implemented type
+};
+/** Information about a single action 5 type. */
+struct Action5Type {
+	Action5BlockType block_type;  ///< How is this Action5 type processed?
+	SpriteID sprite_base;         ///< Load the sprites starting from this sprite.
+	uint16 min_sprites;           ///< If the Action5 contains less sprites, the whole block will be ignored.
+	uint16 max_sprites;           ///< If the Action5 contains more sprites, only the first max_sprites sprites will be used.
+	const char *name;             ///< Name for error messages.
+};
+
+struct Action5TypeRemapDefinition {
+	const char *name; // nullptr indicates the end of the list
+	const Action5Type info;
+
+	/** Create empty object used to identify the end of a list. */
+	Action5TypeRemapDefinition() :
+		name(nullptr),
+		info({ A5BLOCK_INVALID, 0, 0, 0, nullptr })
+	{}
+
+	Action5TypeRemapDefinition(const char *type_name, Action5BlockType block_type, SpriteID sprite_base, uint16 min_sprites, uint16 max_sprites, const char *info_name) :
+		name(type_name),
+		info({ block_type, sprite_base, min_sprites, max_sprites, info_name })
+	{}
+};
+
+struct Action5TypeRemapEntry {
+	const Action5Type *info = nullptr;
+	const char *name = nullptr;
+	uint8 type_id = 0;
+	GRFPropertyMapFallbackMode fallback_mode = GPMFM_IGNORE;
+};
+
+struct Action5TypeRemapSet {
+	std::bitset<256> remapped_ids;
+	btree::btree_map<uint8, Action5TypeRemapEntry> mapping;
+
+	Action5TypeRemapEntry &Entry(uint8 property)
+	{
+		this->remapped_ids.set(property);
+		return this->mapping[property];
+	}
+};
+
+/** New signal control flags. */
+enum NewSignalCtrlFlags {
+	NSCF_GROUPSET               = 0,                          ///< Custom signal sprites group set.
+	NSCF_PROGSIG                = 1,                          ///< Custom signal sprites enabled for programmable pre-signals.
+	NSCF_RESTRICTEDSIG          = 2,                          ///< Custom signal sprite flag enabled for restricted signals.
+	NSCF_RECOLOUR_ENABLED       = 3,                          ///< Recolour sprites enabled
+	NSCF_NOENTRYSIG             = 4,                          ///< Custom signal sprites enabled for no-entry signals.
+};
+
+enum {
+	NEW_SIGNALS_MAX_EXTRA_ASPECT = 6,
+};
+
+/** New signal control flags. */
+enum NewSignalAction3ID {
+	NSA3ID_CUSTOM_SIGNALS       = 0,                          ///< Action 3 ID for custom signal sprites
 };
 
 /** Dynamic data of a loaded NewGRF */
@@ -117,26 +258,43 @@ struct GRFFile : ZeroedMemoryAllocator {
 	struct AirportSpec **airportspec;
 	struct AirportTileSpec **airtspec;
 
+	GRFFilePropertyRemapSet action0_property_remaps[GSF_END];
+	Action5TypeRemapSet action5_type_remaps;
+	std::vector<std::unique_ptr<const char, FreeDeleter>> remap_unknown_property_names;
+
 	uint32 param[0x80];
 	uint param_end;  ///< one more than the highest set parameter
 
 	GRFLabel *label; ///< Pointer to the first label. This is a linked list, not an array.
 
-	SmallVector<CargoLabel, 4> cargo_list;          ///< Cargo translation table (local ID -> label)
+	std::vector<CargoLabel> cargo_list;             ///< Cargo translation table (local ID -> label)
 	uint8 cargo_map[NUM_CARGO];                     ///< Inverse cargo translation table (CargoID -> local ID)
 
-	SmallVector<RailTypeLabel, 4> railtype_list;    ///< Railtype translation table
-	RailTypeByte railtype_map[RAILTYPE_END];
+	std::vector<RailTypeLabel> railtype_list;       ///< Railtype translation table
+	RailType railtype_map[RAILTYPE_END];
+
+	std::vector<RoadTypeLabel> roadtype_list;       ///< Roadtype translation table (road)
+	RoadType roadtype_map[ROADTYPE_END];
+
+	std::vector<RoadTypeLabel> tramtype_list;       ///< Roadtype translation table (tram)
+	RoadType tramtype_map[ROADTYPE_END];
 
 	CanalProperties canal_local_properties[CF_END]; ///< Canal properties as set by this NewGRF
 
 	struct LanguageMap *language_map; ///< Mappings related to the languages.
 
-	int traininfo_vehicle_pitch;  ///< Vertical offset for draing train images in depot GUI and vehicle details
+	int traininfo_vehicle_pitch;  ///< Vertical offset for drawing train images in depot GUI and vehicle details
 	uint traininfo_vehicle_width; ///< Width (in pixels) of a 8/8 train vehicle in depot GUI and vehicle details
 
 	uint32 grf_features;                     ///< Bitset of GrfSpecFeature the grf uses
 	PriceMultipliers price_base_multipliers; ///< Price base multipliers as set by the grf.
+
+	uint32 var8D_overlay;                    ///< Overlay for global variable 8D (action 0x14)
+	uint32 var9D_overlay;                    ///< Overlay for global variable 9D (action 0x14)
+
+	const SpriteGroup *new_signals_group;    ///< New signals sprite group
+	byte new_signal_ctrl_flags;              ///< Ctrl flags for new signals
+	byte new_signal_extra_aspects;           ///< Number of extra aspects for new signals
 
 	GRFFile(const struct GRFConfig *config);
 	~GRFFile();
@@ -158,12 +316,17 @@ enum ShoreReplacement {
 	SHORE_REPLACE_ONLY_NEW,   ///< Only corner-shores were loaded by Action5 (openttd(w/d).grf only).
 };
 
+enum TramReplacement {
+	TRAMWAY_REPLACE_DEPOT_NONE,       ///< No tram depot graphics were loaded.
+	TRAMWAY_REPLACE_DEPOT_WITH_TRACK, ///< Electrified depot graphics with tram track were loaded.
+	TRAMWAY_REPLACE_DEPOT_NO_TRACK,   ///< Electrified depot graphics without tram track were loaded.
+};
+
 struct GRFLoadedFeatures {
 	bool has_2CC;             ///< Set if any vehicle is loaded which uses 2cc (two company colours).
 	uint64 used_liveries;     ///< Bitmask of #LiveryScheme used by the defined engines.
-	bool has_newhouses;       ///< Set if there are any newhouses loaded.
-	bool has_newindustries;   ///< Set if there are any newindustries loaded.
-	ShoreReplacement shore;   ///< It which way shore sprites were replaced.
+	ShoreReplacement shore;   ///< In which way shore sprites were replaced.
+	TramReplacement tram;     ///< In which way tram depots were replaced.
 };
 
 /**
@@ -180,19 +343,21 @@ static inline bool HasGrfMiscBit(GrfMiscBit bit)
 /* Indicates which are the newgrf features currently loaded ingame */
 extern GRFLoadedFeatures _loaded_newgrf_features;
 
-byte GetGRFContainerVersion();
-
-void LoadNewGRFFile(struct GRFConfig *config, uint file_index, GrfLoadingStage stage, Subdirectory subdir);
-void LoadNewGRF(uint load_index, uint file_index, uint num_baseset);
+void LoadNewGRFFile(struct GRFConfig *config, GrfLoadingStage stage, Subdirectory subdir, bool temporary);
+void LoadNewGRF(uint load_index, uint num_baseset);
 void ReloadNewGRFData(); // in saveload/afterload.cpp
 void ResetNewGRFData();
 void ResetPersistentNewGRFData();
 
-void CDECL grfmsg(int severity, const char *str, ...) WARN_FORMAT(2, 3);
+#define grfmsg(severity, ...) if ((severity) == 0 || _debug_grf_level >= (severity)) _intl_grfmsg(severity, __VA_ARGS__)
+void CDECL _intl_grfmsg(int severity, const char *str, ...) WARN_FORMAT(2, 3);
 
 bool GetGlobalVariable(byte param, uint32 *value, const GRFFile *grffile);
 
 StringID MapGRFStringID(uint32 grfid, StringID str);
 void ShowNewGRFError();
+uint CountSelectedGRFs(GRFConfig *grfconf);
+
+struct TemplateVehicle;
 
 #endif /* NEWGRF_H */

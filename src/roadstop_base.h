@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,6 +14,8 @@
 #include "core/pool_type.hpp"
 #include "core/bitmath_func.hpp"
 #include "vehicle_type.h"
+#include "roadveh.h"
+#include "road_map.h"
 
 typedef Pool<RoadStop, RoadStopID, 32, 64000> RoadStopPool;
 extern RoadStopPool _roadstop_pool;
@@ -136,8 +136,19 @@ struct RoadStop : RoadStopPool::PoolItem<&_roadstop_pool> {
 		return HasBit((int)dir, 1) ? this->west : this->east;
 	}
 
+	inline const Entry *GetEntry(const RoadVehicle *rv) const {
+		DiagDirection diag_dir = DirToDiagDir(rv->direction);
+		return this->GetEntry(rv->overtaking != 0 ? ReverseDiagDir(diag_dir) : diag_dir);
+	}
+
+	inline Entry *GetEntry(const RoadVehicle *rv) {
+		DiagDirection diag_dir = DirToDiagDir(rv->direction);
+		return this->GetEntry(rv->overtaking != 0 ? ReverseDiagDir(diag_dir) : diag_dir);
+	}
+
 	void MakeDriveThrough();
 	void ClearDriveThrough();
+	void ChangeDriveThroughDisallowedRoadDirections(DisallowedRoadDirections drd);
 
 	void Leave(RoadVehicle *rv);
 	bool Enter(RoadVehicle *rv);
@@ -189,8 +200,5 @@ private:
 		SetBit(this->status, nr);
 	}
 };
-
-#define FOR_ALL_ROADSTOPS_FROM(var, start) FOR_ALL_ITEMS_FROM(RoadStop, roadstop_index, var, start)
-#define FOR_ALL_ROADSTOPS(var) FOR_ALL_ROADSTOPS_FROM(var, 0)
 
 #endif /* ROADSTOP_BASE_H */

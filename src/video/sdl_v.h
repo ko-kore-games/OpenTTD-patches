@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,29 +15,31 @@
 /** The SDL video driver. */
 class VideoDriver_SDL : public VideoDriver {
 public:
-	/* virtual */ const char *Start(const char * const *param);
+	const char *Start(const StringList &param) override;
 
-	/* virtual */ void Stop();
+	void Stop() override;
 
-	/* virtual */ void MakeDirty(int left, int top, int width, int height);
+	void MakeDirty(int left, int top, int width, int height) override;
 
-	/* virtual */ void MainLoop();
+	void MainLoop() override;
 
-	/* virtual */ bool ChangeResolution(int w, int h);
+	bool ChangeResolution(int w, int h) override;
 
-	/* virtual */ bool ToggleFullscreen(bool fullscreen);
+	bool ToggleFullscreen(bool fullscreen) override;
 
-	/* virtual */ bool AfterBlitterChange();
+	bool AfterBlitterChange() override;
 
-	/* virtual */ void AcquireBlitterLock();
+	bool ClaimMousePointer() override;
 
-	/* virtual */ void ReleaseBlitterLock();
+	const char *GetName() const override { return "sdl"; }
 
-	/* virtual */ bool ClaimMousePointer();
+protected:
+	void InputLoop() override;
+	void Paint() override;
+	void CheckPaletteAnim() override;
+	bool PollEvent() override;
 
-	/* virtual */ const char *GetName() const { return "sdl"; }
 private:
-	int PollEvent();
 	bool CreateMainSurface(uint w, uint h);
 	void SetupKeyboard();
 };
@@ -48,7 +48,7 @@ private:
 class FVideoDriver_SDL : public DriverFactoryBase {
 public:
 	FVideoDriver_SDL() : DriverFactoryBase(Driver::DT_VIDEO, 5, "sdl", "SDL Video Driver") {}
-	/* virtual */ Driver *CreateInstance() const { return new VideoDriver_SDL(); }
+	Driver *CreateInstance() const override { return new VideoDriver_SDL(); }
 };
 
 #endif /* VIDEO_SDL_H */

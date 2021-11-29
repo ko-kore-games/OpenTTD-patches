@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -12,9 +10,11 @@
 #ifndef RANDOM_FUNC_HPP
 #define RANDOM_FUNC_HPP
 
+#include "bitmath_func.hpp"
+
 #if defined(__APPLE__)
 	/* Apple already has Random declared */
-	#define Random OTTD_Random
+#	define Random OTTD_Random
 #endif /* __APPLE__ */
 
 /**
@@ -49,7 +49,7 @@ static inline void SaveRandomSeeds(SavedRandomSeeds *storage)
 
 /**
  * Restores previously saved seeds
- * @param storage Storage where SaveRandomSeeds() stored th seeds
+ * @param storage Storage where SaveRandomSeeds() stored the seeds
  */
 static inline void RestoreRandomSeeds(const SavedRandomSeeds &storage)
 {
@@ -57,15 +57,31 @@ static inline void RestoreRandomSeeds(const SavedRandomSeeds &storage)
 	_interactive_random = storage.interactive_random;
 }
 
+struct GameRandomSeedChecker {
+private:
+	Randomizer random;
+
+public:
+	GameRandomSeedChecker()
+	{
+		this->random = _random;
+	}
+
+	bool Check() const
+	{
+		return (this->random.state[0] == _random.state[0] && this->random.state[1] == _random.state[1]);
+	}
+};
+
 void SetRandomSeed(uint32 seed);
 #ifdef RANDOM_DEBUG
-	#ifdef __APPLE__
-		#define OTTD_Random() DoRandom(__LINE__, __FILE__)
-	#else
-		#define Random() DoRandom(__LINE__, __FILE__)
-	#endif
+#	ifdef __APPLE__
+#		define OTTD_Random() DoRandom(__LINE__, __FILE__)
+#	else
+#		define Random() DoRandom(__LINE__, __FILE__)
+#	endif
 	uint32 DoRandom(int line, const char *file);
-	#define RandomRange(limit) DoRandomRange(limit, __LINE__, __FILE__)
+#	define RandomRange(limit) DoRandomRange(limit, __LINE__, __FILE__)
 	uint32 DoRandomRange(uint32 limit, int line, const char *file);
 #else
 	static inline uint32 Random()
@@ -128,7 +144,7 @@ static inline bool Chance16I(const uint a, const uint b, const uint32 r)
  * @return True with (a/b) probability
  */
 #ifdef RANDOM_DEBUG
-	#define Chance16(a, b) Chance16I(a, b, DoRandom(__LINE__, __FILE__))
+#	define Chance16(a, b) Chance16I(a, b, DoRandom(__LINE__, __FILE__))
 #else
 static inline bool Chance16(const uint a, const uint b)
 {
@@ -152,7 +168,7 @@ static inline bool Chance16(const uint a, const uint b)
  * @return True in (a/b) percent
  */
 #ifdef RANDOM_DEBUG
-	#define Chance16R(a, b, r) (r = DoRandom(__LINE__, __FILE__), Chance16I(a, b, r))
+#	define Chance16R(a, b, r) (r = DoRandom(__LINE__, __FILE__), Chance16I(a, b, r))
 #else
 static inline bool Chance16R(const uint a, const uint b, uint32 &r)
 {

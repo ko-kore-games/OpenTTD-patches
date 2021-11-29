@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -31,6 +29,31 @@ void Blitter_32bppBase::DrawLine(void *video, int x, int y, int x2, int y2, int 
 	this->DrawLineGeneric(x, y, x2, y2, screen_width, screen_height, width, dash, [=](int x, int y) {
 		*((Colour *)video + x + y * _screen.pitch) = c;
 	});
+}
+
+void Blitter_32bppBase::SetRect(void *video, int x, int y, const uint8 *colours, uint lines, uint width, uint pitch)
+{
+	Colour *dst = (Colour *)video + x + y * _screen.pitch;
+	do {
+		uint w = width;
+		do {
+			*dst = LookupColourInPalette(*colours);
+			dst++;
+			colours++;
+		} while (--w);
+		dst += _screen.pitch - width;
+		colours += pitch - width;
+	} while (--lines);
+}
+
+void Blitter_32bppBase::SetRect32(void *video, int x, int y, const uint32 *colours, uint lines, uint width, uint pitch)
+{
+	uint32 *dst = (uint32 *)video + x + y * _screen.pitch;
+	do {
+		memcpy(dst, colours, width * sizeof(uint32));
+		dst += _screen.pitch;
+		colours += pitch;
+	} while (--lines);
 }
 
 void Blitter_32bppBase::DrawRect(void *video, int width, int height, uint8 colour)
@@ -83,7 +106,7 @@ void Blitter_32bppBase::CopyImageToBuffer(const void *video, void *dst, int widt
 	}
 }
 
-void Blitter_32bppBase::ScrollBuffer(void *video, int &left, int &top, int &width, int &height, int scroll_x, int scroll_y)
+void Blitter_32bppBase::ScrollBuffer(void *video, int left, int top, int width, int height, int scroll_x, int scroll_y)
 {
 	const uint32 *src;
 	uint32 *dst;
@@ -96,7 +119,7 @@ void Blitter_32bppBase::ScrollBuffer(void *video, int &left, int &top, int &widt
 		/* Decrease height and increase top */
 		top += scroll_y;
 		height -= scroll_y;
-		assert(height > 0);
+		assert_msg(height > 0, "%d, %d, %d, %d, %d, %d", left, top, width, height, scroll_x, scroll_y);
 
 		/* Adjust left & width */
 		if (scroll_x >= 0) {
@@ -120,7 +143,7 @@ void Blitter_32bppBase::ScrollBuffer(void *video, int &left, int &top, int &widt
 
 		/* Decrease height. (scroll_y is <=0). */
 		height += scroll_y;
-		assert(height > 0);
+		assert_msg(height > 0, "%d, %d, %d, %d, %d, %d", left, top, width, height, scroll_x, scroll_y);
 
 		/* Adjust left & width */
 		if (scroll_x >= 0) {
@@ -176,9 +199,9 @@ Colour Blitter_32bppBase::ReallyAdjustBrightness(Colour colour, uint8 brightness
 	/* Reduce overbright strength */
 	ob /= 2;
 	return Colour(
-		r >= 255 ? 255 : min(r + ob * (255 - r) / 256, 255),
-		g >= 255 ? 255 : min(g + ob * (255 - g) / 256, 255),
-		b >= 255 ? 255 : min(b + ob * (255 - b) / 256, 255),
+		r >= 255 ? 255 : std::min(r + ob * (255 - r) / 256, 255),
+		g >= 255 ? 255 : std::min(g + ob * (255 - g) / 256, 255),
+		b >= 255 ? 255 : std::min(b + ob * (255 - b) / 256, 255),
 		colour.a);
 }
 

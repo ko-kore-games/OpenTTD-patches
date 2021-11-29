@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -26,11 +24,18 @@
 #include "core/geometry_func.hpp"
 #include "newgrf_debug.h"
 #include "zoom_func.h"
+#include "tunnelbridge_map.h"
+#include "viewport_type.h"
 #include "guitimer_func.h"
+#include "viewport_func.h"
+#include "rev.h"
 
 #include "widgets/misc_widget.h"
 
 #include "table/strings.h"
+
+#include <sstream>
+#include <iomanip>
 
 #include "safeguards.h"
 
@@ -47,6 +52,7 @@ static const NWidgetPart _nested_land_info_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
 		NWidget(WWT_CAPTION, COLOUR_GREY), SetDataTip(STR_LAND_AREA_INFORMATION_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_PUSHIMGBTN, COLOUR_GREY, WID_LI_LOCATION), SetMinimalSize(12, 14), SetDataTip(SPR_GOTO_LOCATION, STR_LAND_AREA_INFORMATION_LOCATION_TOOLTIP),
 		NWidget(WWT_DEBUGBOX, COLOUR_GREY),
 	EndContainer(),
 	NWidget(WWT_PANEL, COLOUR_GREY, WID_LI_BACKGROUND), EndContainer(),
@@ -60,56 +66,46 @@ static WindowDesc _land_info_desc(
 );
 
 class LandInfoWindow : public Window {
-	enum LandInfoLines {
-		LAND_INFO_CENTERED_LINES   = 32,                       ///< Up to 32 centered lines (arbitrary limit)
-		LAND_INFO_MULTICENTER_LINE = LAND_INFO_CENTERED_LINES, ///< One multicenter line
-		LAND_INFO_LINE_END,
-	};
-
-	static const uint LAND_INFO_LINE_BUFF_SIZE = 512;
+	StringList  landinfo_data;    ///< Info lines to show.
+	std::string cargo_acceptance; ///< Centered multi-line string for cargo acceptance.
 
 public:
-	char landinfo_data[LAND_INFO_LINE_END][LAND_INFO_LINE_BUFF_SIZE];
 	TileIndex tile;
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_LI_BACKGROUND) return;
 
 		uint y = r.top + WD_TEXTPANEL_TOP;
-		for (uint i = 0; i < LAND_INFO_CENTERED_LINES; i++) {
-			if (StrEmpty(this->landinfo_data[i])) break;
-
+		for (size_t i = 0; i < this->landinfo_data.size(); i++) {
 			DrawString(r.left + WD_FRAMETEXT_LEFT, r.right - WD_FRAMETEXT_RIGHT, y, this->landinfo_data[i], i == 0 ? TC_LIGHT_BLUE : TC_FROMSTRING, SA_HOR_CENTER);
 			y += FONT_HEIGHT_NORMAL + WD_PAR_VSEP_NORMAL;
 			if (i == 0) y += 4;
 		}
 
-		if (!StrEmpty(this->landinfo_data[LAND_INFO_MULTICENTER_LINE])) {
-			SetDParamStr(0, this->landinfo_data[LAND_INFO_MULTICENTER_LINE]);
+		if (!this->cargo_acceptance.empty()) {
+			SetDParamStr(0, this->cargo_acceptance);
 			DrawStringMultiLine(r.left + WD_FRAMETEXT_LEFT, r.right - WD_FRAMETEXT_RIGHT, y, r.bottom - WD_TEXTPANEL_BOTTOM, STR_JUST_RAW_STRING, TC_FROMSTRING, SA_CENTER);
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget != WID_LI_BACKGROUND) return;
 
 		size->height = WD_TEXTPANEL_TOP + WD_TEXTPANEL_BOTTOM;
-		for (uint i = 0; i < LAND_INFO_CENTERED_LINES; i++) {
-			if (StrEmpty(this->landinfo_data[i])) break;
-
+		for (size_t i = 0; i < this->landinfo_data.size(); i++) {
 			uint width = GetStringBoundingBox(this->landinfo_data[i]).width + WD_FRAMETEXT_LEFT + WD_FRAMETEXT_RIGHT;
-			size->width = max(size->width, width);
+			size->width = std::max(size->width, width);
 
 			size->height += FONT_HEIGHT_NORMAL + WD_PAR_VSEP_NORMAL;
 			if (i == 0) size->height += 4;
 		}
 
-		if (!StrEmpty(this->landinfo_data[LAND_INFO_MULTICENTER_LINE])) {
-			uint width = GetStringBoundingBox(this->landinfo_data[LAND_INFO_MULTICENTER_LINE]).width + WD_FRAMETEXT_LEFT + WD_FRAMETEXT_RIGHT;
-			size->width = max(size->width, min(300u, width));
-			SetDParamStr(0, this->landinfo_data[LAND_INFO_MULTICENTER_LINE]);
+		if (!this->cargo_acceptance.empty()) {
+			uint width = GetStringBoundingBox(this->cargo_acceptance).width + WD_FRAMETEXT_LEFT + WD_FRAMETEXT_RIGHT;
+			size->width = std::max(size->width, std::min(300u, width));
+			SetDParamStr(0, cargo_acceptance);
 			size->height += GetStringHeight(STR_JUST_RAW_STRING, size->width - WD_FRAMETEXT_LEFT - WD_FRAMETEXT_RIGHT);
 		}
 	}
@@ -123,21 +119,38 @@ public:
 #else
 #	define LANDINFOD_LEVEL 1
 #endif
-		DEBUG(misc, LANDINFOD_LEVEL, "TILE: %#x (%i,%i)", tile, TileX(tile), TileY(tile));
-		DEBUG(misc, LANDINFOD_LEVEL, "type   = %#x", _m[tile].type);
-		DEBUG(misc, LANDINFOD_LEVEL, "height = %#x", _m[tile].height);
-		DEBUG(misc, LANDINFOD_LEVEL, "m1     = %#x", _m[tile].m1);
-		DEBUG(misc, LANDINFOD_LEVEL, "m2     = %#x", _m[tile].m2);
-		DEBUG(misc, LANDINFOD_LEVEL, "m3     = %#x", _m[tile].m3);
-		DEBUG(misc, LANDINFOD_LEVEL, "m4     = %#x", _m[tile].m4);
-		DEBUG(misc, LANDINFOD_LEVEL, "m5     = %#x", _m[tile].m5);
-		DEBUG(misc, LANDINFOD_LEVEL, "m6     = %#x", _me[tile].m6);
-		DEBUG(misc, LANDINFOD_LEVEL, "m7     = %#x", _me[tile].m7);
-		DEBUG(misc, LANDINFOD_LEVEL, "m8     = %#x", _me[tile].m8);
+		if (_debug_misc_level >= LANDINFOD_LEVEL) {
+			DEBUG(misc, LANDINFOD_LEVEL, "TILE: %#x (%i,%i)", tile, TileX(tile), TileY(tile));
+			if (IsTunnelTile(tile)) {
+				DEBUG(misc, LANDINFOD_LEVEL, "tunnel pool size: %u", (uint)Tunnel::GetPoolSize());
+				DEBUG(misc, LANDINFOD_LEVEL, "index: %#x"          , Tunnel::GetByTile(tile)->index);
+				DEBUG(misc, LANDINFOD_LEVEL, "north tile: %#x"     , Tunnel::GetByTile(tile)->tile_n);
+				DEBUG(misc, LANDINFOD_LEVEL, "south tile: %#x"     , Tunnel::GetByTile(tile)->tile_s);
+				DEBUG(misc, LANDINFOD_LEVEL, "is chunnel: %u"      , Tunnel::GetByTile(tile)->is_chunnel);
+			}
+			if (IsBridgeTile(tile)) {
+				const BridgeSpec *b = GetBridgeSpec(GetBridgeType(tile));
+				DEBUG(misc, LANDINFOD_LEVEL, "bridge: flags: %X, ctrl_flags: %X", b->flags, b->ctrl_flags);
+			}
+			if (IsBridgeAbove(tile)) {
+				BridgePieceDebugInfo info = GetBridgePieceDebugInfo(tile);
+				DEBUG(misc, LANDINFOD_LEVEL, "bridge above: piece: %u, pillars: %X, pillar index: %u", info.piece, info.pillar_flags, info.pillar_index);
+			}
+			DEBUG(misc, LANDINFOD_LEVEL, "type   = %#x", _m[tile].type);
+			DEBUG(misc, LANDINFOD_LEVEL, "height = %#x", _m[tile].height);
+			DEBUG(misc, LANDINFOD_LEVEL, "m1     = %#x", _m[tile].m1);
+			DEBUG(misc, LANDINFOD_LEVEL, "m2     = %#x", _m[tile].m2);
+			DEBUG(misc, LANDINFOD_LEVEL, "m3     = %#x", _m[tile].m3);
+			DEBUG(misc, LANDINFOD_LEVEL, "m4     = %#x", _m[tile].m4);
+			DEBUG(misc, LANDINFOD_LEVEL, "m5     = %#x", _m[tile].m5);
+			DEBUG(misc, LANDINFOD_LEVEL, "m6     = %#x", _me[tile].m6);
+			DEBUG(misc, LANDINFOD_LEVEL, "m7     = %#x", _me[tile].m7);
+			DEBUG(misc, LANDINFOD_LEVEL, "m8     = %#x", _me[tile].m8);
+		}
 #undef LANDINFOD_LEVEL
 	}
 
-	virtual void OnInit()
+	void OnInit() override
 	{
 		Town *t = ClosestTownFromTile(tile, _settings_game.economy.dist_local_authority);
 
@@ -165,21 +178,26 @@ public:
 		td.airport_name = STR_NULL;
 		td.airport_tile_name = STR_NULL;
 		td.railtype = STR_NULL;
+		td.railtype2 = STR_NULL;
 		td.rail_speed = 0;
+		td.rail_speed2 = 0;
+		td.roadtype = STR_NULL;
 		td.road_speed = 0;
+		td.tramtype = STR_NULL;
+		td.tram_speed = 0;
 
-		td.grf = NULL;
+		td.grf = nullptr;
 
 		CargoArray acceptance;
-		AddAcceptedCargo(tile, acceptance, NULL);
+		AddAcceptedCargo(tile, acceptance, nullptr);
 		GetTileDesc(tile, &td);
 
-		uint line_nr = 0;
+		this->landinfo_data.clear();
 
 		/* Tiletype */
 		SetDParam(0, td.dparam[0]);
-		GetString(this->landinfo_data[line_nr], td.str, lastof(this->landinfo_data[line_nr]));
-		line_nr++;
+		SetDParam(1, td.dparam[1]);
+		this->landinfo_data.push_back(GetString(td.str));
 
 		/* Up to four owners */
 		for (uint i = 0; i < 4; i++) {
@@ -187,14 +205,13 @@ public:
 
 			SetDParam(0, STR_LAND_AREA_INFORMATION_OWNER_N_A);
 			if (td.owner[i] != OWNER_NONE && td.owner[i] != OWNER_WATER) GetNameOfOwner(td.owner[i], tile);
-			GetString(this->landinfo_data[line_nr], td.owner_type[i], lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(td.owner_type[i]));
 		}
 
 		/* Cost to clear/revenue when cleared */
 		StringID str = STR_LAND_AREA_INFORMATION_COST_TO_CLEAR_N_A;
 		Company *c = Company::GetIfValid(_local_company);
-		if (c != NULL) {
+		if (c != nullptr) {
 			assert(_current_company == _local_company);
 			CommandCost costclear = DoCommand(tile, 0, 0, DC_QUERY_COST, CMD_LANDSCAPE_CLEAR);
 			if (costclear.Succeeded()) {
@@ -208,134 +225,166 @@ public:
 				SetDParam(0, cost);
 			}
 		}
-		GetString(this->landinfo_data[line_nr], str, lastof(this->landinfo_data[line_nr]));
-		line_nr++;
+		this->landinfo_data.push_back(GetString(str));
 
 		/* Location */
-		char tmp[16];
-		seprintf(tmp, lastof(tmp), "0x%.4X", tile);
+		std::stringstream tile_ss;
+		tile_ss << "0x" << std::setfill('0') << std::setw(4) << std::hex << std::uppercase << tile; // 0x%.4X
+		std::string tile_str = tile_ss.str(); // Can't pass it directly to SetDParamStr as the string is only a temporary and would be destructed before the GetString call.
+
 		SetDParam(0, TileX(tile));
 		SetDParam(1, TileY(tile));
 		SetDParam(2, GetTileZ(tile));
-		SetDParamStr(3, tmp);
-		GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_LANDINFO_COORDS, lastof(this->landinfo_data[line_nr]));
-		line_nr++;
+		SetDParamStr(3, tile_str);
+		this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_LANDINFO_COORDS));
 
 		/* Local authority */
 		SetDParam(0, STR_LAND_AREA_INFORMATION_LOCAL_AUTHORITY_NONE);
-		if (t != NULL) {
+		if (t != nullptr) {
 			SetDParam(0, STR_TOWN_NAME);
 			SetDParam(1, t->index);
 		}
-		GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_LOCAL_AUTHORITY, lastof(this->landinfo_data[line_nr]));
-		line_nr++;
+		this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_LOCAL_AUTHORITY));
 
 		/* Build date */
 		if (td.build_date != INVALID_DATE) {
 			SetDParam(0, td.build_date);
-			GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_BUILD_DATE, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_BUILD_DATE));
 		}
 
 		/* Station class */
 		if (td.station_class != STR_NULL) {
 			SetDParam(0, td.station_class);
-			GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_STATION_CLASS, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_STATION_CLASS));
 		}
 
 		/* Station type name */
 		if (td.station_name != STR_NULL) {
 			SetDParam(0, td.station_name);
-			GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_STATION_TYPE, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_STATION_TYPE));
 		}
 
 		/* Airport class */
 		if (td.airport_class != STR_NULL) {
 			SetDParam(0, td.airport_class);
-			GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_AIRPORT_CLASS, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_AIRPORT_CLASS));
 		}
 
 		/* Airport name */
 		if (td.airport_name != STR_NULL) {
 			SetDParam(0, td.airport_name);
-			GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_AIRPORT_NAME, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_AIRPORT_NAME));
 		}
 
 		/* Airport tile name */
 		if (td.airport_tile_name != STR_NULL) {
 			SetDParam(0, td.airport_tile_name);
-			GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_AIRPORTTILE_NAME, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_AIRPORTTILE_NAME));
 		}
 
 		/* Rail type name */
 		if (td.railtype != STR_NULL) {
 			SetDParam(0, td.railtype);
-			GetString(this->landinfo_data[line_nr], STR_LANG_AREA_INFORMATION_RAIL_TYPE, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_RAIL_TYPE));
 		}
 
 		/* Rail speed limit */
 		if (td.rail_speed != 0) {
 			SetDParam(0, td.rail_speed);
-			GetString(this->landinfo_data[line_nr], STR_LANG_AREA_INFORMATION_RAIL_SPEED_LIMIT, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_RAIL_SPEED_LIMIT));
+		}
+
+		/* 2nd Rail type name */
+		if (td.railtype2 != STR_NULL) {
+			SetDParam(0, td.railtype2);
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_RAIL_TYPE));
+		}
+
+		/* 2nd Rail speed limit */
+		if (td.rail_speed2 != 0) {
+			SetDParam(0, td.rail_speed2);
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_RAIL_SPEED_LIMIT));
+		}
+
+		/* Road type name */
+		if (td.roadtype != STR_NULL) {
+			SetDParam(0, td.roadtype);
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_ROAD_TYPE));
 		}
 
 		/* Road speed limit */
 		if (td.road_speed != 0) {
 			SetDParam(0, td.road_speed);
-			GetString(this->landinfo_data[line_nr], STR_LANG_AREA_INFORMATION_ROAD_SPEED_LIMIT, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_ROAD_SPEED_LIMIT));
+		}
+
+		/* Tram type name */
+		if (td.tramtype != STR_NULL) {
+			SetDParam(0, td.tramtype);
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_TRAM_TYPE));
+		}
+
+		/* Tram speed limit */
+		if (td.tram_speed != 0) {
+			SetDParam(0, td.tram_speed);
+			this->landinfo_data.push_back(GetString(STR_LANG_AREA_INFORMATION_TRAM_SPEED_LIMIT));
 		}
 
 		/* NewGRF name */
-		if (td.grf != NULL) {
+		if (td.grf != nullptr) {
 			SetDParamStr(0, td.grf);
-			GetString(this->landinfo_data[line_nr], STR_LAND_AREA_INFORMATION_NEWGRF_NAME, lastof(this->landinfo_data[line_nr]));
-			line_nr++;
+			this->landinfo_data.push_back(GetString(STR_LAND_AREA_INFORMATION_NEWGRF_NAME));
 		}
 
-		assert(line_nr < LAND_INFO_CENTERED_LINES);
-
-		/* Mark last line empty */
-		this->landinfo_data[line_nr][0] = '\0';
-
 		/* Cargo acceptance is displayed in a extra multiline */
-		char *strp = GetString(this->landinfo_data[LAND_INFO_MULTICENTER_LINE], STR_LAND_AREA_INFORMATION_CARGO_ACCEPTED, lastof(this->landinfo_data[LAND_INFO_MULTICENTER_LINE]));
-		bool found = false;
+		std::stringstream line;
+		line << GetString(STR_LAND_AREA_INFORMATION_CARGO_ACCEPTED);
 
+		bool found = false;
 		for (CargoID i = 0; i < NUM_CARGO; ++i) {
 			if (acceptance[i] > 0) {
 				/* Add a comma between each item. */
-				if (found) strp = strecpy(strp, ", ", lastof(this->landinfo_data[LAND_INFO_MULTICENTER_LINE]));
+				if (found) line << ", ";
 				found = true;
 
 				/* If the accepted value is less than 8, show it in 1/8:ths */
 				if (acceptance[i] < 8) {
 					SetDParam(0, acceptance[i]);
 					SetDParam(1, CargoSpec::Get(i)->name);
-					strp = GetString(strp, STR_LAND_AREA_INFORMATION_CARGO_EIGHTS, lastof(this->landinfo_data[LAND_INFO_MULTICENTER_LINE]));
+					line << GetString(STR_LAND_AREA_INFORMATION_CARGO_EIGHTS);
 				} else {
-					strp = GetString(strp, CargoSpec::Get(i)->name, lastof(this->landinfo_data[LAND_INFO_MULTICENTER_LINE]));
+					line << GetString(CargoSpec::Get(i)->name);
 				}
 			}
 		}
-		if (!found) this->landinfo_data[LAND_INFO_MULTICENTER_LINE][0] = '\0';
+		if (found) {
+			this->cargo_acceptance = line.str();
+		} else {
+			this->cargo_acceptance.clear();
+		}
 	}
 
-	virtual bool IsNewGRFInspectable() const
+	bool IsNewGRFInspectable() const override
 	{
 		return ::IsNewGRFInspectable(GetGrfSpecFeature(this->tile), this->tile);
 	}
 
-	virtual void ShowNewGRFInspectWindow() const
+	void ShowNewGRFInspectWindow() const override
 	{
 		::ShowNewGRFInspectWindow(GetGrfSpecFeature(this->tile), this->tile);
+	}
+
+	void OnClick(Point pt, int widget, int click_count) override
+	{
+		switch (widget) {
+			case WID_LI_LOCATION:
+				if (_ctrl_pressed) {
+					ShowExtraViewportWindow(this->tile);
+				} else {
+					ScrollMainWindowToTile(this->tile);
+				}
+				break;
+		}
 	}
 
 	/**
@@ -343,7 +392,7 @@ public:
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 		switch (data) {
@@ -377,80 +426,87 @@ static const NWidgetPart _nested_about_widgets[] = {
 			NWidget(WWT_EMPTY, INVALID_COLOUR, WID_A_SCROLLING_TEXT),
 		EndContainer(),
 		NWidget(WWT_LABEL, COLOUR_GREY, WID_A_WEBSITE), SetDataTip(STR_BLACK_RAW_STRING, STR_NULL),
-		NWidget(WWT_LABEL, COLOUR_GREY), SetDataTip(STR_ABOUT_COPYRIGHT_OPENTTD, STR_NULL),
+		NWidget(WWT_LABEL, COLOUR_GREY, WID_A_WEBSITE1), SetDataTip(STR_BLACK_RAW_STRING, STR_NULL),
+		NWidget(WWT_LABEL, COLOUR_GREY, WID_A_WEBSITE2), SetDataTip(STR_BLACK_RAW_STRING, STR_NULL),
+		NWidget(WWT_LABEL, COLOUR_GREY, WID_A_COPYRIGHT), SetDataTip(STR_ABOUT_COPYRIGHT_OPENTTD, STR_NULL),
 	EndContainer(),
 };
 
 static WindowDesc _about_desc(
-	WDP_CENTER, NULL, 0, 0,
+	WDP_CENTER, nullptr, 0, 0,
 	WC_GAME_OPTIONS, WC_NONE,
 	0,
 	_nested_about_widgets, lengthof(_nested_about_widgets)
 );
 
 static const char * const _credits[] = {
-	"Original design by Chris Sawyer",
-	"Original graphics by Simon Foster",
-	"",
-	"The OpenTTD team (in alphabetical order):",
-	"  Grzegorz Duczy\xC5\x84ski (adf88) - General coding (since 1.7.2)",
-	"  Albert Hofkamp (Alberth) - GUI expert (since 0.7)",
-	"  Matthijs Kooijman (blathijs) - Pathfinder-guru, Debian port (since 0.3)",
-	"  Ulf Hermann (fonsinchen) - Cargo Distribution (since 1.3)",
-	"  Christoph Elsenhans (frosch) - General coding (since 0.6)",
-	"  Lo\xC3\xAF""c Guilloux (glx) - General / Windows Expert (since 0.4.5)",
-	"  Michael Lutz (michi_cc) - Path based signals (since 0.7)",
-	"  Niels Martin Hansen (nielsm) - Music system, general coding (since 1.9)",
-	"  Owen Rudge (orudge) - Forum host, OS/2 port (since 0.1)",
-	"  Peter Nelson (peter1138) - Spiritual descendant from NewGRF gods (since 0.4.5)",
-	"  Ingo von Borstel (planetmaker) - General, Support (since 1.1)",
-	"  Remko Bijker (Rubidium) - Lead coder and way more (since 0.4.5)",
-	"  Jos\xC3\xA9 Soler (Terkhen) - General coding (since 1.0)",
-	"  Leif Linse (Zuu) - AI/Game Script (since 1.2)",
-	"",
-	"Inactive Developers:",
-	"  Jean-Fran\xC3\xA7ois Claeys (Belugas) - GUI, NewGRF and more (0.4.5 - 1.0)",
-	"  Bjarni Corfitzen (Bjarni) - MacOSX port, coder and vehicles (0.3 - 0.7)",
-	"  Victor Fischer (Celestar) - Programming everywhere you need him to (0.3 - 0.6)",
-	"  Jaroslav Mazanec (KUDr) - YAPG (Yet Another Pathfinder God) ;) (0.4.5 - 0.6)",
-	"  Jonathan Coome (Maedhros) - High priest of the NewGRF Temple (0.5 - 0.6)",
-	"  Attila B\xC3\xA1n (MiHaMiX) - Developer WebTranslator 1 and 2 (0.3 - 0.5)",
-	"  Zden\xC4\x9Bk Sojka (SmatZ) - Bug finder and fixer (0.6 - 1.3)",
-	"  Christoph Mallon (Tron) - Programmer, code correctness police (0.3 - 0.5)",
-	"  Patric Stout (TrueBrain) - NoAI, NoGo, Network (0.3 - 1.2), sys op (active)",
-	"  Thijs Marinussen (Yexo) - AI Framework, General (0.6 - 1.3)",
-	"",
-	"Retired Developers:",
-	"  Tam\xC3\xA1s Farag\xC3\xB3 (Darkvater) - Ex-Lead coder (0.3 - 0.5)",
-	"  Dominik Scherer (dominik81) - Lead programmer, GUI expert (0.3 - 0.3)",
-	"  Emil Djupfeld (egladil) - MacOSX (0.4.5 - 0.6)",
-	"  Simon Sasburg (HackyKid) - Many bugfixes (0.4 - 0.4.5)",
-	"  Ludvig Strigeus (ludde) - Original author of OpenTTD, main coder (0.1 - 0.3)",
-	"  Cian Duffy (MYOB) - BeOS port / manual writing (0.1 - 0.3)",
-	"  Petr Baudi\xC5\xA1 (pasky) - Many patches, NewGRF support (0.3 - 0.3)",
-	"  Benedikt Br\xC3\xBCggemeier (skidd13) - Bug fixer and code reworker (0.6 - 0.7)",
-	"  Serge Paquet (vurlix) - 2nd contributor after ludde (0.1 - 0.3)",
-	"",
-	"Special thanks go out to:",
-	"  Josef Drexler - For his great work on TTDPatch",
-	"  Marcin Grzegorczyk - Track foundations and for describing TTD internals",
-	"  Stefan Mei\xC3\x9Fner (sign_de) - For his work on the console",
-	"  Mike Ragsdale - OpenTTD installer",
-	"  Christian Rosentreter (tokai) - MorphOS / AmigaOS port",
-	"  Richard Kempton (richK) - additional airports, initial TGP implementation",
-	"",
-	"  Alberto Demichelis - Squirrel scripting language \xC2\xA9 2003-2008",
-	"  L. Peter Deutsch - MD5 implementation \xC2\xA9 1999, 2000, 2002",
-	"  Michael Blunck - Pre-signals and semaphores \xC2\xA9 2003",
-	"  George - Canal/Lock graphics \xC2\xA9 2003-2004",
-	"  Andrew Parkhouse (andythenorth) - River graphics",
-	"  David Dallaston (Pikka) - Tram tracks",
-	"  All Translators - Who made OpenTTD a truly international game",
-	"  Bug Reporters - Without whom OpenTTD would still be full of bugs!",
-	"",
-	"",
-	"And last but not least:",
-	"  Chris Sawyer - For an amazing game!"
+	u8"Original design by Chris Sawyer",
+	u8"Original graphics by Simon Foster",
+	u8"",
+	u8"The OpenTTD team (in alphabetical order):",
+	u8"  Grzegorz Duczy\u0144ski (adf88) - General coding (since 1.7.2)",
+	u8"  Albert Hofkamp (Alberth) - GUI expert (since 0.7)",
+	u8"  Matthijs Kooijman (blathijs) - Pathfinder-guru, Debian port (since 0.3)",
+	u8"  Ulf Hermann (fonsinchen) - Cargo Distribution (since 1.3)",
+	u8"  Christoph Elsenhans (frosch) - General coding (since 0.6)",
+	u8"  Lo\u00efc Guilloux (glx) - General / Windows Expert (since 0.4.5)",
+	u8"  Charles Pigott (LordAro) - General / Correctness police (since 1.9)",
+	u8"  Michael Lutz (michi_cc) - Path based signals (since 0.7)",
+	u8"  Niels Martin Hansen (nielsm) - Music system, general coding (since 1.9)",
+	u8"  Owen Rudge (orudge) - Forum host, OS/2 port (since 0.1)",
+	u8"  Peter Nelson (peter1138) - Spiritual descendant from NewGRF gods (since 0.4.5)",
+	u8"  Ingo von Borstel (planetmaker) - General, Support (since 1.1)",
+	u8"  Remko Bijker (Rubidium) - Lead coder and way more (since 0.4.5)",
+	u8"  Jos\u00e9 Soler (Terkhen) - General coding (since 1.0)",
+	u8"",
+	u8"Inactive Developers:",
+	u8"  Jean-Fran\u00e7ois Claeys (Belugas) - GUI, NewGRF and more (0.4.5 - 1.0)",
+	u8"  Bjarni Corfitzen (Bjarni) - MacOSX port, coder and vehicles (0.3 - 0.7)",
+	u8"  Victor Fischer (Celestar) - Programming everywhere you need him to (0.3 - 0.6)",
+	u8"  Jaroslav Mazanec (KUDr) - YAPG (Yet Another Pathfinder God) ;) (0.4.5 - 0.6)",
+	u8"  Jonathan Coome (Maedhros) - High priest of the NewGRF Temple (0.5 - 0.6)",
+	u8"  Attila B\u00e1n (MiHaMiX) - Developer WebTranslator 1 and 2 (0.3 - 0.5)",
+	u8"  Zden\u011bk Sojka (SmatZ) - Bug finder and fixer (0.6 - 1.3)",
+	u8"  Christoph Mallon (Tron) - Programmer, code correctness police (0.3 - 0.5)",
+	u8"  Patric Stout (TrueBrain) - NoAI, NoGo, Network (0.3 - 1.2), sys op (active)",
+	u8"  Thijs Marinussen (Yexo) - AI Framework, General (0.6 - 1.3)",
+	u8"  Leif Linse (Zuu) - AI/Game Script (1.2 - 1.6)",
+	u8"",
+	u8"Retired Developers:",
+	u8"  Tam\u00e1s Farag\u00f3 (Darkvater) - Ex-Lead coder (0.3 - 0.5)",
+	u8"  Dominik Scherer (dominik81) - Lead programmer, GUI expert (0.3 - 0.3)",
+	u8"  Emil Djupfeld (egladil) - MacOSX (0.4.5 - 0.6)",
+	u8"  Simon Sasburg (HackyKid) - Many bugfixes (0.4 - 0.4.5)",
+	u8"  Ludvig Strigeus (ludde) - Original author of OpenTTD, main coder (0.1 - 0.3)",
+	u8"  Cian Duffy (MYOB) - BeOS port / manual writing (0.1 - 0.3)",
+	u8"  Petr Baudi\u0161 (pasky) - Many patches, NewGRF support (0.3 - 0.3)",
+	u8"  Benedikt Br\u00fcggemeier (skidd13) - Bug fixer and code reworker (0.6 - 0.7)",
+	u8"  Serge Paquet (vurlix) - 2nd contributor after ludde (0.1 - 0.3)",
+	u8"",
+	u8"Special thanks go out to:",
+	u8"  Josef Drexler - For his great work on TTDPatch",
+	u8"  Marcin Grzegorczyk - Track foundations and for describing TTD internals",
+	u8"  Stefan Mei\u00dfner (sign_de) - For his work on the console",
+	u8"  Mike Ragsdale - OpenTTD installer",
+	u8"  Christian Rosentreter (tokai) - MorphOS / AmigaOS port",
+	u8"  Richard Kempton (richK) - additional airports, initial TGP implementation",
+	u8"",
+	u8"  Alberto Demichelis - Squirrel scripting language \u00a9 2003-2008",
+	u8"  L. Peter Deutsch - MD5 implementation \u00a9 1999, 2000, 2002",
+	u8"  Michael Blunck - Pre-signals and semaphores \u00a9 2003",
+	u8"  George - Canal/Lock graphics \u00a9 2003-2004",
+	u8"  Andrew Parkhouse (andythenorth) - River graphics",
+	u8"  David Dallaston (Pikka) - Tram tracks",
+	u8"  All Translators - Who made OpenTTD a truly international game",
+	u8"  Bug Reporters - Without whom OpenTTD would still be full of bugs!",
+	u8"",
+	u8"",
+	u8"Developer of this patchpack:",
+	u8"  Jonathan G. Rennison (JGR)",
+	u8"",
+	u8"",
+	u8"And last but not least:",
+	u8"  Chris Sawyer - For an amazing game!"
 };
 
 struct AboutWindow : public Window {
@@ -458,7 +514,7 @@ struct AboutWindow : public Window {
 	int line_height;                         ///< The height of a single line
 	static const int num_visible_lines = 19; ///< The number of lines visible simultaneously
 
-	static const uint TIMER_INTERVAL = 150;  ///< Scrolling interval in ms
+	static const uint TIMER_INTERVAL = 2100; ///< Scrolling interval, scaled by line text line height. This value chosen to maintain parity: 2100 / FONT_HEIGHT_NORMAL = 150ms
 	GUITimer timer;
 
 	AboutWindow() : Window(&_about_desc)
@@ -466,15 +522,17 @@ struct AboutWindow : public Window {
 		this->InitNested(WN_GAME_OPTIONS_ABOUT);
 
 		this->text_position = this->GetWidget<NWidgetBase>(WID_A_SCROLLING_TEXT)->pos_y + this->GetWidget<NWidgetBase>(WID_A_SCROLLING_TEXT)->current_y;
-		this->timer.SetInterval(TIMER_INTERVAL);
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
-		if (widget == WID_A_WEBSITE) SetDParamStr(0, "Website: http://www.openttd.org");
+		if (widget == WID_A_WEBSITE) SetDParamStr(0, "Main project website: https://www.openttd.org");
+		if (widget == WID_A_WEBSITE1) SetDParamStr(0, "Patchpack thread: https://www.tt-forums.net/viewtopic.php?f=33&t=73469");
+		if (widget == WID_A_WEBSITE2) SetDParamStr(0, "Patchpack Github: https://github.com/JGRennison/OpenTTD-patches");
+		if (widget == WID_A_COPYRIGHT) SetDParamStr(0, _openttd_revision_year);
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget != WID_A_SCROLLING_TEXT) return;
 
@@ -485,12 +543,16 @@ struct AboutWindow : public Window {
 
 		d.width = 0;
 		for (uint i = 0; i < lengthof(_credits); i++) {
-			d.width = max(d.width, GetStringBoundingBox(_credits[i]).width);
+			d.width = std::max(d.width, GetStringBoundingBox(_credits[i]).width);
 		}
 		*size = maxdim(*size, d);
+
+		/* Set scroll interval based on required speed. To keep scrolling smooth,
+		 * the interval is adjusted rather than the distance moved. */
+		this->timer.SetInterval(TIMER_INTERVAL / FONT_HEIGHT_NORMAL);
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_A_SCROLLING_TEXT) return;
 
@@ -505,7 +567,7 @@ struct AboutWindow : public Window {
 		}
 	}
 
-	virtual void OnRealtimeTick(uint delta_ms)
+	void OnRealtimeTick(uint delta_ms) override
 	{
 		uint count = this->timer.CountElapsed(delta_ms);
 		if (count > 0) {
@@ -514,7 +576,7 @@ struct AboutWindow : public Window {
 			if (this->text_position < (int)(this->GetWidget<NWidgetBase>(WID_A_SCROLLING_TEXT)->pos_y - lengthof(_credits) * this->line_height)) {
 				this->text_position = this->GetWidget<NWidgetBase>(WID_A_SCROLLING_TEXT)->pos_y + this->GetWidget<NWidgetBase>(WID_A_SCROLLING_TEXT)->current_y;
 			}
-			this->SetDirty();
+			this->SetWidgetDirty(WID_A_SCROLLING_TEXT);
 		}
 	}
 };
@@ -552,6 +614,8 @@ void ShowEstimatedCostOrIncome(Money cost, int x, int y)
  */
 void ShowCostOrIncomeAnimation(int x, int y, int z, Money cost)
 {
+	if (!HasBit(_extra_display_opt, XDO_SHOW_MONEY_TEXT_EFFECTS)) return;
+
 	Point pt = RemapCoords(x, y, z);
 	StringID msg = STR_INCOME_FLOAT_COST;
 
@@ -573,6 +637,8 @@ void ShowCostOrIncomeAnimation(int x, int y, int z, Money cost)
  */
 void ShowFeederIncomeAnimation(int x, int y, int z, Money transfer, Money income)
 {
+	if (!HasBit(_extra_display_opt, XDO_SHOW_MONEY_TEXT_EFFECTS)) return;
+
 	Point pt = RemapCoords(x, y, z);
 
 	SetDParam(0, transfer);
@@ -638,7 +704,7 @@ static const NWidgetPart _nested_tooltips_widgets[] = {
 };
 
 static WindowDesc _tool_tips_desc(
-	WDP_MANUAL, NULL, 0, 0, // Coordinates and sizes are not used,
+	WDP_MANUAL, nullptr, 0, 0, // Coordinates and sizes are not used,
 	WC_TOOLTIPS, WC_NONE,
 	WDF_NO_FOCUS,
 	_nested_tooltips_widgets, lengthof(_nested_tooltips_widgets)
@@ -651,23 +717,33 @@ struct TooltipsWindow : public Window
 	byte paramcount;                  ///< Number of string parameters in #string_id.
 	uint64 params[5];                 ///< The string parameters.
 	TooltipCloseCondition close_cond; ///< Condition for closing the window.
+	char buffer[DRAW_STRING_BUFFER];  ///< Text to draw
+	int viewport_virtual_left;        ///< Owner viewport state: left
+	int viewport_virtual_top;         ///< Owner viewport state: top
+	bool delete_next_mouse_loop;      ///< Delete window on the next mouse loop
 
 	TooltipsWindow(Window *parent, StringID str, uint paramcount, const uint64 params[], TooltipCloseCondition close_tooltip) : Window(&_tool_tips_desc)
 	{
 		this->parent = parent;
 		this->string_id = str;
-		assert_compile(sizeof(this->params[0]) == sizeof(params[0]));
+		static_assert(sizeof(this->params[0]) == sizeof(params[0]));
 		assert(paramcount <= lengthof(this->params));
 		if (paramcount > 0) memcpy(this->params, params, sizeof(this->params[0]) * paramcount);
 		this->paramcount = paramcount;
 		this->close_cond = close_tooltip;
+		this->delete_next_mouse_loop = false;
+		if (this->paramcount == 0) GetString(this->buffer, str, lastof(this->buffer)); // Get the text while params are available
+		if (close_tooltip == TCC_HOVER_VIEWPORT) {
+			this->viewport_virtual_left = parent->viewport->virtual_left;
+			this->viewport_virtual_top = parent->viewport->virtual_top;
+		}
 
 		this->InitNested();
 
 		CLRBITS(this->flags, WF_WHITE_BORDER);
 	}
 
-	virtual Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number)
+	Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number) override
 	{
 		/* Find the free screen space between the main toolbar at the top, and the statusbar at the bottom.
 		 * Add a fixed distance 2 so the tooltip floats free from both bars.
@@ -681,18 +757,18 @@ struct TooltipsWindow : public Window
 		 * Clamp value to below main toolbar and above statusbar. If tooltip would
 		 * go below window, flip it so it is shown above the cursor */
 		pt.y = Clamp(_cursor.pos.y + _cursor.total_size.y + _cursor.total_offs.y + 5, scr_top, scr_bot);
-		if (pt.y + sm_height > scr_bot) pt.y = min(_cursor.pos.y + _cursor.total_offs.y - 5, scr_bot) - sm_height;
+		if (pt.y + sm_height > scr_bot) pt.y = std::min(_cursor.pos.y + _cursor.total_offs.y - 5, scr_bot) - sm_height;
 		pt.x = sm_width >= _screen.width ? 0 : Clamp(_cursor.pos.x - (sm_width >> 1), 0, _screen.width - sm_width);
 
 		return pt;
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		/* There is only one widget. */
 		for (uint i = 0; i != this->paramcount; i++) SetDParam(i, this->params[i]);
 
-		size->width  = min(GetStringBoundingBox(this->string_id).width, ScaleGUITrad(194));
+		size->width  = std::min<uint>(GetStringBoundingBox(this->string_id).width, ScaleGUITrad(194));
 		size->height = GetStringHeight(this->string_id, size->width);
 
 		/* Increase slightly to have some space around the box. */
@@ -700,22 +776,26 @@ struct TooltipsWindow : public Window
 		size->height += 2 + WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		/* There is only one widget. */
 		GfxFillRect(r.left, r.top, r.right, r.bottom, PC_BLACK);
 		GfxFillRect(r.left + 1, r.top + 1, r.right - 1, r.bottom - 1, PC_LIGHT_YELLOW);
 
-		for (uint arg = 0; arg < this->paramcount; arg++) {
-			SetDParam(arg, this->params[arg]);
+		if (this->paramcount == 0) {
+			DrawStringMultiLine(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, r.top + WD_FRAMERECT_TOP, r.bottom - WD_FRAMERECT_BOTTOM, this->buffer, TC_FROMSTRING, SA_CENTER);
+		} else {
+			for (uint arg = 0; arg < this->paramcount; arg++) {
+				SetDParam(arg, this->params[arg]);
+			}
+			DrawStringMultiLine(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, r.top + WD_FRAMERECT_TOP, r.bottom - WD_FRAMERECT_BOTTOM, this->string_id, TC_FROMSTRING, SA_CENTER);
 		}
-		DrawStringMultiLine(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, r.top + WD_FRAMERECT_TOP, r.bottom - WD_FRAMERECT_BOTTOM, this->string_id, TC_FROMSTRING, SA_CENTER);
 	}
 
-	virtual void OnMouseLoop()
+	void OnMouseLoop() override
 	{
 		/* Always close tooltips when the cursor is not in our window. */
-		if (!_cursor.in_window) {
+		if (!_cursor.in_window || this->delete_next_mouse_loop) {
 			delete this;
 			return;
 		}
@@ -726,6 +806,29 @@ struct TooltipsWindow : public Window
 			case TCC_RIGHT_CLICK: if (!_right_button_down) delete this; break;
 			case TCC_HOVER: if (!_mouse_hovering) delete this; break;
 			case TCC_NONE: break;
+<<<<<<< HEAD
+=======
+			case TCC_NEXT_LOOP: this->delete_next_mouse_loop = true; break;
+
+			case TCC_HOVER_VIEWPORT:
+				if (_settings_client.gui.hover_delay_ms == 0) {
+					this->delete_next_mouse_loop = true;
+				} else if (!_mouse_hovering) {
+					delete this;
+					break;
+				}
+				if (this->viewport_virtual_left != this->parent->viewport->virtual_left ||
+						this->viewport_virtual_top != this->parent->viewport->virtual_top) {
+					this->delete_next_mouse_loop = true;
+				}
+				break;
+
+			case TCC_EXIT_VIEWPORT: {
+				Window *w = FindWindowFromPt(_cursor.pos.x, _cursor.pos.y);
+				if (w == nullptr || IsPtInWindowViewport(w, _cursor.pos.x, _cursor.pos.y) == nullptr) delete this;
+				break;
+			}
+>>>>>>> jgrpp-0.44.0
 		}
 	}
 };
@@ -742,7 +845,7 @@ void GuiShowTooltips(Window *parent, StringID str, uint paramcount, const uint64
 {
 	DeleteWindowById(WC_TOOLTIPS, 0);
 
-	if (str == STR_NULL) return;
+	if (str == STR_NULL || !_cursor.in_window) return;
 
 	new TooltipsWindow(parent, str, paramcount, params, close_tooltip);
 }
@@ -792,7 +895,7 @@ void QueryString::DrawEditBox(const Window *w, int wid) const
 	/* We will take the current widget length as maximum width, with a small
 	 * space reserved at the end for the caret to show */
 	const Textbuf *tb = &this->text;
-	int delta = min(0, (right - left) - tb->pixels - 10);
+	int delta = std::min(0, (right - left) - tb->pixels - 10);
 
 	if (tb->caretxoffs + delta < 0) delta = -tb->caretxoffs;
 
@@ -830,7 +933,7 @@ Point QueryString::GetCaretPosition(const Window *w, int wid) const
 
 	/* Clamp caret position to be inside out current width. */
 	const Textbuf *tb = &this->text;
-	int delta = min(0, (right - left) - tb->pixels - 10);
+	int delta = std::min(0, (right - left) - tb->pixels - 10);
 	if (tb->caretxoffs + delta < 0) delta = -tb->caretxoffs;
 
 	Point pt = {left + WD_FRAMERECT_LEFT + tb->caretxoffs + delta, (int)wi->pos_y + WD_FRAMERECT_TOP};
@@ -863,7 +966,7 @@ Rect QueryString::GetBoundingRect(const Window *w, int wid, const char *from, co
 
 	/* Clamp caret position to be inside our current width. */
 	const Textbuf *tb = &this->text;
-	int delta = min(0, (right - left) - tb->pixels - 10);
+	int delta = std::min(0, (right - left) - tb->pixels - 10);
 	if (tb->caretxoffs + delta < 0) delta = -tb->caretxoffs;
 
 	/* Get location of first and last character. */
@@ -880,7 +983,7 @@ Rect QueryString::GetBoundingRect(const Window *w, int wid, const char *from, co
  * @param w Window the edit box is in.
  * @param wid Widget index.
  * @param pt Position to test.
- * @return Pointer to the character at the position or NULL if no character is at the position.
+ * @return Pointer to the character at the position or nullptr if no character is at the position.
  */
 const char *QueryString::GetCharAtPosition(const Window *w, int wid, const Point &pt) const
 {
@@ -898,11 +1001,11 @@ const char *QueryString::GetCharAtPosition(const Window *w, int wid, const Point
 	int top    = wi->pos_y + WD_FRAMERECT_TOP;
 	int bottom = wi->pos_y + wi->current_y - 1 - WD_FRAMERECT_BOTTOM;
 
-	if (!IsInsideMM(pt.y, top, bottom)) return NULL;
+	if (!IsInsideMM(pt.y, top, bottom)) return nullptr;
 
 	/* Clamp caret position to be inside our current width. */
 	const Textbuf *tb = &this->text;
-	int delta = min(0, (right - left) - tb->pixels - 10);
+	int delta = std::min(0, (right - left) - tb->pixels - 10);
 	if (tb->caretxoffs + delta < 0) delta = -tb->caretxoffs;
 
 	return ::GetCharAtPosition(tb->buf, pt.x - delta - left);
@@ -941,13 +1044,16 @@ struct QueryStringWindow : public Window
 {
 	QueryString editbox;    ///< Editbox.
 	QueryStringFlags flags; ///< Flags controlling behaviour of the window.
+	Dimension warning_size; ///< How much space to use for the warning text
 
 	QueryStringWindow(StringID str, StringID caption, uint max_bytes, uint max_chars, WindowDesc *desc, Window *parent, CharSetFilter afilter, QueryStringFlags flags) :
 			Window(desc), editbox(max_bytes, max_chars)
 	{
+		assert(parent != nullptr);
+
 		char *last_of = &this->editbox.text.buf[this->editbox.text.max_bytes - 1];
 		GetString(this->editbox.text.buf, str, last_of);
-		str_validate(this->editbox.text.buf, last_of, SVS_NONE);
+		StrMakeValidInPlace(this->editbox.text.buf, last_of, SVS_NONE);
 
 		/* Make sure the name isn't too long for the text buffer in the number of
 		 * characters (not bytes). max_chars also counts the '\0' characters. */
@@ -967,13 +1073,28 @@ struct QueryStringWindow : public Window
 		this->flags = flags;
 
 		this->InitNested(WN_QUERY_STRING);
+		this->UpdateWarningStringSize();
 
 		this->parent = parent;
 
 		this->SetFocusedWidget(WID_QS_TEXT);
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWarningStringSize()
+	{
+		if (this->flags & QSF_PASSWORD) {
+			assert(this->nested_root->smallest_x > 0);
+			this->warning_size.width = this->nested_root->current_x - (WD_FRAMETEXT_LEFT + WD_FRAMETEXT_RIGHT + WD_FRAMERECT_LEFT + WD_FRAMERECT_RIGHT);
+			this->warning_size.height = GetStringHeight(STR_WARNING_PASSWORD_SECURITY, this->warning_size.width);
+			this->warning_size.height += WD_FRAMETEXT_TOP + WD_FRAMETEXT_BOTTOM + WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
+		} else {
+			this->warning_size = Dimension{ 0, 0 };
+		}
+
+		this->ReInit();
+	}
+
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget == WID_QS_DEFAULT && (this->flags & QSF_ENABLE_DEFAULT) == 0) {
 			/* We don't want this widget to show! */
@@ -981,28 +1102,43 @@ struct QueryStringWindow : public Window
 			resize->width = 0;
 			size->width = 0;
 		}
+
+		if (widget == WID_QS_WARNING) {
+			*size = this->warning_size;
+		}
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
+	{
+		if (widget != WID_QS_WARNING) return;
+
+		if (this->flags & QSF_PASSWORD) {
+			DrawStringMultiLine(r.left + WD_FRAMERECT_LEFT + WD_FRAMETEXT_LEFT, r.right - WD_FRAMETEXT_RIGHT - WD_FRAMERECT_RIGHT,
+				r.top + WD_FRAMERECT_TOP + WD_FRAMETEXT_TOP, r.bottom - WD_FRAMERECT_BOTTOM - WD_FRAMETEXT_BOTTOM,
+				STR_WARNING_PASSWORD_SECURITY, TC_FROMSTRING, SA_CENTER);
+		}
+	}
+
+	void SetStringParameters(int widget) const override
 	{
 		if (widget == WID_QS_CAPTION) SetDParam(0, this->editbox.caption);
 	}
 
 	void OnOk()
 	{
-		if (this->editbox.orig == NULL || strcmp(this->editbox.text.buf, this->editbox.orig) != 0) {
-			/* If the parent is NULL, the editbox is handled by general function
+		if (this->editbox.orig == nullptr || strcmp(this->editbox.text.buf, this->editbox.orig) != 0) {
+			/* If the parent is nullptr, the editbox is handled by general function
 			 * HandleOnEditText */
-			if (this->parent != NULL) {
+			if (this->parent != nullptr) {
 				this->parent->OnQueryTextFinished(this->editbox.text.buf);
 			} else {
-				HandleOnEditText(this->editbox.text.buf);
+				NOT_REACHED();
 			}
 			this->editbox.handled = true;
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_QS_DEFAULT:
@@ -1021,10 +1157,10 @@ struct QueryStringWindow : public Window
 
 	~QueryStringWindow()
 	{
-		if (!this->editbox.handled && this->parent != NULL) {
+		if (!this->editbox.handled && this->parent != nullptr) {
 			Window *parent = this->parent;
-			this->parent = NULL; // so parent doesn't try to delete us again
-			parent->OnQueryTextFinished(NULL);
+			this->parent = nullptr; // so parent doesn't try to delete us again
+			parent->OnQueryTextFinished(nullptr);
 		}
 	}
 };
@@ -1037,6 +1173,7 @@ static const NWidgetPart _nested_query_string_widgets[] = {
 	NWidget(WWT_PANEL, COLOUR_GREY),
 		NWidget(WWT_EDITBOX, COLOUR_GREY, WID_QS_TEXT), SetMinimalSize(256, 12), SetFill(1, 1), SetPadding(2, 2, 2, 2),
 	EndContainer(),
+	NWidget(WWT_PANEL, COLOUR_GREY, WID_QS_WARNING), EndContainer(),
 	NWidget(NWID_HORIZONTAL, NC_EQUALSIZE),
 		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_QS_DEFAULT), SetMinimalSize(87, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_DEFAULT, STR_NULL),
 		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_QS_CANCEL), SetMinimalSize(86, 12), SetFill(1, 1), SetDataTip(STR_BUTTON_CANCEL, STR_NULL),
@@ -1057,7 +1194,7 @@ static WindowDesc _query_string_desc(
  * @param caption StringID of text shown in caption of querywindow
  * @param maxsize maximum size in bytes or characters (including terminating '\0') depending on flags
  * @param parent pointer to a Window that will handle the events (ok/cancel) of this
- *        window. If NULL, results are handled by global function HandleOnEditText
+ *        window. If nullptr, results are handled by global function HandleOnEditText
  * @param afilter filters out unwanted character input
  * @param flags various flags, @see QueryStringFlags
  */
@@ -1084,20 +1221,25 @@ struct QueryWindow : public Window {
 		this->caption = caption;
 		this->message = message;
 		this->proc    = callback;
+		this->parent  = parent;
 
 		this->InitNested(WN_CONFIRM_POPUP_QUERY);
-
-		this->parent = parent;
-		this->left = parent->left + (parent->width / 2) - (this->width / 2);
-		this->top = parent->top + (parent->height / 2) - (this->height / 2);
 	}
 
 	~QueryWindow()
 	{
-		if (this->proc != NULL) this->proc(this->parent, false);
+		if (this->proc != nullptr) this->proc(this->parent, false);
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void FindWindowPlacementAndResize(int def_width, int def_height) override
+	{
+		/* Position query window over the calling window, ensuring it's within screen bounds. */
+		this->left = Clamp(parent->left + (parent->width / 2) - (this->width / 2), 0, _screen.width - this->width);
+		this->top = Clamp(parent->top + (parent->height / 2) - (this->height / 2), 0, _screen.height - this->height);
+		this->SetDirty();
+	}
+
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_Q_CAPTION:
@@ -1111,7 +1253,7 @@ struct QueryWindow : public Window {
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget != WID_Q_TEXT) return;
 
@@ -1121,7 +1263,7 @@ struct QueryWindow : public Window {
 		*size = d;
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_Q_TEXT) return;
 
@@ -1129,7 +1271,7 @@ struct QueryWindow : public Window {
 				this->message, TC_FROMSTRING, SA_CENTER);
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_Q_YES: {
@@ -1138,11 +1280,11 @@ struct QueryWindow : public Window {
 				QueryCallbackProc *proc = this->proc;
 				Window *parent = this->parent;
 				/* Prevent the destructor calling the callback function */
-				this->proc = NULL;
+				this->proc = nullptr;
 				delete this;
-				if (proc != NULL) {
+				if (proc != nullptr) {
 					proc(parent, true);
-					proc = NULL;
+					proc = nullptr;
 				}
 				break;
 			}
@@ -1152,15 +1294,15 @@ struct QueryWindow : public Window {
 		}
 	}
 
-	virtual EventState OnKeyPress(WChar key, uint16 keycode)
+	EventState OnKeyPress(WChar key, uint16 keycode) override
 	{
 		/* ESC closes the window, Enter confirms the action */
 		switch (keycode) {
 			case WKC_RETURN:
 			case WKC_NUM_ENTER:
-				if (this->proc != NULL) {
+				if (this->proc != nullptr) {
 					this->proc(this->parent, true);
-					this->proc = NULL;
+					this->proc = nullptr;
 				}
 				FALLTHROUGH;
 
@@ -1187,7 +1329,7 @@ static const NWidgetPart _nested_query_widgets[] = {
 };
 
 static WindowDesc _query_desc(
-	WDP_CENTER, NULL, 0, 0,
+	WDP_CENTER, nullptr, 0, 0,
 	WC_CONFIRM_POPUP_QUERY, WC_NONE,
 	WDF_MODAL,
 	_nested_query_widgets, lengthof(_nested_query_widgets)
@@ -1198,16 +1340,15 @@ static WindowDesc _query_desc(
  * The window is aligned to the centre of its parent.
  * @param caption string shown as window caption
  * @param message string that will be shown for the window
- * @param parent pointer to parent window, if this pointer is NULL the parent becomes
+ * @param parent pointer to parent window, if this pointer is nullptr the parent becomes
  * the main window WC_MAIN_WINDOW
  * @param callback callback function pointer to set in the window descriptor
  */
 void ShowQuery(StringID caption, StringID message, Window *parent, QueryCallbackProc *callback)
 {
-	if (parent == NULL) parent = FindWindowById(WC_MAIN_WINDOW, 0);
+	if (parent == nullptr) parent = FindWindowById(WC_MAIN_WINDOW, 0);
 
-	const Window *w;
-	FOR_ALL_WINDOWS_FROM_BACK(w) {
+	for (const Window *w : Window::IterateFromBack()) {
 		if (w->window_class != WC_CONFIRM_POPUP_QUERY) continue;
 
 		const QueryWindow *qw = (const QueryWindow *)w;
@@ -1218,4 +1359,88 @@ void ShowQuery(StringID caption, StringID message, Window *parent, QueryCallback
 	}
 
 	new QueryWindow(&_query_desc, caption, message, parent, callback);
+}
+
+static const NWidgetPart _modifier_key_toggle_widgets[] = {
+	NWidget(NWID_HORIZONTAL),
+		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
+		NWidget(WWT_CAPTION, COLOUR_GREY), SetDataTip(STR_MODIFIER_KEY_TOGGLE_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(WWT_SHADEBOX, COLOUR_GREY),
+		NWidget(WWT_STICKYBOX, COLOUR_GREY),
+	EndContainer(),
+	NWidget(WWT_PANEL, COLOUR_GREY),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 2),
+		NWidget(NWID_HORIZONTAL, NC_EQUALSIZE), SetPIP(2, 0, 2),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_MKT_SHIFT), SetMinimalSize(78, 12), SetFill(1, 0),
+										SetDataTip(STR_SHIFT_KEY_NAME, STR_MODIFIER_TOGGLE_SHIFT_TOOLTIP),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_MKT_CTRL), SetMinimalSize(78, 12), SetFill(1, 0),
+										SetDataTip(STR_CTRL_KEY_NAME, STR_MODIFIER_TOGGLE_CTRL_TOOLTIP),
+		EndContainer(),
+		NWidget(NWID_SPACER), SetMinimalSize(0, 2),
+	EndContainer(),
+};
+
+struct ModifierKeyToggleWindow : Window {
+	ModifierKeyToggleWindow(WindowDesc *desc, WindowNumber window_number) :
+			Window(desc)
+	{
+		this->InitNested(window_number);
+		this->UpdateButtons();
+	}
+
+	~ModifierKeyToggleWindow()
+	{
+		_invert_shift = false;
+		_invert_ctrl = false;
+	}
+
+	void UpdateButtons()
+	{
+		this->SetWidgetLoweredState(WID_MKT_SHIFT, _shift_pressed);
+		this->SetWidgetLoweredState(WID_MKT_CTRL, _ctrl_pressed);
+		this->SetDirty();
+	}
+
+	void OnCTRLStateChangeAlways() override
+	{
+		this->UpdateButtons();
+	}
+
+	void OnShiftStateChange() override
+	{
+		this->UpdateButtons();
+	}
+
+	void OnClick(Point pt, int widget, int click_count) override
+	{
+		switch (widget) {
+			case WID_MKT_SHIFT:
+				_invert_shift = !_invert_shift;
+				UpdateButtons();
+				break;
+
+			case WID_MKT_CTRL:
+				_invert_ctrl = !_invert_ctrl;
+				UpdateButtons();
+				break;
+		}
+	}
+
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
+	{
+		if (!gui_scope) return;
+		this->UpdateButtons();
+	}
+};
+
+static WindowDesc _modifier_key_toggle_desc(
+	WDP_AUTO, "modifier_key_toggle", 0, 0,
+	WC_MODIFIER_KEY_TOGGLE, WC_NONE,
+	WDF_NO_FOCUS,
+	_modifier_key_toggle_widgets, lengthof(_modifier_key_toggle_widgets)
+);
+
+void ShowModifierKeyToggleWindow()
+{
+	AllocateWindowDescFront<ModifierKeyToggleWindow>(&_modifier_key_toggle_desc, 0);
 }

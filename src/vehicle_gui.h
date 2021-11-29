@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -18,8 +16,9 @@
 #include "station_type.h"
 #include "engine_type.h"
 #include "company_type.h"
+#include "widgets/dropdown_func.h"
 
-void ShowVehicleRefitWindow(const Vehicle *v, VehicleOrderID order, Window *parent, bool auto_refit = false);
+void ShowVehicleRefitWindow(const Vehicle *v, VehicleOrderID order, Window *parent, bool auto_refit = false, bool is_virtual_train = false);
 
 /** The tabs in the train details window */
 enum TrainDetailsWindowTabs {
@@ -37,7 +36,15 @@ enum VehicleInvalidateWindowData {
 	VIWD_AUTOREPLACE       = -4, ///< Autoreplace replaced the vehicle.
 };
 
-int DrawVehiclePurchaseInfo(int left, int right, int y, EngineID engine_number);
+/** Extra information about refitted cargo and capacity */
+struct TestedEngineDetails {
+	Money cost;           ///< Refit cost
+	CargoID cargo;        ///< Cargo type
+	uint capacity;        ///< Cargo capacity
+	uint16 mail_capacity; ///< Mail capacity if available
+};
+
+int DrawVehiclePurchaseInfo(int left, int right, int y, EngineID engine_number, TestedEngineDetails &te);
 
 void DrawTrainImage(const Train *v, int left, int right, int y, VehicleID selection, EngineImageType image_type, int skip, VehicleID drag_dest = INVALID_VEHICLE);
 void DrawRoadVehImage(const Vehicle *v, int left, int right, int y, VehicleID selection, EngineImageType image_type, int skip = 0);
@@ -53,6 +60,8 @@ void ShowVehicleListWindow(const Vehicle *v);
 void ShowVehicleListWindow(CompanyID company, VehicleType vehicle_type);
 void ShowVehicleListWindow(CompanyID company, VehicleType vehicle_type, StationID station);
 void ShowVehicleListWindow(CompanyID company, VehicleType vehicle_type, TileIndex depot_tile);
+
+void DirtyVehicleListWindowForVehicle(const Vehicle *v);
 
 /**
  * Get the height of a single vehicle in the GUIs.
@@ -98,9 +107,40 @@ void ShowVehicleViewWindow(const Vehicle *v);
 bool VehicleClicked(const Vehicle *v);
 void StartStopVehicle(const Vehicle *v, bool texteffect);
 
-Vehicle *CheckClickOnVehicle(const struct ViewPort *vp, int x, int y);
+Vehicle *CheckClickOnVehicle(const struct Viewport *vp, int x, int y);
 
 void DrawVehicleImage(const Vehicle *v, int left, int right, int y, VehicleID selection, EngineImageType image_type, int skip);
 void SetMouseCursorVehicle(const Vehicle *v, EngineImageType image_type);
+
+/**
+ * Tell if the focused window concerns the specified vehicle.
+ * @param vid Vehicle id to check.
+ * @param ref_window The window to check against.
+ * @return True if the focused window is about specified vehicle.
+ */
+static inline bool HasFocusedVehicleChanged(const VehicleID vid, Window *ref_window)
+{
+	if (ref_window) {
+		WindowClass wc = ref_window->window_class;
+		WindowNumber wn = ref_window->window_number;
+
+		if (wc == WC_DROPDOWN_MENU) GetParentWindowInfo(ref_window, wc, wn);
+
+		switch (wc) {
+			default:
+				break;
+			case WC_VEHICLE_DETAILS:
+			case WC_VEHICLE_REFIT:
+			case WC_VEHICLE_ORDERS:
+			case WC_VEHICLE_TIMETABLE:
+			case WC_VEHICLE_VIEW:
+			case WC_VEHICLE_CARGO_TYPE_LOAD_ORDERS:
+			case WC_VEHICLE_CARGO_TYPE_UNLOAD_ORDERS:
+				return ((uint32) wn != vid);
+		}
+	}
+
+	return true;
+}
 
 #endif /* VEHICLE_GUI_H */

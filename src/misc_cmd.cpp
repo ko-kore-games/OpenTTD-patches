@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -21,20 +19,27 @@
 #include "company_func.h"
 #include "company_gui.h"
 #include "company_base.h"
+#include "tile_map.h"
+#include "texteff.hpp"
 #include "core/backup_type.hpp"
+#include "cheat_type.h"
 
 #include "table/strings.h"
 
 #include "safeguards.h"
 
+/* Make sure we can discard lower 2 bits of 64bit amount when passing it to Cmd[In|De]creaseLoan() */
+static_assert((LOAN_INTERVAL & 3) == 0);
+
 /**
  * Increase the loan of your company.
  * @param tile unused
  * @param flags operation to perform
- * @param p1 amount to increase the loan with, multitude of LOAN_INTERVAL. Only used when p2 == 2.
- * @param p2 when 0: loans LOAN_INTERVAL
- *           when 1: loans the maximum loan permitting money (press CTRL),
- *           when 2: loans the amount specified in p1
+ * @param p1 higher half of amount to increase the loan with, multitude of LOAN_INTERVAL. Only used when (p2 & 3) == 2.
+ * @param p2 (bit 2-31) - lower half of amount (lower 2 bits assumed to be 0)
+ *           (bit 0-1)  - when 0: loans LOAN_INTERVAL
+ *                        when 1: loans the maximum loan permitting money (press CTRL),
+ *                        when 2: loans the amount specified in p1 and p2
  * @param text unused
  * @return the cost of this operation or an error
  */
@@ -48,7 +53,7 @@ CommandCost CmdIncreaseLoan(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 	}
 
 	Money loan;
-	switch (p2) {
+	switch (p2 & 3) {
 		default: return CMD_ERROR; // Invalid method
 		case 0: // Take some extra loan
 			loan = LOAN_INTERVAL;
@@ -57,8 +62,8 @@ CommandCost CmdIncreaseLoan(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 			loan = _economy.max_loan - c->current_loan;
 			break;
 		case 2: // Take the given amount of loan
-			if ((int32)p1 < LOAN_INTERVAL || c->current_loan + (int32)p1 > _economy.max_loan || p1 % LOAN_INTERVAL != 0) return CMD_ERROR;
-			loan = p1;
+			loan = ((uint64)p1 << 32) | (p2 & 0xFFFFFFFC);
+			if (loan < LOAN_INTERVAL || c->current_loan + loan > _economy.max_loan || loan % LOAN_INTERVAL != 0) return CMD_ERROR;
 			break;
 	}
 
@@ -78,10 +83,11 @@ CommandCost CmdIncreaseLoan(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
  * Decrease the loan of your company.
  * @param tile unused
  * @param flags operation to perform
- * @param p1 amount to decrease the loan with, multitude of LOAN_INTERVAL. Only used when p2 == 2.
- * @param p2 when 0: pays back LOAN_INTERVAL
- *           when 1: pays back the maximum loan permitting money (press CTRL),
- *           when 2: pays back the amount specified in p1
+ * @param p1 higher half of amount to decrease the loan with, multitude of LOAN_INTERVAL. Only used when (p2 & 3) == 2.
+ * @param p2 (bit 2-31) - lower half of amount (lower 2 bits assumed to be 0)
+ *           (bit 0-1)  - when 0: pays back LOAN_INTERVAL
+ *                        when 1: pays back the maximum loan permitting money (press CTRL),
+ *                        when 2: pays back the amount specified in p1 and p2
  * @param text unused
  * @return the cost of this operation or an error
  */
@@ -92,18 +98,18 @@ CommandCost CmdDecreaseLoan(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
 	if (c->current_loan == 0) return_cmd_error(STR_ERROR_LOAN_ALREADY_REPAYED);
 
 	Money loan;
-	switch (p2) {
+	switch (p2 & 3) {
 		default: return CMD_ERROR; // Invalid method
 		case 0: // Pay back one step
-			loan = min(c->current_loan, (Money)LOAN_INTERVAL);
+			loan = std::min(c->current_loan, (Money)LOAN_INTERVAL);
 			break;
 		case 1: // Pay back as much as possible
-			loan = max(min(c->current_loan, c->money), (Money)LOAN_INTERVAL);
+			loan = std::max(std::min(c->current_loan, c->money), (Money)LOAN_INTERVAL);
 			loan -= loan % LOAN_INTERVAL;
 			break;
 		case 2: // Repay the given amount of loan
-			if (p1 % LOAN_INTERVAL != 0 || (int32)p1 < LOAN_INTERVAL || p1 > c->current_loan) return CMD_ERROR; // Invalid amount to loan
-			loan = p1;
+			loan = ((uint64)p1 << 32) | (p2 & 0xFFFFFFFC);
+			if (loan % LOAN_INTERVAL != 0 || loan < LOAN_INTERVAL || loan > c->current_loan) return CMD_ERROR; // Invalid amount to loan
 			break;
 	}
 
@@ -124,7 +130,7 @@ CommandCost CmdDecreaseLoan(TileIndex tile, DoCommandFlag flags, uint32 p1, uint
  * In case of an unsafe unpause, we want the
  * user to confirm that it might crash.
  * @param w         unused
- * @param confirmed whether the user confirms his/her action
+ * @param confirmed whether the user confirmed their action
  */
 static void AskUnsafeUnpauseCallback(Window *w, bool confirmed)
 {
@@ -152,14 +158,13 @@ CommandCost CmdPause(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, 
 		case PM_PAUSED_ERROR:
 		case PM_PAUSED_NORMAL:
 		case PM_PAUSED_GAME_SCRIPT:
+		case PM_PAUSED_LINK_GRAPH:
 			break;
 
-#ifdef ENABLE_NETWORK
 		case PM_PAUSED_JOIN:
 		case PM_PAUSED_ACTIVE_CLIENTS:
 			if (!_networking) return CMD_ERROR;
 			break;
-#endif /* ENABLE_NETWORK */
 
 		default: return CMD_ERROR;
 	}
@@ -168,23 +173,19 @@ CommandCost CmdPause(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, 
 			ShowQuery(
 				STR_NEWGRF_UNPAUSE_WARNING_TITLE,
 				STR_NEWGRF_UNPAUSE_WARNING,
-				NULL,
+				nullptr,
 				AskUnsafeUnpauseCallback
 			);
 		} else {
-#ifdef ENABLE_NETWORK
 			PauseMode prev_mode = _pause_mode;
-#endif /* ENABLE_NETWORK */
 
 			if (p2 == 0) {
-				_pause_mode = _pause_mode & ~p1;
+				_pause_mode = static_cast<PauseMode>(_pause_mode & (byte)~p1);
 			} else {
-				_pause_mode = _pause_mode | p1;
+				_pause_mode = static_cast<PauseMode>(_pause_mode | (byte)p1);
 			}
 
-#ifdef ENABLE_NETWORK
 			NetworkHandlePauseChange(prev_mode, (PauseMode)p1);
-#endif /* ENABLE_NETWORK */
 		}
 
 		SetWindowDirty(WC_STATUS_BAR, 0);
@@ -204,12 +205,114 @@ CommandCost CmdPause(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, 
  */
 CommandCost CmdMoneyCheat(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const char *text)
 {
+	if (_networking && !_settings_game.difficulty.money_cheat_in_multiplayer) return CMD_ERROR;
+	if (flags & DC_EXEC) {
+		_cheats.money.been_used = true;
+		SetWindowDirty(WC_CHEATS, 0);
+	}
 	return CommandCost(EXPENSES_OTHER, -(int32)p1);
 }
 
 /**
- * Change the bank bank balance of a company by inserting or removing money without affecting the loan.
+ * Change the financial flow of your company (admin).
  * @param tile unused
+ * @param flags operation to perform
+ * @param p1 the amount of money to receive (if positive), or spend (if negative)
+ * @param p2 unused
+ * @param text unused
+ * @return the cost of this operation or an error
+ */
+CommandCost CmdMoneyCheatAdmin(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const char *text)
+{
+	if (flags & DC_EXEC) {
+		_cheats.money.been_used = true;
+		SetWindowDirty(WC_CHEATS, 0);
+	}
+	return CommandCost(EXPENSES_OTHER, -(int32)p1);
+}
+
+/**
+ * Change the value of a cheat setting.
+ * @param tile unused
+ * @param flags operation to perform
+ * @param p1 the cheat number
+ * @param p2 the cheat value
+ * @param text unused
+ * @return the cost of this operation or an error
+ */
+CommandCost CmdCheatSetting(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const char *text)
+{
+	Cheat *cht = nullptr;
+	switch ((CheatNumbers) p1) {
+		case CHT_EXTRA_DYNAMITE:
+			cht = &_cheats.magic_bulldozer;
+			break;
+
+		case CHT_CROSSINGTUNNELS:
+			cht = &_cheats.crossing_tunnels;
+			break;
+
+		case CHT_NO_JETCRASH:
+			cht = &_cheats.no_jetcrash;
+			break;
+
+		case CHT_INFLATION_INCOME:
+			if (flags & DC_EXEC) {
+				_extra_cheats.inflation_income.been_used = true;
+				_economy.inflation_payment = Clamp<uint64>(p2, 1 << 16, MAX_INFLATION);
+				if (_economy.inflation_payment > _economy.inflation_prices) {
+					_economy.inflation_prices = _economy.inflation_payment;
+					_extra_cheats.inflation_cost.been_used = true;
+				}
+				RecomputePrices();
+				SetWindowDirty(WC_CHEATS, 0);
+			}
+			return CommandCost();
+
+		case CHT_INFLATION_COST:
+			if (flags & DC_EXEC) {
+				_extra_cheats.inflation_cost.been_used = true;
+				_economy.inflation_prices = Clamp<uint64>(p2, 1 << 16, MAX_INFLATION);
+				if (_economy.inflation_payment > _economy.inflation_prices) {
+					_economy.inflation_payment = _economy.inflation_prices;
+					_extra_cheats.inflation_income.been_used = true;
+				}
+				RecomputePrices();
+				SetWindowDirty(WC_CHEATS, 0);
+			}
+			return CommandCost();
+
+		case CHT_STATION_RATING:
+			cht = &_extra_cheats.station_rating;
+			break;
+
+		case CHT_TOWN_RATING:
+			cht = &_extra_cheats.town_rating;
+			break;
+
+		default:
+			return CMD_ERROR;
+	}
+	if (flags & DC_EXEC) {
+		cht->value  = p2;
+		cht->been_used = true;
+		SetWindowDirty(WC_CHEATS, 0);
+
+		if (p1 == CHT_STATION_RATING) {
+			extern void UpdateAllStationRatings();
+			UpdateAllStationRatings();
+		}
+		if (p1 == CHT_TOWN_RATING) {
+			extern void UpdateAllTownRatings();
+			UpdateAllTownRatings();
+		}
+	}
+	return CommandCost();
+}
+
+/**
+ * Change the bank bank balance of a company by inserting or removing money without affecting the loan.
+ * @param tile tile to show text effect on (if not 0)
  * @param flags operation to perform
  * @param p1 the amount of money to receive (if positive), or spend (if negative)
  * @param p2 (bit 0-7)  - the company ID.
@@ -229,12 +332,16 @@ CommandCost CmdChangeBankBalance(TileIndex tile, DoCommandFlag flags, uint32 p1,
 
 	if (flags & DC_EXEC) {
 		/* Change company bank balance of company. */
-		Backup<CompanyByte> cur_company(_current_company, company, FILE_LINE);
+		Backup<CompanyID> cur_company(_current_company, company, FILE_LINE);
 		SubtractMoneyFromCompany(CommandCost(expenses_type, -delta));
 		cur_company.Restore();
+
+		if (tile != 0) {
+			ShowCostOrIncomeAnimation(TileX(tile) * TILE_SIZE, TileY(tile) * TILE_SIZE, GetTilePixelZ(tile), -delta);
+		}
 	}
 
-	/* This command doesn't cost anyting for deity. */
+	/* This command doesn't cost anything for deity. */
 	CommandCost zero_cost(expenses_type, 0);
 	return zero_cost;
 }
@@ -256,16 +363,16 @@ CommandCost CmdGiveMoney(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 
 	if (!_settings_game.economy.give_money) return CMD_ERROR;
 
 	const Company *c = Company::Get(_current_company);
-	CommandCost amount(EXPENSES_OTHER, min((Money)p1, (Money)20000000LL));
+	CommandCost amount(EXPENSES_OTHER, std::min((Money)p1, (Money)20000000LL));
 	CompanyID dest_company = (CompanyID)p2;
 
 	/* You can only transfer funds that is in excess of your loan */
 	if (c->money - c->current_loan < amount.GetCost() || amount.GetCost() < 0) return CMD_ERROR;
-	if (!_networking || !Company::IsValidID(dest_company)) return CMD_ERROR;
+	if (!Company::IsValidID(dest_company)) return CMD_ERROR;
 
 	if (flags & DC_EXEC) {
 		/* Add money to company */
-		Backup<CompanyByte> cur_company(_current_company, dest_company, FILE_LINE);
+		Backup<CompanyID> cur_company(_current_company, dest_company, FILE_LINE);
 		SubtractMoneyFromCompany(CommandCost(EXPENSES_OTHER, -amount.GetCost()));
 		cur_company.Restore();
 	}

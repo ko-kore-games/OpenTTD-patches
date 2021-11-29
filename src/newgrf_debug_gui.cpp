@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,15 +9,17 @@
 
 #include "stdafx.h"
 #include <stdarg.h>
+#include <functional>
 #include "window_gui.h"
 #include "window_func.h"
-#include "fileio_func.h"
+#include "random_access_file_type.h"
 #include "spritecache.h"
 #include "string_func.h"
 #include "strings_func.h"
 #include "textbuf_gui.h"
 #include "vehicle_gui.h"
 #include "zoom_func.h"
+#include "scope.h"
 
 #include "engine_base.h"
 #include "industry.h"
@@ -40,6 +40,8 @@
 #include "newgrf_industries.h"
 #include "newgrf_industrytiles.h"
 
+#include "newgrf_config.h"
+
 #include "widgets/newgrf_debug_widget.h"
 
 #include "table/strings.h"
@@ -47,7 +49,7 @@
 #include "safeguards.h"
 
 /** The sprite picker. */
-NewGrfDebugSpritePicker _newgrf_debug_sprite_picker = { SPM_NONE, NULL, 0, SmallVector<SpriteID, 256>() };
+NewGrfDebugSpritePicker _newgrf_debug_sprite_picker = { SPM_NONE, nullptr, std::vector<SpriteID>() };
 
 /**
  * Get the feature index related to the window number.
@@ -56,7 +58,7 @@ NewGrfDebugSpritePicker _newgrf_debug_sprite_picker = { SPM_NONE, NULL, 0, Small
  */
 static inline uint GetFeatureIndex(uint window_number)
 {
-	return GB(window_number, 0, 24);
+	return GB(window_number, 0, 27);
 }
 
 /**
@@ -68,8 +70,8 @@ static inline uint GetFeatureIndex(uint window_number)
  */
 static inline uint GetInspectWindowNumber(GrfSpecFeature feature, uint index)
 {
-	assert((index >> 24) == 0);
-	return (feature << 24) | index;
+	assert((index >> 27) == 0);
+	return (feature << 27) | index;
 }
 
 /**
@@ -166,7 +168,7 @@ public:
 	 * @param avail Return whether the variable is available.
 	 * @return The resolved variable's value.
 	 */
-	virtual uint Resolve(uint index, uint var, uint param, bool *avail) const = 0;
+	virtual uint Resolve(uint index, uint var, uint param, GetVariableExtra *extra) const = 0;
 
 	/**
 	 * Used to decide if the PSA needs a parameter or not.
@@ -192,12 +194,22 @@ public:
 	 * Gets the first position of the array containing the persistent storage.
 	 * @param index Index of the item.
 	 * @param grfid Parameter for the PSA. Only required for items with parameters.
-	 * @return Pointer to the first position of the storage array or NULL if not present.
+	 * @return Pointer to the first position of the storage array or nullptr if not present.
 	 */
 	virtual const int32 *GetPSAFirstPosition(uint index, uint32 grfid) const
 	{
-		return NULL;
+		return nullptr;
 	}
+
+	virtual std::vector<uint32> GetPSAGRFIDs(uint index) const
+	{
+		return {};
+	}
+
+	virtual void ExtraInfo(uint index, std::function<void(const char *)> print) const {}
+	virtual void SpriteDump(uint index, std::function<void(const char *)> print) const {}
+	virtual bool ShowExtraInfoOnly(uint index) const { return false; };
+	virtual bool ShowSpriteDumpButton(uint index) const { return false; };
 
 protected:
 	/**
@@ -246,24 +258,24 @@ struct NIFeature {
  */
 static inline GrfSpecFeature GetFeatureNum(uint window_number)
 {
-	return (GrfSpecFeature)GB(window_number, 24, 8);
+	return (GrfSpecFeature)GB(window_number, 27, 5);
 }
 
 /**
  * Get the NIFeature related to the window number.
  * @param window_number The window to get the NIFeature for.
- * @return the NIFeature, or NULL is there isn't one.
+ * @return the NIFeature, or nullptr is there isn't one.
  */
 static inline const NIFeature *GetFeature(uint window_number)
 {
 	GrfSpecFeature idx = GetFeatureNum(window_number);
-	return idx < GSF_FAKE_END ? _nifeatures[idx] : NULL;
+	return idx < GSF_FAKE_END ? _nifeatures[idx] : nullptr;
 }
 
 /**
  * Get the NIHelper related to the window number.
  * @param window_number The window to get the NIHelper for.
- * @pre GetFeature(window_number) != NULL
+ * @pre GetFeature(window_number) != nullptr
  * @return the NIHelper
  */
 static inline const NIHelper *GetFeatureHelper(uint window_number)
@@ -291,6 +303,12 @@ struct NewGRFInspectWindow : Window {
 	byte current_edit_param;
 
 	Scrollbar *vscroll;
+
+	int first_variable_line_index = 0;
+
+	bool auto_refresh = false;
+	bool log_console = false;
+	bool sprite_dump = false;
 
 	/**
 	 * Check whether the given variable has a parameter.
@@ -332,7 +350,7 @@ struct NewGRFInspectWindow : Window {
 			assert(this->HasChainIndex());
 			const Vehicle *v = Vehicle::Get(index);
 			v = v->Move(this->chain_index);
-			if (v != NULL) index = v->index;
+			if (v != nullptr) index = v->index;
 		}
 		return index;
 	}
@@ -348,13 +366,14 @@ struct NewGRFInspectWindow : Window {
 
 		const Vehicle *v = Vehicle::Get(::GetFeatureIndex(this->window_number));
 		v = v->Move(this->chain_index);
-		if (v == NULL) this->chain_index = 0;
+		if (v == nullptr) this->chain_index = 0;
 	}
 
 	NewGRFInspectWindow(WindowDesc *desc, WindowNumber wno) : Window(desc)
 	{
 		this->CreateNestedTree();
 		this->vscroll = this->GetScrollbar(WID_NGRFI_SCROLLBAR);
+		this->GetWidget<NWidgetStacked>(WID_NGRFI_SPRITE_DUMP_SEL)->SetDisplayedPlane(GetFeatureHelper(wno)->ShowSpriteDumpButton(::GetFeatureIndex(wno)) ? 0 : SZSP_NONE);
 		this->FinishInitNested(wno);
 
 		this->vscroll->SetCount(0);
@@ -363,25 +382,25 @@ struct NewGRFInspectWindow : Window {
 		this->OnInvalidateData(0, true);
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		if (widget != WID_NGRFI_CAPTION) return;
 
 		GetFeatureHelper(this->window_number)->SetStringParameters(this->GetFeatureIndex());
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_NGRFI_VEH_CHAIN: {
 				assert(this->HasChainIndex());
 				GrfSpecFeature f = GetFeatureNum(this->window_number);
-				size->height = max(size->height, GetVehicleImageCellSize((VehicleType)(VEH_TRAIN + (f - GSF_TRAINS)), EIT_IN_DEPOT).height + 2 + WD_BEVEL_TOP + WD_BEVEL_BOTTOM);
+				size->height = std::max(size->height, GetVehicleImageCellSize((VehicleType)(VEH_TRAIN + (f - GSF_TRAINS)), EIT_IN_DEPOT).height + 2 + WD_BEVEL_TOP + WD_BEVEL_BOTTOM);
 				break;
 			}
 
 			case WID_NGRFI_MAINPANEL:
-				resize->height = max(11, FONT_HEIGHT_NORMAL + 1);
+				resize->height = std::max(11, FONT_HEIGHT_NORMAL + 1);
 				resize->width  = 1;
 
 				size->height = 5 * resize->height + TOP_OFFSET + BOTTOM_OFFSET;
@@ -404,13 +423,15 @@ struct NewGRFInspectWindow : Window {
 		vseprintf(buf, lastof(buf), format, va);
 		va_end(va);
 
+		if (this->log_console) DEBUG(misc, 0, "  %s", buf);
+
 		offset -= this->vscroll->GetPosition();
 		if (offset < 0 || offset >= this->vscroll->GetCapacity()) return;
 
 		::DrawString(r.left + LEFT_OFFSET, r.right - RIGHT_OFFSET, r.top + TOP_OFFSET + (offset * this->resize.step_height), buf, TC_BLACK);
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
 			case WID_NGRFI_VEH_CHAIN: {
@@ -418,7 +439,7 @@ struct NewGRFInspectWindow : Window {
 				int total_width = 0;
 				int sel_start = 0;
 				int sel_end = 0;
-				for (const Vehicle *u = v->First(); u != NULL; u = u->Next()) {
+				for (const Vehicle *u = v->First(); u != nullptr; u = u->Next()) {
 					if (u == v) sel_start = total_width;
 					switch (u->type) {
 						case VEH_TRAIN: total_width += Train      ::From(u)->GetDisplayImageWidth(); break;
@@ -432,7 +453,7 @@ struct NewGRFInspectWindow : Window {
 				int skip = 0;
 				if (total_width > width) {
 					int sel_center = (sel_start + sel_end) / 2;
-					if (sel_center > width / 2) skip = min(total_width - width, sel_center - width / 2);
+					if (sel_center > width / 2) skip = std::min(total_width - width, sel_center - width / 2);
 				}
 
 				GrfSpecFeature f = GetFeatureNum(this->window_number);
@@ -452,6 +473,13 @@ struct NewGRFInspectWindow : Window {
 
 		if (widget != WID_NGRFI_MAINPANEL) return;
 
+		if (this->log_console) {
+			GetFeatureHelper(this->window_number)->SetStringParameters(this->GetFeatureIndex());
+			char buf[1024];
+			GetString(buf, STR_NEWGRF_INSPECT_CAPTION, lastof(buf));
+			DEBUG(misc, 0, "*** %s ***", buf + Utf8EncodedCharLen(buf[0]));
+		}
+
 		uint index = this->GetFeatureIndex();
 		const NIFeature *nif  = GetFeature(this->window_number);
 		const NIHelper *nih   = nif->helper;
@@ -459,14 +487,61 @@ struct NewGRFInspectWindow : Window {
 		const void *base_spec = nih->GetSpec(index);
 
 		uint i = 0;
-		if (nif->variables != NULL) {
-			this->DrawString(r, i++, "Variables:");
-			for (const NIVariable *niv = nif->variables; niv->name != NULL; niv++) {
-				bool avail = true;
-				uint param = HasVariableParameter(niv->var) ? NewGRFInspectWindow::var60params[GetFeatureNum(this->window_number)][niv->var - 0x60] : 0;
-				uint value = nih->Resolve(index, niv->var, param, &avail);
 
-				if (!avail) continue;
+		auto guard = scope_guard([&]() {
+			if (this->log_console) {
+				const_cast<NewGRFInspectWindow*>(this)->log_console = false;
+				DEBUG(misc, 0, "*** END ***");
+			}
+
+			uint count = std::min<uint>(UINT16_MAX, i);
+			if (vscroll->GetCount() != count) {
+				/* Not nice and certainly a hack, but it beats duplicating
+				 * this whole function just to count the actual number of
+				 * elements. Especially because they need to be redrawn. */
+				const_cast<NewGRFInspectWindow*>(this)->vscroll->SetCount(count);
+			}
+		});
+
+		auto line_handler = [&](const char *buf) {
+			if (this->log_console) DEBUG(misc, 0, "  %s", buf);
+
+			int offset = i++;
+			offset -= this->vscroll->GetPosition();
+			if (offset < 0 || offset >= this->vscroll->GetCapacity()) return;
+
+			::DrawString(r.left + LEFT_OFFSET, r.right - RIGHT_OFFSET, r.top + TOP_OFFSET + (offset * this->resize.step_height), buf, TC_BLACK);
+		};
+		if (this->sprite_dump) {
+			nih->SpriteDump(index, line_handler);
+			return;
+		} else {
+			nih->ExtraInfo(index, line_handler);
+		}
+
+		if (nih->ShowExtraInfoOnly(index)) return;
+
+		uint32 grfid = nih->GetGRFID(index);
+		if (grfid) {
+			this->DrawString(r, i++, "GRF:");
+			this->DrawString(r, i++, "  ID: %08X", BSWAP32(grfid));
+			GRFConfig *grfconfig = GetGRFConfig(grfid);
+			if (grfconfig) {
+				this->DrawString(r, i++, "  Name: %s", grfconfig->GetName());
+				this->DrawString(r, i++, "  File: %s", grfconfig->filename);
+			}
+		}
+
+		const_cast<NewGRFInspectWindow*>(this)->first_variable_line_index = i;
+
+		if (nif->variables != nullptr) {
+			this->DrawString(r, i++, "Variables:");
+			for (const NIVariable *niv = nif->variables; niv->name != nullptr; niv++) {
+				GetVariableExtra extra;
+				uint param = HasVariableParameter(niv->var) ? NewGRFInspectWindow::var60params[GetFeatureNum(this->window_number)][niv->var - 0x60] : 0;
+				uint value = nih->Resolve(index, niv->var, param, &extra);
+
+				if (!extra.available) continue;
 
 				if (HasVariableParameter(niv->var)) {
 					this->DrawString(r, i++, "  %02x[%02x]: %08x (%s)", niv->var, param, value, niv->name);
@@ -476,23 +551,34 @@ struct NewGRFInspectWindow : Window {
 			}
 		}
 
-		uint psa_size = nih->GetPSASize(index, this->caller_grfid);
-		const int32 *psa = nih->GetPSAFirstPosition(index, this->caller_grfid);
-		if (psa_size != 0 && psa != NULL) {
-			if (nih->PSAWithParameter()) {
-				this->DrawString(r, i++, "Persistent storage [%08X]:", BSWAP32(this->caller_grfid));
-			} else {
-				this->DrawString(r, i++, "Persistent storage:");
-			}
-			assert(psa_size % 4 == 0);
-			for (uint j = 0; j < psa_size; j += 4, psa += 4) {
-				this->DrawString(r, i++, "  %i: %i %i %i %i", j, psa[0], psa[1], psa[2], psa[3]);
+		std::vector<uint32> psa_grfids = nih->GetPSAGRFIDs(index);
+		for (const uint32 grfid : psa_grfids) {
+			uint psa_size = nih->GetPSASize(index, grfid);
+			const int32 *psa = nih->GetPSAFirstPosition(index, grfid);
+			if (psa_size != 0 && psa != nullptr) {
+				if (nih->PSAWithParameter()) {
+					this->DrawString(r, i++, "Persistent storage [%08X]:", BSWAP32(grfid));
+				} else {
+					this->DrawString(r, i++, "Persistent storage:");
+				}
+				assert(psa_size % 4 == 0);
+				uint last_non_blank = 0;
+				for (uint j = 0; j < psa_size; j++) {
+					if (psa[j] != 0) last_non_blank = j + 1;
+				}
+				const uint psa_limit = (last_non_blank + 3) & ~3;
+				for (uint j = 0; j < psa_limit; j += 4, psa += 4) {
+					this->DrawString(r, i++, "  %i: %i %i %i %i", j, psa[0], psa[1], psa[2], psa[3]);
+				}
+				if (last_non_blank != psa_size) {
+					this->DrawString(r, i++, "  %i to %i are all 0", psa_limit, psa_size - 1);
+				}
 			}
 		}
 
-		if (nif->properties != NULL) {
+		if (nif->properties != nullptr) {
 			this->DrawString(r, i++, "Properties:");
-			for (const NIProperty *nip = nif->properties; nip->name != NULL; nip++) {
+			for (const NIProperty *nip = nif->properties; nip->name != nullptr; nip++) {
 				const void *ptr = (const byte *)base + nip->offset;
 				uint value;
 				switch (nip->read_size) {
@@ -523,9 +609,9 @@ struct NewGRFInspectWindow : Window {
 			}
 		}
 
-		if (nif->callbacks != NULL) {
+		if (nif->callbacks != nullptr) {
 			this->DrawString(r, i++, "Callbacks:");
-			for (const NICallback *nic = nif->callbacks; nic->name != NULL; nic++) {
+			for (const NICallback *nic = nif->callbacks; nic->name != nullptr; nic++) {
 				if (nic->cb_bit != CBM_NO_BIT) {
 					const void *ptr = (const byte *)base_spec + nic->offset;
 					uint value;
@@ -543,14 +629,9 @@ struct NewGRFInspectWindow : Window {
 				}
 			}
 		}
-
-		/* Not nice and certainly a hack, but it beats duplicating
-		 * this whole function just to count the actual number of
-		 * elements. Especially because they need to be redrawn. */
-		const_cast<NewGRFInspectWindow*>(this)->vscroll->SetCount(i);
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_NGRFI_PARENT: {
@@ -571,7 +652,7 @@ struct NewGRFInspectWindow : Window {
 				if (this->HasChainIndex()) {
 					uint index = this->GetFeatureIndex();
 					Vehicle *v = Vehicle::Get(index);
-					if (v != NULL && v->Next() != NULL) {
+					if (v != nullptr && v->Next() != nullptr) {
 						this->chain_index++;
 						this->InvalidateData();
 					}
@@ -579,16 +660,19 @@ struct NewGRFInspectWindow : Window {
 				break;
 
 			case WID_NGRFI_MAINPANEL: {
+				if (this->sprite_dump) return;
 				/* Does this feature have variables? */
 				const NIFeature *nif  = GetFeature(this->window_number);
-				if (nif->variables == NULL) return;
+				if (nif->variables == nullptr) return;
 
 				/* Get the line, make sure it's within the boundaries. */
 				int line = this->vscroll->GetScrolledRowFromWidget(pt.y, this, WID_NGRFI_MAINPANEL, TOP_OFFSET);
 				if (line == INT_MAX) return;
+				if (line < this->first_variable_line_index) return;
+				line -= this->first_variable_line_index;
 
 				/* Find the variable related to the line */
-				for (const NIVariable *niv = nif->variables; niv->name != NULL; niv++, line--) {
+				for (const NIVariable *niv = nif->variables; niv->name != nullptr; niv++, line--) {
 					if (line != 1) continue; // 1 because of the "Variables:" line
 
 					if (!HasVariableParameter(niv->var)) break;
@@ -596,19 +680,42 @@ struct NewGRFInspectWindow : Window {
 					this->current_edit_param = niv->var;
 					ShowQueryString(STR_EMPTY, STR_NEWGRF_INSPECT_QUERY_CAPTION, 9, this, CS_HEXADECIMAL, QSF_NONE);
 				}
+				break;
+			}
+
+			case WID_NGRFI_REFRESH: {
+				this->auto_refresh = !this->auto_refresh;
+				this->SetWidgetLoweredState(WID_NGRFI_REFRESH, this->auto_refresh);
+				this->SetWidgetDirty(WID_NGRFI_REFRESH);
+				break;
+			}
+
+			case WID_NGRFI_LOG_CONSOLE: {
+				this->log_console = true;
+				this->SetWidgetDirty(WID_NGRFI_MAINPANEL);
+				break;
+			}
+
+			case WID_NGRFI_SPRITE_DUMP: {
+				this->sprite_dump = !this->sprite_dump;
+				this->SetWidgetLoweredState(WID_NGRFI_SPRITE_DUMP, this->sprite_dump);
+				this->SetWidgetDirty(WID_NGRFI_SPRITE_DUMP);
+				this->SetWidgetDirty(WID_NGRFI_MAINPANEL);
+				this->SetWidgetDirty(WID_NGRFI_SCROLLBAR);
+				break;
 			}
 		}
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
 		if (StrEmpty(str)) return;
 
-		NewGRFInspectWindow::var60params[GetFeatureNum(this->window_number)][this->current_edit_param - 0x60] = strtol(str, NULL, 16);
+		NewGRFInspectWindow::var60params[GetFeatureNum(this->window_number)][this->current_edit_param - 0x60] = strtol(str, nullptr, 16);
 		this->SetDirty();
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
 		this->vscroll->SetCapacityFromWidget(this, WID_NGRFI_MAINPANEL, TOP_OFFSET + BOTTOM_OFFSET);
 	}
@@ -618,15 +725,20 @@ struct NewGRFInspectWindow : Window {
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 		if (this->HasChainIndex()) {
 			this->ValidateChainIndex();
 			this->SetWidgetDisabledState(WID_NGRFI_VEH_PREV, this->chain_index == 0);
 			Vehicle *v = Vehicle::Get(this->GetFeatureIndex());
-			this->SetWidgetDisabledState(WID_NGRFI_VEH_NEXT, v == NULL || v->Next() == NULL);
+			this->SetWidgetDisabledState(WID_NGRFI_VEH_NEXT, v == nullptr || v->Next() == nullptr);
 		}
+	}
+
+	void OnRealtimeTick(uint delta_ms) override
+	{
+		if (this->auto_refresh) this->SetDirty();
 	}
 };
 
@@ -636,6 +748,11 @@ static const NWidgetPart _nested_newgrf_inspect_chain_widgets[] = {
 	NWidget(NWID_HORIZONTAL),
 		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
 		NWidget(WWT_CAPTION, COLOUR_GREY, WID_NGRFI_CAPTION), SetDataTip(STR_NEWGRF_INSPECT_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
+		NWidget(NWID_SELECTION, INVALID_COLOUR, WID_NGRFI_SPRITE_DUMP_SEL),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_NGRFI_SPRITE_DUMP), SetDataTip(STR_NEWGRF_INSPECT_SPRITE_DUMP, STR_NEWGRF_INSPECT_SPRITE_DUMP_TOOLTIP),
+		EndContainer(),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_NGRFI_LOG_CONSOLE), SetDataTip(STR_NEWGRF_INSPECT_LOG_CONSOLE, STR_NEWGRF_INSPECT_LOG_CONSOLE_TOOLTIP),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_NGRFI_REFRESH), SetDataTip(STR_NEWGRF_INSPECT_REFRESH, STR_NEWGRF_INSPECT_REFRESH_TOOLTIP),
 		NWidget(WWT_SHADEBOX, COLOUR_GREY),
 		NWidget(WWT_DEFSIZEBOX, COLOUR_GREY),
 		NWidget(WWT_STICKYBOX, COLOUR_GREY),
@@ -661,6 +778,11 @@ static const NWidgetPart _nested_newgrf_inspect_widgets[] = {
 		NWidget(WWT_CLOSEBOX, COLOUR_GREY),
 		NWidget(WWT_CAPTION, COLOUR_GREY, WID_NGRFI_CAPTION), SetDataTip(STR_NEWGRF_INSPECT_CAPTION, STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS),
 		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_NGRFI_PARENT), SetDataTip(STR_NEWGRF_INSPECT_PARENT_BUTTON, STR_NEWGRF_INSPECT_PARENT_TOOLTIP),
+		NWidget(NWID_SELECTION, INVALID_COLOUR, WID_NGRFI_SPRITE_DUMP_SEL),
+			NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_NGRFI_SPRITE_DUMP), SetDataTip(STR_NEWGRF_INSPECT_SPRITE_DUMP, STR_NEWGRF_INSPECT_SPRITE_DUMP_TOOLTIP),
+		EndContainer(),
+		NWidget(WWT_PUSHTXTBTN, COLOUR_GREY, WID_NGRFI_LOG_CONSOLE), SetDataTip(STR_NEWGRF_INSPECT_LOG_CONSOLE, STR_NEWGRF_INSPECT_LOG_CONSOLE_TOOLTIP),
+		NWidget(WWT_TEXTBTN, COLOUR_GREY, WID_NGRFI_REFRESH), SetDataTip(STR_NEWGRF_INSPECT_REFRESH, STR_NEWGRF_INSPECT_REFRESH_TOOLTIP),
 		NWidget(WWT_SHADEBOX, COLOUR_GREY),
 		NWidget(WWT_DEFSIZEBOX, COLOUR_GREY),
 		NWidget(WWT_STICKYBOX, COLOUR_GREY),
@@ -699,6 +821,7 @@ static WindowDesc _newgrf_inspect_desc(
  */
 void ShowNewGRFInspectWindow(GrfSpecFeature feature, uint index, const uint32 grfid)
 {
+	if (index >= (1 << 27)) return;
 	if (!IsNewGRFInspectable(feature, index)) return;
 
 	WindowNumber wno = GetInspectWindowNumber(feature, index);
@@ -718,6 +841,7 @@ void ShowNewGRFInspectWindow(GrfSpecFeature feature, uint index, const uint32 gr
 void InvalidateNewGRFInspectWindow(GrfSpecFeature feature, uint index)
 {
 	if (feature == GSF_INVALID) return;
+	if (index >= (1 << 27)) return;
 
 	WindowNumber wno = GetInspectWindowNumber(feature, index);
 	InvalidateWindowData(WC_NEWGRF_INSPECT, wno);
@@ -734,6 +858,7 @@ void InvalidateNewGRFInspectWindow(GrfSpecFeature feature, uint index)
 void DeleteNewGRFInspectWindow(GrfSpecFeature feature, uint index)
 {
 	if (feature == GSF_INVALID) return;
+	if (index >= (1 << 27)) return;
 
 	WindowNumber wno = GetInspectWindowNumber(feature, index);
 	DeleteWindowById(WC_NEWGRF_INSPECT, wno);
@@ -755,8 +880,9 @@ void DeleteNewGRFInspectWindow(GrfSpecFeature feature, uint index)
  */
 bool IsNewGRFInspectable(GrfSpecFeature feature, uint index)
 {
+	if (index >= (1 << 27)) return false;
 	const NIFeature *nif = GetFeature(GetInspectWindowNumber(feature, index));
-	if (nif == NULL) return false;
+	if (nif == nullptr) return false;
 	return nif->helper->IsInspectable(index);
 }
 
@@ -770,7 +896,7 @@ GrfSpecFeature GetGrfSpecFeature(TileIndex tile)
 	switch (GetTileType(tile)) {
 		default:              return GSF_INVALID;
 		case MP_RAILWAY:      return GSF_RAILTYPES;
-		case MP_ROAD:         return IsLevelCrossing(tile) ? GSF_RAILTYPES : GSF_INVALID;
+		case MP_ROAD:         return IsLevelCrossing(tile) ? GSF_RAILTYPES : GSF_ROADTYPES;
 		case MP_HOUSE:        return GSF_HOUSES;
 		case MP_INDUSTRY:     return GSF_INDUSTRYTILES;
 		case MP_OBJECT:       return GSF_OBJECTS;
@@ -806,7 +932,7 @@ GrfSpecFeature GetGrfSpecFeature(VehicleType type)
 
 /** Window used for aligning sprites. */
 struct SpriteAlignerWindow : Window {
-	typedef SmallPair<int16, int16> XyOffs;    ///< Pair for x and y offsets of the sprite before alignment. First value contains the x offset, second value y offset.
+	typedef std::pair<int16, int16> XyOffs;    ///< Pair for x and y offsets of the sprite before alignment. First value contains the x offset, second value y offset.
 
 	SpriteID current_sprite;                   ///< The currently shown sprite.
 	Scrollbar *vscroll;
@@ -822,13 +948,13 @@ struct SpriteAlignerWindow : Window {
 		while (GetSpriteType(this->current_sprite) != ST_NORMAL) this->current_sprite++;
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		const Sprite *spr = GetSprite(this->current_sprite, ST_NORMAL);
 		switch (widget) {
 			case WID_SA_CAPTION:
 				SetDParam(0, this->current_sprite);
-				SetDParamStr(1, FioGetFilename(GetOriginFileSlot(this->current_sprite)));
+				SetDParamStr(1, GetOriginFile(this->current_sprite)->GetSimplifiedFilename());
 				break;
 
 			case WID_SA_OFFSETS_ABS:
@@ -840,8 +966,8 @@ struct SpriteAlignerWindow : Window {
 				/* Relative offset is new absolute offset - starting absolute offset.
 				 * Show 0, 0 as the relative offsets if entry is not in the map (meaning they have not been changed yet).
 				 */
-				const SmallPair<SpriteID, XyOffs> *key_offs_pair = this->offs_start_map.Find(this->current_sprite);
-				if (key_offs_pair != this->offs_start_map.End()) {
+				const auto key_offs_pair = this->offs_start_map.Find(this->current_sprite);
+				if (key_offs_pair != this->offs_start_map.end()) {
 					SetDParam(0, spr->x_offs - key_offs_pair->second.first);
 					SetDParam(1, spr->y_offs - key_offs_pair->second.second);
 				} else {
@@ -856,18 +982,23 @@ struct SpriteAlignerWindow : Window {
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
-		if (widget != WID_SA_LIST) return;
-
-		resize->height = max(11, FONT_HEIGHT_NORMAL + 1);
-		resize->width  = 1;
-
-		/* Resize to about 200 pixels (for the preview) */
-		size->height = (1 + 200 / resize->height) * resize->height;
+		switch (widget) {
+			case WID_SA_SPRITE:
+				size->height = ScaleGUITrad(200);
+				break;
+			case WID_SA_LIST:
+				resize->height = FONT_HEIGHT_NORMAL + WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
+				resize->width  = 1;
+				fill->height = resize->height;
+				break;
+			default:
+				break;
+		}
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		switch (widget) {
 			case WID_SA_SPRITE: {
@@ -883,7 +1014,7 @@ struct SpriteAlignerWindow : Window {
 				DrawPixelInfo *old_dpi = _cur_dpi;
 				_cur_dpi = &new_dpi;
 
-				DrawSprite(this->current_sprite, PAL_NONE, x, y, NULL, ZOOM_LVL_GUI);
+				DrawSprite(this->current_sprite, PAL_NONE, x, y, nullptr, ZOOM_LVL_GUI);
 
 				_cur_dpi = old_dpi;
 
@@ -894,8 +1025,8 @@ struct SpriteAlignerWindow : Window {
 				const NWidgetBase *nwid = this->GetWidget<NWidgetBase>(widget);
 				int step_size = nwid->resize_y;
 
-				SmallVector<SpriteID, 256> &list = _newgrf_debug_sprite_picker.sprites;
-				int max = min<int>(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), list.Length());
+				std::vector<SpriteID> &list = _newgrf_debug_sprite_picker.sprites;
+				int max = std::min<int>(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), (uint)list.size());
 
 				int y = r.top + WD_FRAMERECT_TOP;
 				for (int i = this->vscroll->GetPosition(); i < max; i++) {
@@ -908,7 +1039,7 @@ struct SpriteAlignerWindow : Window {
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_SA_PREVIOUS:
@@ -940,7 +1071,7 @@ struct SpriteAlignerWindow : Window {
 				int step_size = nwid->resize_y;
 
 				uint i = this->vscroll->GetPosition() + (pt.y - nwid->pos_y) / step_size;
-				if (i < _newgrf_debug_sprite_picker.sprites.Length()) {
+				if (i < _newgrf_debug_sprite_picker.sprites.size()) {
 					SpriteID spr = _newgrf_debug_sprite_picker.sprites[i];
 					if (GetSpriteType(spr) == ST_NORMAL) this->current_sprite = spr;
 				}
@@ -972,7 +1103,7 @@ struct SpriteAlignerWindow : Window {
 					this->offs_start_map.Insert(this->current_sprite, XyOffs(spr->x_offs, spr->y_offs));
 				}
 				switch (widget) {
-					/* Move ten units at a time if ctrl is pressed. */
+					/* Move eight units at a time if ctrl is pressed. */
 					case WID_SA_UP:    spr->y_offs -= _ctrl_pressed ? 8 : 1; break;
 					case WID_SA_DOWN:  spr->y_offs += _ctrl_pressed ? 8 : 1; break;
 					case WID_SA_LEFT:  spr->x_offs -= _ctrl_pressed ? 8 : 1; break;
@@ -992,7 +1123,7 @@ struct SpriteAlignerWindow : Window {
 		}
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
 		if (StrEmpty(str)) return;
 
@@ -1009,17 +1140,17 @@ struct SpriteAlignerWindow : Window {
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 		if (data == 1) {
 			/* Sprite picker finished */
 			this->RaiseWidget(WID_SA_PICKER);
-			this->vscroll->SetCount(_newgrf_debug_sprite_picker.sprites.Length());
+			this->vscroll->SetCount((uint)_newgrf_debug_sprite_picker.sprites.size());
 		}
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
 		this->vscroll->SetCapacityFromWidget(this, WID_SA_LIST);
 	}

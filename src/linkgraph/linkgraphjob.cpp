@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -28,19 +26,30 @@ INSTANTIATE_POOL_METHODS(LinkGraphJob)
  */
 /* static */ Path *Path::invalid_path = new Path(INVALID_NODE, true);
 
+static DateTicks GetLinkGraphJobJoinDateTicks(uint duration_multiplier)
+{
+	DateTicks ticks = _settings_game.linkgraph.recalc_time * DAY_TICKS * duration_multiplier;
+	if (_settings_game.linkgraph.recalc_not_scaled_by_daylength) {
+		ticks /= _settings_game.economy.day_length_factor;
+	}
+	return ticks + (_date * DAY_TICKS) + _date_fract;
+}
+
 /**
  * Create a link graph job from a link graph. The link graph will be copied so
  * that the calculations don't interfer with the normal operations on the
  * original. The job is immediately started.
  * @param orig Original LinkGraph to be copied.
  */
-LinkGraphJob::LinkGraphJob(const LinkGraph &orig) :
+LinkGraphJob::LinkGraphJob(const LinkGraph &orig, uint duration_multiplier) :
 		/* Copying the link graph here also copies its index member.
 		 * This is on purpose. */
 		link_graph(orig),
 		settings(_settings_game.linkgraph),
-		thread(NULL),
-		join_date(_date + _settings_game.linkgraph.recalc_time)
+		join_date_ticks(GetLinkGraphJobJoinDateTicks(duration_multiplier)),
+		start_date_ticks((_date * DAY_TICKS) + _date_fract),
+		job_completed(false),
+		job_aborted(false)
 {
 }
 
@@ -55,23 +64,9 @@ void LinkGraphJob::EraseFlows(NodeID from)
 	}
 }
 
-/**
- * Spawn a thread if possible and run the link graph job in the thread. If
- * that's not possible run the job right now in the current thread.
- */
-void LinkGraphJob::SpawnThread()
+void LinkGraphJob::SetJobGroup(std::shared_ptr<LinkGraphJobGroup> group)
 {
-	if (!ThreadObject::New(&(LinkGraphSchedule::Run), this, &this->thread, "ottd:linkgraph")) {
-		this->thread = NULL;
-		/* Of course this will hang a bit.
-		 * On the other hand, if you want to play games which make this hang noticably
-		 * on a platform without threads then you'll probably get other problems first.
-		 * OK:
-		 * If someone comes and tells me that this hangs for him/her, I'll implement a
-		 * smaller grained "Step" method for all handlers and add some more ticks where
-		 * "Step" is called. No problem in principle. */
-		LinkGraphSchedule::Run(this);
-	}
+	this->group = std::move(group);
 }
 
 /**
@@ -79,34 +74,42 @@ void LinkGraphJob::SpawnThread()
  */
 void LinkGraphJob::JoinThread()
 {
-	if (this->thread != NULL) {
-		this->thread->Join();
-		delete this->thread;
-		this->thread = NULL;
+	if (this->group != nullptr) {
+		this->group->JoinThread();
+		this->group.reset();
 	}
 }
 
 /**
- * Join the link graph job and destroy it.
+ * Join the link graph job thread, if not already joined.
  */
 LinkGraphJob::~LinkGraphJob()
 {
 	this->JoinThread();
+}
 
-	/* Don't update stuff from other pools, when everything is being removed.
-	 * Accessing other pools may be invalid. */
-	if (CleaningPool()) return;
+/**
+ * Join the link graph job thread, then merge/apply it.
+ */
+void LinkGraphJob::FinaliseJob()
+{
+	this->JoinThread();
+
+	/* If the job has been aborted, the job state is invalid.
+	 * This should never be reached, as once the job has been marked as aborted
+	 * the only valid job operation is to clear the LinkGraphJob pool. */
+	assert(!this->IsJobAborted());
 
 	/* Link graph has been merged into another one. */
 	if (!LinkGraph::IsValidID(this->link_graph.index)) return;
 
-	uint size = this->Size();
+	uint16 size = this->Size();
 	for (NodeID node_id = 0; node_id < size; ++node_id) {
 		Node from = (*this)[node_id];
 
 		/* The station can have been deleted. Remove all flows originating from it then. */
 		Station *st = Station::GetIfValid(from.Station());
-		if (st == NULL) {
+		if (st == nullptr) {
 			this->EraseFlows(node_id);
 			continue;
 		}
@@ -126,7 +129,7 @@ LinkGraphJob::~LinkGraphJob()
 			if (from[it->first].Flow() == 0) continue;
 			StationID to = (*this)[it->first].Station();
 			Station *st2 = Station::GetIfValid(to);
-			if (st2 == NULL || st2->goods[this->Cargo()].link_graph != this->link_graph.index ||
+			if (st2 == nullptr || st2->goods[this->Cargo()].link_graph != this->link_graph.index ||
 					st2->goods[this->Cargo()].node != it->first ||
 					(*lg)[node_id][it->first].LastUpdate() == INVALID_DATE) {
 				/* Edge has been removed. Delete flows. */
@@ -146,27 +149,33 @@ LinkGraphJob::~LinkGraphJob()
 		 * somewhere. Do delete them and also reroute relevant cargo if
 		 * automatic distribution has been turned off for that cargo. */
 		for (FlowStatMap::iterator it(ge.flows.begin()); it != ge.flows.end();) {
-			FlowStatMap::iterator new_it = flows.find(it->first);
+			FlowStatMap::iterator new_it = flows.find(it->GetOrigin());
 			if (new_it == flows.end()) {
+				bool should_erase = true;
 				if (_settings_game.linkgraph.GetDistributionType(this->Cargo()) != DT_MANUAL) {
-					it->second.Invalidate();
-					++it;
-				} else {
-					FlowStat shares(INVALID_STATION, 1);
-					it->second.SwapShares(shares);
-					ge.flows.erase(it++);
-					for (FlowStat::SharesMap::const_iterator shares_it(shares.GetShares()->begin());
-							shares_it != shares.GetShares()->end(); ++shares_it) {
+					should_erase = it->Invalidate();
+				}
+				if (should_erase) {
+					FlowStat shares(INVALID_STATION, INVALID_STATION, 1);
+					it->SwapShares(shares);
+					it = ge.flows.erase(it);
+					for (FlowStat::const_iterator shares_it(shares.begin());
+							shares_it != shares.end(); ++shares_it) {
 						RerouteCargo(st, this->Cargo(), shares_it->second, st->index);
 					}
+				} else {
+					++it;
 				}
 			} else {
-				it->second.SwapShares(new_it->second);
+				it->SwapShares(*new_it);
 				flows.erase(new_it);
 				++it;
 			}
 		}
-		ge.flows.insert(flows.begin(), flows.end());
+		for (FlowStatMap::iterator it(flows.begin()); it != flows.end(); ++it) {
+			ge.flows.insert(std::move(*it));
+		}
+		ge.flows.SortStorage();
 		InvalidateWindowData(WC_STATION_VIEW, st->index, this->Cargo());
 	}
 }
@@ -179,7 +188,7 @@ LinkGraphJob::~LinkGraphJob()
 void LinkGraphJob::Init()
 {
 	uint size = this->Size();
-	this->nodes.Resize(size);
+	this->nodes.resize(size);
 	this->edges.Resize(size, size);
 	for (uint i = 0; i < size; ++i) {
 		this->nodes[i].Init(this->link_graph[i].Supply());
@@ -208,8 +217,7 @@ void LinkGraphJob::EdgeAnnotation::Init()
 void LinkGraphJob::NodeAnnotation::Init(uint supply)
 {
 	this->undelivered_supply = supply;
-	new (&this->flows) FlowStatMap;
-	new (&this->paths) PathList;
+	this->received_demand = 0;
 }
 
 /**
@@ -222,14 +230,14 @@ void LinkGraphJob::NodeAnnotation::Init(uint supply)
  */
 void Path::Fork(Path *base, uint cap, int free_cap, uint dist)
 {
-	this->capacity = min(base->capacity, cap);
-	this->free_capacity = min(base->free_capacity, free_cap);
+	this->capacity = std::min(base->capacity, cap);
+	this->free_capacity = std::min(base->free_capacity, free_cap);
 	this->distance = base->distance + dist;
 	assert(this->distance > 0);
-	if (this->parent != base) {
+	if (this->GetParent() != base) {
 		this->Detach();
-		this->parent = base;
-		this->parent->num_children++;
+		this->SetParent(base);
+		base->num_children++;
 	}
 	this->origin = base->origin;
 }
@@ -244,19 +252,19 @@ void Path::Fork(Path *base, uint cap, int free_cap, uint dist)
  */
 uint Path::AddFlow(uint new_flow, LinkGraphJob &job, uint max_saturation)
 {
-	if (this->parent != NULL) {
-		LinkGraphJob::Edge edge = job[this->parent->node][this->node];
+	if (this->GetParent() != nullptr) {
+		LinkGraphJob::Edge edge = job[this->GetParent()->node][this->node];
 		if (max_saturation != UINT_MAX) {
 			uint usable_cap = edge.Capacity() * max_saturation / 100;
 			if (usable_cap > edge.Flow()) {
-				new_flow = min(new_flow, usable_cap - edge.Flow());
+				new_flow = std::min(new_flow, usable_cap - edge.Flow());
 			} else {
 				return 0;
 			}
 		}
-		new_flow = this->parent->AddFlow(new_flow, job, max_saturation);
+		new_flow = this->GetParent()->AddFlow(new_flow, job, max_saturation);
 		if (this->flow == 0 && new_flow > 0) {
-			job[this->parent->node].Paths().push_front(this);
+			job[this->GetParent()->node].Paths().push_back(this);
 		}
 		edge.AddFlow(new_flow);
 	}
@@ -274,6 +282,6 @@ Path::Path(NodeID n, bool source) :
 	capacity(source ? UINT_MAX : 0),
 	free_capacity(source ? INT_MAX : INT_MIN),
 	flow(0), node(n), origin(source ? n : INVALID_NODE),
-	num_children(0), parent(NULL)
+	num_children(0), parent_storage(0)
 {}
 

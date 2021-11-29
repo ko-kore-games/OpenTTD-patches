@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -36,8 +34,26 @@ struct TownScopeResolver : public ScopeResolver {
 	{
 	}
 
-	virtual uint32 GetVariable(byte variable, uint32 parameter, bool *available) const;
+	virtual uint32 GetVariable(byte variable, uint32 parameter, GetVariableExtra *extra) const;
 	virtual void StorePSA(uint reg, int32 value);
+};
+
+/**
+ * Fake scope resolver for nonexistent towns.
+ *
+ * The purpose of this class is to provide a house resolver for a given house type
+ * but not an actual house instatntion. We need this when e.g. drawing houses in
+ * GUI to keep backward compatibility with GRFs that were created before this
+ * functionality. When querying house sprites, certain GRF may read various town
+ * variables e.g. the population. Since the building doesn't exists and is not
+ * bounded to any town we have no real values that we can return. Instead of
+ * failing, this resolver will return fake values.
+ */
+struct FakeTownScopeResolver : public ScopeResolver {
+	FakeTownScopeResolver(ResolverObject &ro) : ScopeResolver(ro)
+	{ }
+
+	virtual uint32 GetVariable(byte variable, uint32 parameter, GetVariableExtra *extra) const;
 };
 
 /** Resolver of town properties. */
@@ -46,7 +62,7 @@ struct TownResolverObject : public ResolverObject {
 
 	TownResolverObject(const struct GRFFile *grffile, Town *t, bool readonly);
 
-	/* virtual */ ScopeResolver *GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, byte relative = 0)
+	ScopeResolver *GetScope(VarSpriteGroupScope scope = VSG_SCOPE_SELF, byte relative = 0) override
 	{
 		switch (scope) {
 			case VSG_SCOPE_SELF: return &town_scope;
