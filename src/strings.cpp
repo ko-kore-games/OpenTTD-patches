@@ -75,11 +75,7 @@ int64 StringParameters::GetInt64(WChar type)
 		DEBUG(misc, 0, "Trying to read invalid string parameter");
 		return 0;
 	}
-<<<<<<< HEAD
-	if (this->type != NULL) {
-=======
 	if (this->type != nullptr) {
->>>>>>> jgrpp-0.44.0
 		if (this->type[this->offset] != 0 && this->type[this->offset] != type) {
 			DEBUG(misc, 0, "Trying to read string parameter with wrong type");
 			return 0;

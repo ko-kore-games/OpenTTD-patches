@@ -624,10 +624,7 @@ Fix #7088: Avoid crash by closing AI/GS textfile windows when changing their in-
 - Fix: [Windows] Incorrect error handling could lead to cascading error windows (#7482)
 - Fix #7478: Don't remove NewGRF objects on company take-over. (#7483)
 
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 1.9.0 (2019-04-01)
 ------------------------------------------------------------------------
 - Fix #7411: Use industry production callback (if used) on initial industry cargo generation (#7412)

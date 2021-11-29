@@ -1,10 +1,6 @@
 @echo off
 
-<<<<<<< HEAD
-set OPENTTD_VERSION=1.9.1
-=======
 set OPENTTD_VERSION=1.11.0
->>>>>>> jgrpp-0.44.0
 set OPENSFX_VERSION=0.8.0
 set NOSOUND_VERSION=0.8.0
 set OPENGFX_VERSION=1.2.0

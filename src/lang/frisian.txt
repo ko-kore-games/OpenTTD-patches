@@ -193,10 +193,6 @@ STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}{NBSP}mp
 STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}km/o
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}m/s
 
-STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mpo
-STR_UNIT_NAME_VELOCITY_METRIC                                   :km/o
-STR_UNIT_NAME_VELOCITY_SI                                       :m/s
-
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}hp
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}hp
 STR_UNITS_POWER_SI                                              :{COMMA}{NBSP}kW
@@ -235,7 +231,6 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Selektea
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Selektear skiftnoarm
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Selekear filternoarm
 STR_BUTTON_SORT_BY                                              :{BLACK}Skifte op
-STR_BUTTON_RENAME                                               :{BLACK}op 'e nij neamme
 
 STR_TOOLTIP_CLOSE_WINDOW                                        :{BLACK}Slút finster
 STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS                              :{BLACK}Finstertitel - hjirmei kinst it finster ferslepe
@@ -2090,7 +2085,6 @@ STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Bedriuw 
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :{WHITE}Client lyst
-STR_NETWORK_COMPANY_LIST_SPECTATE                               :{WHITE}Taskôgje
 
 # Network client list
 
@@ -2638,9 +2632,6 @@ STR_MAPGEN_BY                                                   :{BLACK}*
 STR_MAPGEN_NUMBER_OF_TOWNS                                      :{BLACK}Oantal stêden:
 STR_MAPGEN_DATE                                                 :{BLACK}Datum:
 STR_MAPGEN_NUMBER_OF_INDUSTRIES                                 :{BLACK}Oantal yndustrien:
-STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Hichte sniegrins:
-STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Sniegrins ien omheech ferpleatsje:
-STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Sniegrins ien nei beneden ferpleatsje:
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Lângenerator:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Terreintype:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Seenivo:
@@ -2666,7 +2657,6 @@ STR_MAPGEN_HEIGHTMAP_NAME                                       :{BLACK}Namme hi
 STR_MAPGEN_HEIGHTMAP_SIZE_LABEL                                 :{BLACK}Grutte:
 STR_MAPGEN_HEIGHTMAP_SIZE                                       :{ORANGE}{NUM} x {NUM}
 
-STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{BLACK}Sniehichte oanpasse
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{BLACK}Startjier oanpasse
 
 # SE Map generation
@@ -4197,11 +4187,6 @@ STR_BASESOUNDS_WIN_DESCRIPTION                                  :Orizjinele lûd
 STR_BASESOUNDS_NONE_DESCRIPTION                                 :In lûdspakket sûnder lûden.
 STR_BASEMUSIC_WIN_DESCRIPTION                                   :Orizjinele musyk fan de Transport Tycoon Deluxe Windows-edysje.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :In musykpakket sûnder wiere musyk.
-
-STR_TRADITIONAL_TRAIN_NAME                                      :Trein {COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Lânfartúg {COMMA}
-STR_TRADITIONAL_SHIP_NAME                                       :Skip {COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME                                   :Fleantúg {COMMA}
 
 ##id 0x2000
 # Town building names

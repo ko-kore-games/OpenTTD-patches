@@ -989,15 +989,12 @@ static void ShipController(Ship *v)
 			if ((v->vehstatus & VS_HIDDEN) == 0) v->Vehicle::UpdateViewport(true);
 			return;
 		}
-<<<<<<< HEAD
 
 		/* Ship is back on the bridge head, we need to comsume its path
-=======
 		/* Bridge exit */
 		if (_settings_game.vehicle.ship_collision_avoidance && gp.new_tile != TileVirtXY(v->x_pos, v->y_pos)) HandleSpeedOnAqueduct(v, gp.new_tile, v->tile);
 
 		/* Ship is back on the bridge head, we need to consume its path
->>>>>>> jgrpp-0.44.0
 		 * cache entry here as we didn't have to choose a ship track. */
 		if (!v->path.empty()) v->path.pop_front();
 	}

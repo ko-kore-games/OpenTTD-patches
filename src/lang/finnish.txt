@@ -189,18 +189,12 @@ STR_COLOUR_BROWN                                                :Ruskea
 STR_COLOUR_GREY                                                 :Harmaa
 STR_COLOUR_WHITE                                                :Valkoinen
 STR_COLOUR_RANDOM                                               :Satunnainen
-STR_COLOUR_DEFAULT                                              :Oletus
 
 # Units used in OpenTTD
 STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}{NBSP}mph
 STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}km/h
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}ruutua/vrk
-
-STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mph
-STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
-STR_UNIT_NAME_VELOCITY_SI                                       :m/s
-STR_UNIT_NAME_VELOCITY_GAMEUNITS                                :ruutua/vrk
 
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}hv
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}hv
@@ -240,7 +234,6 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Valitse 
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Valitse järjestyskriteeri
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Valitse suodatuskriteerit
 STR_BUTTON_SORT_BY                                              :{BLACK}Lajittele
-STR_BUTTON_RENAME                                               :{BLACK}Nimeä uudelleen
 STR_BUTTON_CATCHMENT                                            :{BLACK}Vaikutusalue
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Valitse, näytetäänkö vaikutusalue
 
@@ -248,13 +241,8 @@ STR_TOOLTIP_CLOSE_WINDOW                                        :{BLACK}Sulje ik
 STR_TOOLTIP_WINDOW_TITLE_DRAG_THIS                              :{BLACK}Ikkunan otsake – siirrä ikkunaa vetämällä tästä
 STR_TOOLTIP_SHADE                                               :{BLACK}Pienennä ikkuna – näytä vain otsikko
 STR_TOOLTIP_DEBUG                                               :{BLACK}Näytä NewGRF-vianmääritystiedot
-<<<<<<< HEAD
-STR_TOOLTIP_DEFSIZE                                             :{BLACK}Palauta ikkunan oletuskoko. Ctrl+Klik tallentaa nykyisen koon oletukseksi
-STR_TOOLTIP_STICKY                                              :{BLACK}Aseta ikkuna säilymään "Sulje kaikki ikkunat" -napista huolimatta. Ctrl+Klik tallentaa tilan oletukseksi
-=======
 STR_TOOLTIP_DEFSIZE                                             :{BLACK}Palauta ikkunan oletuskoko. Ctrl+napsautus tallentaa nykyisen koon oletukseksi.
 STR_TOOLTIP_STICKY                                              :{BLACK}Aseta ikkuna säilymään ”Sulje kaikki ikkunat” -napista huolimatta. Ctrl+napsautus tallentaa tilan oletukseksi.
->>>>>>> jgrpp-0.44.0
 STR_TOOLTIP_RESIZE                                              :{BLACK}Napsauta ja vedä muuttaaksesi tämän ikkunan kokoa
 STR_TOOLTIP_TOGGLE_LARGE_SMALL_WINDOW                           :{BLACK}Suurenna/pienennä ikkuna
 STR_TOOLTIP_VSCROLL_BAR_SCROLLS_LIST                            :{BLACK}Vierityspalkki – luettelon vieritys ylös/alas
@@ -434,17 +422,10 @@ STR_MAP_MENU_EXTRA_VIEWPORT                                     :Lisänäkymä
 STR_MAP_MENU_LINGRAPH_LEGEND                                    :Rahtivirran selitys
 STR_MAP_MENU_SIGN_LIST                                          :Kylttilista
 
-<<<<<<< HEAD
-############ range for town menu starts
-STR_TOWN_MENU_TOWN_DIRECTORY                                    :Kuntahakemisto
-STR_TOWN_MENU_FOUND_TOWN                                        :Perusta kunta
-############ range ends here
-=======
 # Town menu
 ###length 2
 STR_TOWN_MENU_TOWN_DIRECTORY                                    :Kuntahakemisto
 STR_TOWN_MENU_FOUND_TOWN                                        :Perusta kunta
->>>>>>> jgrpp-0.44.0
 
 # Subsidies menu
 ###length 1
@@ -506,10 +487,6 @@ STR_TOOLBAR_SOUND_MUSIC                                         :Ääni/musiikki
 STR_NEWS_MENU_LAST_MESSAGE_NEWS_REPORT                          :Viimeisin viesti/uutisraportti
 STR_NEWS_MENU_MESSAGE_HISTORY_MENU                              :Viestihistoria
 STR_NEWS_MENU_DELETE_ALL_MESSAGES                               :Poista kaikki viestit
-<<<<<<< HEAD
-############ range ends here
-=======
->>>>>>> jgrpp-0.44.0
 
 # About menu
 ###length 10
@@ -665,14 +642,9 @@ STR_PERFORMANCE_DETAIL_CARGO                                    :{BLACK}Rahti:
 STR_PERFORMANCE_DETAIL_MONEY                                    :{BLACK}Raha:
 STR_PERFORMANCE_DETAIL_LOAN                                     :{BLACK}Laina:
 STR_PERFORMANCE_DETAIL_TOTAL                                    :{BLACK}Yhteensä:
-<<<<<<< HEAD
-############ End of order list
-STR_PERFORMANCE_DETAIL_VEHICLES_TOOLTIP                         :{BLACK}Liikennevälineiden määrä. Tähän kuuluvat ajoneuvot, junat, laivat ja lentokoneet
-=======
 
 ###length 10
 STR_PERFORMANCE_DETAIL_VEHICLES_TOOLTIP                         :{BLACK}Kulkuveuvojen määrä. Tähän kuuluvat ajoneuvot, junat, laivat ja ilma-alukset
->>>>>>> jgrpp-0.44.0
 STR_PERFORMANCE_DETAIL_STATIONS_TOOLTIP                         :{BLACK}Asemien osien määrä. Kaikki osat asemista (esim. rautatieasema, bussipysäkki, lentokenttä) lasketaan, vaikka ne olisivat yhdistettynä yhdeksi asemaksi
 STR_PERFORMANCE_DETAIL_MIN_PROFIT_TOOLTIP                       :{BLACK}Vähätuottoisimman kulkuneuvon tulo (kaikkien yli 2 vuotta vanhojen kulkuneuvojen)
 STR_PERFORMANCE_DETAIL_MIN_INCOME_TOOLTIP                       :{BLACK}Viimeisen 12 neljänneksen vähätuottoisimman kuun käteistuoton määrä
@@ -723,17 +695,10 @@ STR_PLAYLIST_TRACK_INDEX                                        :{TINY_FONT}{BLA
 STR_PLAYLIST_PROGRAM                                            :{TINY_FONT}{BLACK}Soittolista – ”{STRING}”
 STR_PLAYLIST_CLEAR                                              :{TINY_FONT}{BLACK}Tyhjennä
 STR_PLAYLIST_CHANGE_SET                                         :{BLACK}Vaihda kokoelma
-<<<<<<< HEAD
-STR_PLAYLIST_TOOLTIP_CLEAR_CURRENT_PROGRAM_CUSTOM1              :{BLACK}Tyhjennä nykyinen soittolista (vain Oma1 tai Oma2)
-STR_PLAYLIST_TOOLTIP_CHANGE_SET                                 :{BLACK}Valitse toinen asennettu kokoelma musiikkivalikoimaksesi
-STR_PLAYLIST_TOOLTIP_CLICK_TO_ADD_TRACK                         :{BLACK}Valitse musiikkiraita lisätäksesi sen nykyiseen soittolistaan (vain Oma1 tai Oma2).
-STR_PLAYLIST_TOOLTIP_CLICK_TO_REMOVE_TRACK                      :{BLACK}Poista musiikkiraita nykyseiltä soittolistalta napsauttamalla (ainoastaan Custom1 tai Custom2)
-=======
 STR_PLAYLIST_TOOLTIP_CLEAR_CURRENT_PROGRAM_CUSTOM1              :{BLACK}Tyhjennä nykyinen soittolista (vain oma{NBSP}1 tai oma{NBSP}2)
 STR_PLAYLIST_TOOLTIP_CHANGE_SET                                 :{BLACK}Valitse toinen asennettu kokoelma musiikkivalikoimaksesi
 STR_PLAYLIST_TOOLTIP_CLICK_TO_ADD_TRACK                         :{BLACK}Valitse musiikkiraita lisätäksesi sen nykyiseen soittolistaan (vain oma{NBSP}1 tai oma{NBSP}2).
 STR_PLAYLIST_TOOLTIP_CLICK_TO_REMOVE_TRACK                      :{BLACK}Poista musiikkiraita nykyiseltä soittolistalta napsauttamalla (vain oma{NBSP}1 tai oma{NBSP}2)
->>>>>>> jgrpp-0.44.0
 
 # Highscore window
 STR_HIGHSCORE_TOP_COMPANIES_WHO_REACHED                         :{BIG_FONT}{BLACK}Parhaat yhtiöt, jotka saavuttivat vuoden {NUM}
@@ -762,10 +727,7 @@ STR_SMALLMAP_TYPE_ROUTEMAP                                      :Rahtivirta
 STR_SMALLMAP_TYPE_ROUTES                                        :Reitit
 STR_SMALLMAP_TYPE_VEGETATION                                    :Kasvillisuus
 STR_SMALLMAP_TYPE_OWNERS                                        :Omistajat
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_SMALLMAP_TOOLTIP_SHOW_LAND_CONTOURS_ON_MAP                  :{BLACK}Näytä korkeuserot kartalla
 STR_SMALLMAP_TOOLTIP_SHOW_VEHICLES_ON_MAP                       :{BLACK}Näytä liikennevälineet kartalla
 STR_SMALLMAP_TOOLTIP_SHOW_INDUSTRIES_ON_MAP                     :{BLACK}Näytä teollisuuslaitokset kartalla
@@ -773,15 +735,9 @@ STR_SMALLMAP_TOOLTIP_SHOW_LINK_STATS_ON_MAP                     :{BLACK}Näytä 
 STR_SMALLMAP_TOOLTIP_SHOW_TRANSPORT_ROUTES_ON                   :{BLACK}Näytä kuljetusreitit kartalla
 STR_SMALLMAP_TOOLTIP_SHOW_VEGETATION_ON_MAP                     :{BLACK}Näytä kasvillisuus kartalla
 STR_SMALLMAP_TOOLTIP_SHOW_LAND_OWNERS_ON_MAP                    :{BLACK}Näytä maanomistajat kartalla
-<<<<<<< HEAD
-STR_SMALLMAP_TOOLTIP_INDUSTRY_SELECTION                         :{BLACK}Napsauta teollisuustyyppiä näyttääksesi sen. Ctrl+Klik näyttää valitun tyypin. Ctrl+Klik uudestaan näyttää kaikki teollisuustyypit
-STR_SMALLMAP_TOOLTIP_COMPANY_SELECTION                          :{BLACK}Napsauta yhtiötä näyttääksesi sen omaisuuden. Ctrl+Klik näyttää ainoastaan valitun yhtiön. Ctrl+Klik uudestaan näyttää kaikki yhtiöt
-STR_SMALLMAP_TOOLTIP_CARGO_SELECTION                            :{BLACK}Napsauta rahtia näyttääksesi tai piilottaaksesi sen. Ctrl+Klik piilottaa kaikki paitsi valitun rahdin. Ctrl+Klik uudelleen palauttaa kaikki rahdit näkyviin
-=======
 STR_SMALLMAP_TOOLTIP_INDUSTRY_SELECTION                         :{BLACK}Napsauta teollisuustyyppiä piilottaaksesi tai näyttääksesi sen. Ctrl+napsautus näyttää vain valitun tyypin. Ctrl+napsautus uudestaan näyttää kaikki teollisuustyypit.
 STR_SMALLMAP_TOOLTIP_COMPANY_SELECTION                          :{BLACK}Napsauta yhtiötä piilottaaksesi tai näyttääksesi yhtiön maaomistuksen. Ctrl+napsautus näyttää ainoastaan valitun yhtiön. Ctrl+napsautus uudestaan näyttää kaikki yhtiöt.
 STR_SMALLMAP_TOOLTIP_CARGO_SELECTION                            :{BLACK}Napsauta rahtityyppiä näyttääksesi tai piilottaaksesi sen. Ctrl+napsautus piilottaa kaikki paitsi valitun rahdin. Ctrl+napsautus uudelleen palauttaa kaikki rahdit näkyviin.
->>>>>>> jgrpp-0.44.0
 
 STR_SMALLMAP_LEGENDA_ROADS                                      :{TINY_FONT}{BLACK}Tiet
 STR_SMALLMAP_LEGENDA_RAILROADS                                  :{TINY_FONT}{BLACK}Rautatiet
@@ -932,22 +888,15 @@ STR_NEWS_VEHICLE_AUTORENEW_FAILED                               :{WHITE}Automaat
 STR_NEWS_NEW_VEHICLE_NOW_AVAILABLE                              :{BIG_FONT}{BLACK}Uusi {STRING} on nyt saatavilla!
 STR_NEWS_NEW_VEHICLE_TYPE                                       :{BIG_FONT}{BLACK}{ENGINE}
 STR_NEWS_NEW_VEHICLE_NOW_AVAILABLE_WITH_TYPE                    :{BLACK}Uusi {STRING} on nyt saatavilla! – {ENGINE}
-<<<<<<< HEAD
-=======
 
 STR_NEWS_SHOW_VEHICLE_GROUP_TOOLTIP                             :{BLACK}Avaa ryhmäikkuna kulkuneuvon ryhmään kohdistettuna
->>>>>>> jgrpp-0.44.0
 
 STR_NEWS_STATION_NO_LONGER_ACCEPTS_CARGO                        :{WHITE}{STATION} ei ota enää vastaan {STRING}.
 STR_NEWS_STATION_NO_LONGER_ACCEPTS_CARGO_OR_CARGO               :{WHITE}{STATION} ei ota enää vastaan {STRING} tai {STRING}.
 STR_NEWS_STATION_NOW_ACCEPTS_CARGO                              :{WHITE}{STATION} ottaa nyt vastaan {STRING}.
 STR_NEWS_STATION_NOW_ACCEPTS_CARGO_AND_CARGO                    :{WHITE}{STATION} ottaa nyt vastaan {STRING} ja {STRING}.
 
-<<<<<<< HEAD
-STR_NEWS_OFFER_OF_SUBSIDY_EXPIRED                               :{BIG_FONT}{BLACK}Tukitarjous päättynyt:{}{}{STRING} välillä {STRING} - {STRING} ei voi enää saada tukea
-=======
 STR_NEWS_OFFER_OF_SUBSIDY_EXPIRED                               :{BIG_FONT}{BLACK}Tukitarjous päättynyt:{}{}{STRING} välillä {STRING} – {STRING} ei voi enää saada tukea
->>>>>>> jgrpp-0.44.0
 STR_NEWS_SUBSIDY_WITHDRAWN_SERVICE                              :{BIG_FONT}{BLACK}Tuki vedetty pois:{}{}{STRING} kuljetuspalvelu välille {STRING}-{STRING} ei ole enää tuettu
 STR_NEWS_SERVICE_SUBSIDY_OFFERED                                :{BIG_FONT}{BLACK}Tuki tarjottu:{}{}Ensimmäinen {STRING}kuljetus välillä {STRING} – {STRING} saa {NUM} vuoden mittaisen tuen paikallisviranomaisilta!
 ###length 4
@@ -961,11 +910,7 @@ STR_NEWS_EXCLUSIVE_RIGHTS_TITLE                                 :{BIG_FONT}{BLAC
 STR_NEWS_EXCLUSIVE_RIGHTS_DESCRIPTION                           :{BIG_FONT}{BLACK}{TOWN} ja {STRING} allekirjoittavat sopimuksen vuoden pituisesta kuljetusyksinoikeudesta!
 
 # Extra view window
-<<<<<<< HEAD
-STR_EXTRA_VIEW_PORT_TITLE                                       :{WHITE}Näkymä {COMMA}
-=======
 STR_EXTRA_VIEWPORT_TITLE                                        :{WHITE}Näkymä {COMMA}
->>>>>>> jgrpp-0.44.0
 STR_EXTRA_VIEW_MOVE_VIEW_TO_MAIN                                :{BLACK}Päänäkymästä tähän
 STR_EXTRA_VIEW_MOVE_VIEW_TO_MAIN_TT                             :{BLACK}Kopioi päänäkymän sijainti tähän näkymään
 STR_EXTRA_VIEW_MOVE_MAIN_TO_VIEW                                :{BLACK}Vaihda päänäkymää
@@ -1013,16 +958,6 @@ STR_GAME_OPTIONS_CURRENCY_GEL                                   :Georgian lari (
 STR_GAME_OPTIONS_CURRENCY_IRR                                   :Iranin rial (IRR)
 STR_GAME_OPTIONS_CURRENCY_RUB                                   :Uusi Venäjän rupla (RUB)
 STR_GAME_OPTIONS_CURRENCY_MXN                                   :Meksikon peso (MXN)
-<<<<<<< HEAD
-############ end of currency region
-
-STR_GAME_OPTIONS_ROAD_VEHICLES_FRAME                            :{BLACK}Kulkuneuvot
-STR_GAME_OPTIONS_ROAD_VEHICLES_DROPDOWN_TOOLTIP                 :{BLACK}Valitse kummalla puolella tietä ajetaan
-STR_GAME_OPTIONS_ROAD_VEHICLES_DROPDOWN_LEFT                    :Vasemmanpuolinen liikenne
-STR_GAME_OPTIONS_ROAD_VEHICLES_DROPDOWN_RIGHT                   :Oikeanpuolinen liikenne
-
-STR_GAME_OPTIONS_TOWN_NAMES_FRAME                               :{BLACK}Kuntien nimet
-=======
 STR_GAME_OPTIONS_CURRENCY_NTD                                   :Uusi Taiwanin dollari (TWD)
 STR_GAME_OPTIONS_CURRENCY_CNY                                   :Kiinan renminbi (CNY)
 STR_GAME_OPTIONS_CURRENCY_HKD                                   :Hongkongin dollari (HKD)
@@ -1035,7 +970,6 @@ STR_GAME_OPTIONS_ROAD_VEHICLES_DROPDOWN_LEFT                    :Vasemmanpuoline
 STR_GAME_OPTIONS_ROAD_VEHICLES_DROPDOWN_RIGHT                   :Oikeanpuolinen liikenne
 
 STR_GAME_OPTIONS_TOWN_NAMES_FRAME                               :{BLACK}Kuntien nimet:
->>>>>>> jgrpp-0.44.0
 STR_GAME_OPTIONS_TOWN_NAMES_DROPDOWN_TOOLTIP                    :{BLACK}Valitse kuntien nimien tyyli
 
 ###length 21
@@ -1074,10 +1008,7 @@ STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_12_MONTHS              :Kerran vuodessa
 
 STR_GAME_OPTIONS_LANGUAGE                                       :{BLACK}Kieli
 STR_GAME_OPTIONS_LANGUAGE_TOOLTIP                               :{BLACK}Valitse käyttöliittymän kieli
-<<<<<<< HEAD
-=======
 STR_GAME_OPTIONS_LANGUAGE_PERCENTAGE                            :{STRING} ({NUM}{NBSP}% valmiina)
->>>>>>> jgrpp-0.44.0
 
 STR_GAME_OPTIONS_FULLSCREEN                                     :{BLACK}Koko näyttö
 STR_GAME_OPTIONS_FULLSCREEN_TOOLTIP                             :{BLACK}Valitse tämä pelataksesi kokoruututilassa
@@ -1104,12 +1035,6 @@ STR_GAME_OPTIONS_GUI_ZOOM_DROPDOWN_4X_ZOOM                      :Nelinkertainen
 
 STR_GAME_OPTIONS_FONT_ZOOM                                      :{BLACK}Kirjasinkoko
 STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_TOOLTIP                     :{BLACK}Valitse käyttöliittymän kirjasinkoko
-<<<<<<< HEAD
-
-STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_NORMAL                      :Normaali
-STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_2X_ZOOM                     :Kaksinkertainen koko
-STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_4X_ZOOM                     :Nelinkertainen koko
-=======
 
 STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_AUTO                        :(tunnista automaattisesti)
 STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_NORMAL                      :Normaali
@@ -1122,7 +1047,6 @@ STR_GAME_OPTIONS_REFRESH_RATE                                   :{BLACK}Näytön
 STR_GAME_OPTIONS_REFRESH_RATE_TOOLTIP                           :{BLACK}Valitse käytettävä näytönvirkistystaajuus
 STR_GAME_OPTIONS_REFRESH_RATE_ITEM                              :{NUM} Hz
 STR_GAME_OPTIONS_REFRESH_RATE_WARNING                           :{WHITE}Yli 60 Hz:n virkistystaajuudet saattavat vaikuttaa suorituskykyyn.
->>>>>>> jgrpp-0.44.0
 
 STR_GAME_OPTIONS_BASE_GRF                                       :{BLACK}Perusgrafiikat
 STR_GAME_OPTIONS_BASE_GRF_TOOLTIP                               :{BLACK}Valitse käytettävät perusgrafiikat
@@ -1305,10 +1229,7 @@ STR_CONFIG_SETTING_RUNNING_COSTS_HELPTEXT                       :Määritä kulk
 
 STR_CONFIG_SETTING_CONSTRUCTION_SPEED                           :Rakennusnopeus: {STRING}
 STR_CONFIG_SETTING_CONSTRUCTION_SPEED_HELPTEXT                  :Rajoita tekoälyn rakennustoimien määrää
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_VEHICLE_BREAKDOWNS                           :Kulkuneuvojen hajoaminen: {STRING}
 STR_CONFIG_SETTING_VEHICLE_BREAKDOWNS_HELPTEXT                  :Määritä, kuinka usein puutteellisesti huolletut ajoneuvot voivat hajota
 
@@ -1333,10 +1254,7 @@ STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :Mikäli käytö
 
 STR_CONFIG_SETTING_DISASTERS                                    :Onnettomuudet: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :Ottaa käyttöön onnettomuudet jotka saattavat ajoittain estää tai tuhota liikennettä tai infrastruktuuria
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_CITY_APPROVAL                                :Valtuuston asenne alueiden uudelleenjärjestelyyn: {STRING}
 STR_CONFIG_SETTING_CITY_APPROVAL_HELPTEXT                       :Valitse, kuinka paljon yhtiöiden aiheuttama melu ja ympäristövahingot vaikuttavat niiden arvioihin sekä tuleviin rakennustoimiin alueella
 
@@ -1352,10 +1270,6 @@ STR_CONFIG_SETTING_AUTOSLOPE_HELPTEXT                           :Sallii maaston 
 
 STR_CONFIG_SETTING_CATCHMENT                                    :Realistisemman kokoiset vaikutusalueet: {STRING}
 STR_CONFIG_SETTING_CATCHMENT_HELPTEXT                           :Erityyppisillä asemilla ja lentokentillä on eri kokoiset vaikutusalueet
-<<<<<<< HEAD
-STR_CONFIG_SETTING_EXTRADYNAMITE                                :Kunnan omistamien teiden, siltojen ja tunneleiden raivaaminen sallittu: {STRING}
-STR_CONFIG_SETTING_EXTRADYNAMITE_HELPTEXT                       :Tekee kuntien omistaman infrastruktuurin ja rakennusten tuhoamisesta helpompaa
-=======
 
 STR_CONFIG_SETTING_SERVE_NEUTRAL_INDUSTRIES                     :Yhtiöiden asemat voivat palvella laitoksia, joilla on omat asemat: {STRING}
 STR_CONFIG_SETTING_SERVE_NEUTRAL_INDUSTRIES_HELPTEXT            :Mikäli käytössä, asemilla valmiiksi varustettuja teollisuuslaitoksia (kuten öljylauttoja) voivat palvella myös yhtiöiden lähistölle rakentamat asemat. Mikäli pois käytöstä, tällaisia laitoksia voivat palvella vain niiden omat asemat. Lähistöllä olevat yhtiöiden asemat eivät tällöin voi palvella näitä laitoksia, eivätkä laitosten asemat palvele muita kuin näitä laitoksia
@@ -1363,17 +1277,13 @@ STR_CONFIG_SETTING_SERVE_NEUTRAL_INDUSTRIES_HELPTEXT            :Mikäli käytö
 STR_CONFIG_SETTING_EXTRADYNAMITE                                :Kunnan omistamien teiden, siltojen ja tunneleiden raivaaminen sallittu: {STRING}
 STR_CONFIG_SETTING_EXTRADYNAMITE_HELPTEXT                       :Tekee kuntien omistaman infrastruktuurin ja rakennusten tuhoamisesta helpompaa
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_TRAIN_LENGTH                                 :Junien maksimipituus: {STRING}
 STR_CONFIG_SETTING_TRAIN_LENGTH_HELPTEXT                        :Määrittää junien suurimman sallitun pituuden
 STR_CONFIG_SETTING_TILE_LENGTH                                  :{COMMA} ruutu{P 0 "" a}
 
 STR_CONFIG_SETTING_SMOKE_AMOUNT                                 :Kulkuneuvon savun/kipinöiden määrä: {STRING}
 STR_CONFIG_SETTING_SMOKE_AMOUNT_HELPTEXT                        :Määrittää kuinka paljon savua tai kipinöitä kulkuneuvot saavat aikaan
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_TRAIN_ACCELERATION_MODEL                     :Junien kiihdytysmalli: {STRING}
 STR_CONFIG_SETTING_TRAIN_ACCELERATION_MODEL_HELPTEXT            :Valitsee junien käyttämän fysiikkamallin. "Alkuperäinen" malli hidastaa junia mäissä tasapuolisesti. "Realistinen" malli hidastaa junia mäissä ja mutkissa junan ominaisuuksista riippuen
 
@@ -1383,10 +1293,7 @@ STR_CONFIG_SETTING_ROAD_VEHICLE_ACCELERATION_MODEL_HELPTEXT     :Valitsee ajoneu
 STR_CONFIG_SETTING_TRAIN_SLOPE_STEEPNESS                        :Mäkien jyrkkyys junille: {STRING}
 STR_CONFIG_SETTING_TRAIN_SLOPE_STEEPNESS_HELPTEXT               :Mäkien jyrkkyys junille. Korkeammat arvot tekevät mäkien nousemisesta vaikeampaa
 STR_CONFIG_SETTING_PERCENTAGE                                   :{COMMA}{NBSP}%
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_ROAD_VEHICLE_SLOPE_STEEPNESS                 :Mäkien jyrkkyys ajoneuvoille: {STRING}
 STR_CONFIG_SETTING_ROAD_VEHICLE_SLOPE_STEEPNESS_HELPTEXT        :Mäkien jyrkkyys ajoneuvoille. Korkeammat arvot tekevät mäkien nousemisesta vaikeampaa
 
@@ -1410,25 +1317,17 @@ STR_CONFIG_SETTING_MAX_TUNNEL_LENGTH_HELPTEXT                   :Suurin sallittu
 
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD             :Manuaalinen raakateollisuuden rakentamistapa: {STRING}
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_HELPTEXT    :Ensisijaisten teollisuuslaitosten rahoitustapa. ”Ei mitään” tarkoittaa, että rahoitus ei ole mahdollista; ”koekaivaus” tarkoittaa, että rahoitus on mahdollista, mutta teollisuuslaitos rakennetaan sattumanvaraiselle paikalle kartalla tai rakennus epäonnistuu; ”kuten muut tehtaat” tarkoittaa, että rakentaminen onnistuu kuten kaikkien muidenkin teollisuuslaitosten kohdalla
-<<<<<<< HEAD
-=======
 ###length 3
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_NONE        :Ei mikään
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_NORMAL      :Kuten muut tehtaat
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_PROSPECTING :Koekaivaus
 
 STR_CONFIG_SETTING_INDUSTRY_PLATFORM                            :Teollisuutta ympäröivä tasainen maasto: {STRING}
 STR_CONFIG_SETTING_INDUSTRY_PLATFORM_HELPTEXT                   :Teollisuuslaitosten ympärillä oleva tasainen maasto. Tämä varmistaa että teollisuuslaitosten ympärillä on tyhjää tilaa esimerkiksi ratojen ja asemien rakantamiseen
-<<<<<<< HEAD
-STR_CONFIG_SETTING_MULTIPINDTOWN                                :Kunnassa voi olla useita samanlaisia teollisuustyyppejä: {STRING}
-STR_CONFIG_SETTING_MULTIPINDTOWN_HELPTEXT                       :Normaalisti kunta ei halua enempää kuin yhden kutakin teollisuuslaitostyyppiä. Tämän asetuksen ollessa käytössä kunnat sallivat useampien samaa tyyppiä olevien teollisuuslaitosten rakentamisen
-=======
 
 STR_CONFIG_SETTING_MULTIPINDTOWN                                :Kunnassa voi olla useita samanlaisia teollisuustyyppejä: {STRING}
 STR_CONFIG_SETTING_MULTIPINDTOWN_HELPTEXT                       :Normaalisti kunta ei halua enempää kuin yhden kutakin teollisuuslaitostyyppiä. Tämän asetuksen ollessa käytössä kunnat sallivat useampien samaa tyyppiä olevien teollisuuslaitosten rakentamisen
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_SIGNALSIDE                                   :Näytä opastimet: {STRING}
 STR_CONFIG_SETTING_SIGNALSIDE_HELPTEXT                          :Valitse kummalle puolelle rataa opastimet rakennetaan
 ###length 3
@@ -1438,12 +1337,6 @@ STR_CONFIG_SETTING_SIGNALSIDE_RIGHT                             :Oikealla puolel
 
 STR_CONFIG_SETTING_SHOWFINANCES                                 :Näytä rahoitusikkuna vuoden lopussa: {STRING}
 STR_CONFIG_SETTING_SHOWFINANCES_HELPTEXT                        :Mikäli käytössä, rahoitusikkuna näytetään jokaisen vuoden lopussa yhtiön taloudellisen tilanteen seurannan helpottamiseksi
-<<<<<<< HEAD
-STR_CONFIG_SETTING_NONSTOP_BY_DEFAULT                           :Uudet käskyt ovat oletusarvoisesti ilman välipysähdyksiä: {STRING}
-STR_CONFIG_SETTING_NONSTOP_BY_DEFAULT_HELPTEXT                  :Normaalisti kulkuneuvo pysähtyy jokaisella läpikulkemallaan asemalla. Mikäli tämä asetus on käytössä kulkuneuvot eivät pysähdy ajaessaan asemien läpi. Huomioi, että tämä asetus määrittää oletusarvoisen toiminnon uusille kulkuneuvoille. Asetusta voidaan muuttaa erikseen kunkin kulkuneuvon kohdalla
-STR_CONFIG_SETTING_STOP_LOCATION                                :Uudet junien käskyt pysäyttävät junan aseman {STRING}
-STR_CONFIG_SETTING_STOP_LOCATION_HELPTEXT                       :Paikka, johon juna pysähtyy oletuksena asemalla. ”Alkuun” tarkoittaa, että junan viimeinen vaunu pysähtyy laiturin alkuun; ”keskelle” tarkoittaa junan pysähtymistä keskelle laituria; ja ”loppuun” tarkoittaa, että veturi pysähtyy laiturin päähän. Huomaa, että tämä asetus määrittää vain oletusarvon uusille määräyksille. Yksittäisten määräysten kohdalla käyttäytymistä voi muuttaa tästä asetuksesta huolimatta
-=======
 
 STR_CONFIG_SETTING_NONSTOP_BY_DEFAULT                           :Uudet käskyt ovat oletusarvoisesti ilman välipysähdyksiä: {STRING}
 STR_CONFIG_SETTING_NONSTOP_BY_DEFAULT_HELPTEXT                  :Normaalisti kulkuneuvo pysähtyy jokaisella läpikulkemallaan asemalla. Mikäli tämä asetus on käytössä kulkuneuvot eivät pysähdy ajaessaan asemien läpi. Huomioi, että tämä asetus määrittää oletusarvoisen toiminnon uusille kulkuneuvoille. Asetusta voidaan muuttaa erikseen kunkin kulkuneuvon kohdalla
@@ -1451,7 +1344,6 @@ STR_CONFIG_SETTING_NONSTOP_BY_DEFAULT_HELPTEXT                  :Normaalisti kul
 STR_CONFIG_SETTING_STOP_LOCATION                                :Uudet junien käskyt pysäyttävät junan aseman {STRING}
 STR_CONFIG_SETTING_STOP_LOCATION_HELPTEXT                       :Paikka, johon juna pysähtyy oletuksena asemalla. ”Alkuun” tarkoittaa, että junan viimeinen vaunu pysähtyy laiturin alkuun; ”keskelle” tarkoittaa junan pysähtymistä keskelle laituria; ja ”loppuun” tarkoittaa, että veturi pysähtyy laiturin päähän. Huomaa, että tämä asetus määrittää vain oletusarvon uusille määräyksille. Yksittäisten määräysten kohdalla käyttäytymistä voi muuttaa tästä asetuksesta huolimatta
 ###length 3
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_STOP_LOCATION_NEAR_END                       :alkuun
 STR_CONFIG_SETTING_STOP_LOCATION_MIDDLE                         :keskelle
 STR_CONFIG_SETTING_STOP_LOCATION_FAR_END                        :loppuun
@@ -1466,14 +1358,6 @@ STR_CONFIG_SETTING_AUTOSCROLL_EVERY_VIEWPORT                    :Kaikissa näkym
 
 STR_CONFIG_SETTING_BRIBE                                        :Salli viranomaisten lahjominen: {STRING}
 STR_CONFIG_SETTING_BRIBE_HELPTEXT                               :Salli yhtiöiden yrittää paikallisviranomaisten lahjontaa. Jos lahjontayritys paljastuu, yhtiö ei voi toimia kunnassa kuuteen kuukauteen
-<<<<<<< HEAD
-STR_CONFIG_SETTING_ALLOW_EXCLUSIVE                              :Salli kuljetusyksinoikeuksien ostaminen: {STRING}
-STR_CONFIG_SETTING_ALLOW_EXCLUSIVE_HELPTEXT                     :Jos yhtiö ostaa kuljetusyksinoikeudet kuntaan, vastustajien matkustaja- ja rahtiasemat eivät vastaanota rahtia vuoden ajan
-STR_CONFIG_SETTING_ALLOW_FUND_BUILDINGS                         :Salli rakennusten rahoittaminen: {STRING}
-STR_CONFIG_SETTING_ALLOW_FUND_BUILDINGS_HELPTEXT                :Sallii yhtiöiden rahoittaa uusien talojen rakentamista kunnissa
-STR_CONFIG_SETTING_ALLOW_FUND_ROAD                              :Salli paikallisen tieverkon uudelleenrakentamisen rahoitus: {STRING}
-STR_CONFIG_SETTING_ALLOW_FUND_ROAD_HELPTEXT                     :Sallii yhtiöiden rahoittaa kuntien tieverkon uudelleenrakentamista tieliikenteen häiritsemiseksi
-=======
 
 STR_CONFIG_SETTING_ALLOW_EXCLUSIVE                              :Salli kuljetusyksinoikeuksien ostaminen: {STRING}
 STR_CONFIG_SETTING_ALLOW_EXCLUSIVE_HELPTEXT                     :Jos yhtiö ostaa kuljetusyksinoikeudet kuntaan, vastustajien matkustaja- ja rahtiasemat eivät vastaanota rahtia vuoden ajan
@@ -1484,7 +1368,6 @@ STR_CONFIG_SETTING_ALLOW_FUND_BUILDINGS_HELPTEXT                :Sallii yhtiöid
 STR_CONFIG_SETTING_ALLOW_FUND_ROAD                              :Salli paikallisen tieverkon uudelleenrakentamisen rahoitus: {STRING}
 STR_CONFIG_SETTING_ALLOW_FUND_ROAD_HELPTEXT                     :Sallii yhtiöiden rahoittaa kuntien tieverkon uudelleenrakentamista tieliikenteen häiritsemiseksi
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_ALLOW_GIVE_MONEY                             :Salli rahan lähettäminen muille yhtiöille: {STRING}
 STR_CONFIG_SETTING_ALLOW_GIVE_MONEY_HELPTEXT                    :Sallii rahan siirtämisen yhtiöiden välillä moninpelitilassa
 
@@ -1501,10 +1384,7 @@ STR_CONFIG_SETTING_PLANE_CRASHES_HELPTEXT                       :Määrittää l
 STR_CONFIG_SETTING_PLANE_CRASHES_NONE                           :Ei yhtään¹
 STR_CONFIG_SETTING_PLANE_CRASHES_REDUCED                        :Vähennetty
 STR_CONFIG_SETTING_PLANE_CRASHES_NORMAL                         :Tavallinen
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD                            :Läpiajettavat pysäkit kuntien omistamille teille: {STRING}
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD_HELPTEXT                   :Sallii pysäkkien rakentamisen kuntien omistamille teille
 STR_CONFIG_SETTING_STOP_ON_COMPETITOR_ROAD                      :Salli läpiajettavat pysäkit kilpailijoiden omistamilla teillä: {STRING}
@@ -1522,30 +1402,13 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_AIRPORTS_HELPTEXT               :Mikäli käytö
 
 STR_CONFIG_SETTING_WARN_LOST_VEHICLE                            :Varoita, jos kulkuneuvo on eksynyt: {STRING}
 STR_CONFIG_SETTING_WARN_LOST_VEHICLE_HELPTEXT                   :Lähetä viesti, jos kulkuneuvo ei löydä reittiä määränpäähänsä
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_ORDER_REVIEW                                 :Tarkista kulkuneuvojen pysähdykset: {STRING}
 STR_CONFIG_SETTING_ORDER_REVIEW_HELPTEXT                        :Mikäli käytössä, kulkuneuvojen määräykset tarkistetaan väliajoin ja havaituista ongelmista ilmoitetaan uutisviestillä
 ###length 3
 STR_CONFIG_SETTING_ORDER_REVIEW_OFF                             :Ei
 STR_CONFIG_SETTING_ORDER_REVIEW_EXDEPOT                         :Kyllä, mutta ei pysäytetyille
 STR_CONFIG_SETTING_ORDER_REVIEW_ON                              :Kaikille kulkuneuvoille
-<<<<<<< HEAD
-STR_CONFIG_SETTING_WARN_INCOME_LESS                             :Varoita, jos kulkuneuvon tulos on negatiivinen: {STRING}
-STR_CONFIG_SETTING_WARN_INCOME_LESS_HELPTEXT                    :Mikäli käytössä, uutisviesti lähetetään, jos kulkuneuvo ei ole tuottanut rahaa viimeisen kalenterivuoden aikana
-STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES                        :Kulkuneuvot eivät vanhene: {STRING}
-STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES_HELPTEXT               :Mikäli käytössä, kaikki kulkuneuvot ovat saatavilla ikuisesti niiden julkistamisen jälkeen
-STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Uudista kulkuneuvo automaattisesti, kun se vanhenee: {STRING}
-STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :Mikäli käytössä, lähellä käyttöikänsä loppua oleva kulkuneuvo korvataan automaattisesti
-STR_CONFIG_SETTING_AUTORENEW_MONTHS                             :Uudista automaattisesti {STRING}
-STR_CONFIG_SETTING_AUTORENEW_MONTHS_HELPTEXT                    :Suhteellinen ikä, jonka jälkeen kulkuneuvo voidaan uudistaa automaattisesti
-STR_CONFIG_SETTING_AUTORENEW_MONTHS_VALUE_BEFORE                :{COMMA} kuukau{P 0 tta tta} ennen kulkuneuvon käyttöiän loppua
-STR_CONFIG_SETTING_AUTORENEW_MONTHS_VALUE_AFTER                 :{COMMA} kuukau{P 0 si tta} jälkeen kulkuneuvon käyttöiän lopun
-STR_CONFIG_SETTING_AUTORENEW_MONEY                              :Vähimmäisrahamäärä kulkuneuvon automaattiseen uudistukseen: {STRING}
-STR_CONFIG_SETTING_AUTORENEW_MONEY_HELPTEXT                     :Pienin rahamäärä, joka on oltava pankissa ennen kulkuneuvojen automaattista uudistamista
-=======
 
 STR_CONFIG_SETTING_WARN_INCOME_LESS                             :Varoita, jos kulkuneuvon tulos on negatiivinen: {STRING}
 STR_CONFIG_SETTING_WARN_INCOME_LESS_HELPTEXT                    :Mikäli käytössä, uutisviesti lähetetään, jos kulkuneuvo ei ole tuottanut rahaa viimeisen kalenterivuoden aikana
@@ -1565,7 +1428,6 @@ STR_CONFIG_SETTING_AUTORENEW_MONTHS_VALUE_AFTER                 :{COMMA} kuukau{
 STR_CONFIG_SETTING_AUTORENEW_MONEY                              :Vähimmäisrahamäärä kulkuneuvon automaattiseen uudistukseen: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_MONEY_HELPTEXT                     :Vähimmäisrahamäärä, jonka on jäätävä pankkiin kulkuneuvoja automaattisesti uudistettaessa
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_ERRMSG_DURATION                              :Virheilmoitusten näyttöaika: {STRING}
 STR_CONFIG_SETTING_ERRMSG_DURATION_HELPTEXT                     :Aika virheilmoitusten näyttämiseen punaisessa ikkunassa. Huomaa, että jotkut (kriittiset) virheilmoitukset eivät sulkeudu automaattisesti tämän ajan jälkeen, vaan ne on suljettava käsin
 STR_CONFIG_SETTING_ERRMSG_DURATION_VALUE                        :{COMMA} sekunti{P 0 "" a}
@@ -1575,15 +1437,10 @@ STR_CONFIG_SETTING_HOVER_DELAY_HELPTEXT                         :Viive ennen ty�
 STR_CONFIG_SETTING_HOVER_DELAY_VALUE                            :Pidä hiirtä päällä {COMMA} millisekunti{P 0 "" a}
 ###setting-zero-is-special
 STR_CONFIG_SETTING_HOVER_DELAY_DISABLED                         :Hiiren oikea painike
-<<<<<<< HEAD
-STR_CONFIG_SETTING_POPULATION_IN_LABEL                          :Näytä kunnan asukasluku kunnan nimen yhteydessä: {STRING}
-STR_CONFIG_SETTING_POPULATION_IN_LABEL_HELPTEXT                 :Näytä kuntien asukasluvut kartalla
-=======
 
 STR_CONFIG_SETTING_POPULATION_IN_LABEL                          :Näytä kunnan asukasluku kunnan nimen yhteydessä: {STRING}
 STR_CONFIG_SETTING_POPULATION_IN_LABEL_HELPTEXT                 :Näytä kuntien asukasluvut kartalla
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_GRAPH_LINE_THICKNESS                         :Viivojen paksuus kuvaajissa: {STRING}
 STR_CONFIG_SETTING_GRAPH_LINE_THICKNESS_HELPTEXT                :Viivan leveys kuvaajissa. Ohut viiva on tarkasti luettavissa kun taas paksumpi viiva on helpompi nähdä ja sen värit ovat helpommin havaittavissa
 
@@ -1591,12 +1448,8 @@ STR_CONFIG_SETTING_SHOW_NEWGRF_NAME                             :Näytä NewGRF:
 STR_CONFIG_SETTING_SHOW_NEWGRF_NAME_HELPTEXT                    :Lisää kulkuneuvovalikoimaikkunaan rivin, joka kertoo mistä NewGRF:stä valittu kulkuneuvo on peräisin.
 
 STR_CONFIG_SETTING_LANDSCAPE                                    :Maasto: {STRING}
-<<<<<<< HEAD
-STR_CONFIG_SETTING_LANDSCAPE_HELPTEXT                           :Maasto vaikuttaa useisiin pelin peruselementteihin, kuten rahtiin ja kuntien kasvuedellytyksiin. NewGRF:t ja peliskriptit voivat kuitenkin vaikuttaa tarkemmin pelin kulkuun
-=======
 STR_CONFIG_SETTING_LANDSCAPE_HELPTEXT                           :Maasto vaikuttaa useisiin pelin peruselementteihin, kuten rahtiin ja kuntien kasvuedellytyksiin. NewGRF:t ja peliskriptit voivat kuitenkin vaikuttaa tarkemmin pelin kulkuun.
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_LAND_GENERATOR                               :Maastogeneraattori: {STRING}
 STR_CONFIG_SETTING_LAND_GENERATOR_HELPTEXT                      :Alkuperäinen maastonluoja riippuu perusgrafiikkapaketista ja luo ennalta määritettyjä maastonmuotoja. TerraGenesis luo maastoa Perlin-kohinan perusteella ja mahdollistaa asetusten tarkemman määrittelyn
 ###length 2
@@ -1613,9 +1466,6 @@ STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE                        :Suurin sallittu
 STR_CONFIG_SETTING_OIL_REF_EDGE_DISTANCE_HELPTEXT               :Öljynjalostamojen ja öljylauttojen suurin etäisyys kartan reunasta. Saarikartoilla tämä takaa sen, että ne ovat lähellä rannikkoa. Yli 256 ruudun kartoilla tätä arvoa suurennetaan suhteessa kartan kokoon.
 
 STR_CONFIG_SETTING_SNOWLINE_HEIGHT                              :Lumirajan korkeus: {STRING}
-<<<<<<< HEAD
-STR_CONFIG_SETTING_SNOWLINE_HEIGHT_HELPTEXT                     :Määritä, millä korkeudella lumiraja on pohjoisessa maastotyypissä. Lumi vaikuttaa teollisuuslaitosten luontiin sekä kuntien kasvuedellytyksiin
-=======
 STR_CONFIG_SETTING_SNOWLINE_HEIGHT_HELPTEXT                     :Määritä, millä korkeudella lumiraja on pohjoisessa maastotyypissä. Lumi vaikuttaa teollisuuslaitosten luontiin sekä kuntien kasvuedellytyksiin. Voidaan muuttaa vain Skenaariomuokkaimessa, muuten lasketaan ”lumen peiton” perusteella
 
 STR_CONFIG_SETTING_SNOW_COVERAGE                                :Lumen peitto: {STRING}
@@ -1626,7 +1476,6 @@ STR_CONFIG_SETTING_DESERT_COVERAGE                              :Aavikon peitto:
 STR_CONFIG_SETTING_DESERT_COVERAGE_HELPTEXT                     :Säätele aavikon määrän suuruusluokkaa subtrooppisessa maastossa. Aavikko vaikuttaa myös teollisuuden luontiin. Käytetään vain karttaa luodessa
 STR_CONFIG_SETTING_DESERT_COVERAGE_VALUE                        :{NUM}{NBSP}%
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_ROUGHNESS_OF_TERRAIN                         :Maaston epätasaisuus: {STRING}
 STR_CONFIG_SETTING_ROUGHNESS_OF_TERRAIN_HELPTEXT                :(Vain TerraGenesis) Määritä mäkien tiheys: Tasaisessa maastossa mäet ovat laajempia ja niitä on vähemmän. Epätasaisessa maastossa on enemmän mäkiä, mikä voi saada maaston näyttämään itseään toistavalta
 ###length 4
@@ -1643,10 +1492,7 @@ STR_CONFIG_SETTING_RIVER_AMOUNT_HELPTEXT                        :Valitse, kuinka
 
 STR_CONFIG_SETTING_TREE_PLACER                                  :Puiden sijoittelualgoritmi: {STRING}
 STR_CONFIG_SETTING_TREE_PLACER_HELPTEXT                         :Määritä puiden jakautuminen kartalla: ”Alkuperäinen” istuttaa puita tasaisesti ympäri karttaa, ”parannettu” istuttaa niitä ryhmiin
-<<<<<<< HEAD
-=======
 ###length 3
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_TREE_PLACER_NONE                             :Ei mitään
 STR_CONFIG_SETTING_TREE_PLACER_ORIGINAL                         :Alkuperäinen
 STR_CONFIG_SETTING_TREE_PLACER_IMPROVED                         :Parannettu
@@ -1744,10 +1590,7 @@ STR_CONFIG_SETTING_AUTOSAVE_HELPTEXT                            :Valitse aikavä
 
 STR_CONFIG_SETTING_DATE_FORMAT_IN_SAVE_NAMES                    :Käytä {STRING} päivämäärämuotoa tallennettujen pelien niminä
 STR_CONFIG_SETTING_DATE_FORMAT_IN_SAVE_NAMES_HELPTEXT           :Pelitallenteiden tiedostonimissä käytettävä päivämäärän muoto
-<<<<<<< HEAD
-=======
 ###length 3
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_DATE_FORMAT_IN_SAVE_NAMES_LONG               :pitkää (31. joulu 2008)
 STR_CONFIG_SETTING_DATE_FORMAT_IN_SAVE_NAMES_SHORT              :lyhyttä (31.12.2008)
 STR_CONFIG_SETTING_DATE_FORMAT_IN_SAVE_NAMES_ISO                :ISO- (2008-12-31)
@@ -1777,15 +1620,10 @@ STR_CONFIG_SETTING_TIMETABLE_SHOW_ARRIVAL_DEPARTURE_HELPTEXT    :Näytä odotetu
 
 STR_CONFIG_SETTING_QUICKGOTO                                    :Nopea kulkuneuvon käskyjen luominen: {STRING}
 STR_CONFIG_SETTING_QUICKGOTO_HELPTEXT                           :Valitse ”mene”-kursori kun määräysikkuna avataan
-<<<<<<< HEAD
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Oletusraidetyyppi: {STRING}
-STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Ratatyyppi, joka valitaan pelin aloittamisen jälkeen: ”ensimmäinen saatavilla oleva” valitsee vanhimman ratatyypin, ”viimeisin saatavilla oleva” valitsee uusimman ratatyypin, ja ”eniten käytetty” valitsee eniten käytetyn ratatyypin
-=======
 
 STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE                            :Oletusraidetyyppi: {STRING}
 STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_HELPTEXT                   :Ratatyyppi, joka valitaan pelin aloittamisen jälkeen: ”ensimmäinen saatavilla oleva” valitsee vanhimman ratatyypin, ”viimeisin saatavilla oleva” valitsee uusimman ratatyypin, ja ”eniten käytetty” valitsee eniten käytetyn ratatyypin
 ###length 3
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_FIRST                      :Ensimmäinen
 STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_LAST                       :Viimeinen
 STR_CONFIG_SETTING_DEFAULT_RAIL_TYPE_MOST_USED                  :Yleisin
@@ -1825,15 +1663,10 @@ STR_CONFIG_SETTING_SOUND_CLICK_HELPTEXT                         :Piippaa painikk
 
 STR_CONFIG_SETTING_SOUND_DISASTER                               :Vahingot/onnettomuudet: {STRING}
 STR_CONFIG_SETTING_SOUND_DISASTER_HELPTEXT                      :Toista vahinkojen ja onnettomuuksien äänet
-<<<<<<< HEAD
-STR_CONFIG_SETTING_SOUND_VEHICLE                                :Kulkuneuvot: {STRING}
-STR_CONFIG_SETTING_SOUND_VEHICLE_HELPTEXT                       :Toista kulkuneuvojen äänet
-=======
 
 STR_CONFIG_SETTING_SOUND_VEHICLE                                :Kulkuneuvot: {STRING}
 STR_CONFIG_SETTING_SOUND_VEHICLE_HELPTEXT                       :Toista kulkuneuvojen äänet
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_SOUND_AMBIENT                                :Ympäristö: {STRING}
 STR_CONFIG_SETTING_SOUND_AMBIENT_HELPTEXT                       :Toista ympäristön, kuten maaston, teollisuuden ja taajamien äänet
 
@@ -1888,13 +1721,10 @@ STR_CONFIG_SETTING_SERVINT_AIRCRAFT                             :Lentokoneiden o
 STR_CONFIG_SETTING_SERVINT_AIRCRAFT_HELPTEXT                    :Määritä oletushuoltoväli uusille lentokoneille, mikäli kulkuneuvolle ei ole määritelty erillistä huoltoväliä
 STR_CONFIG_SETTING_SERVINT_SHIPS                                :Laivojen oletushuoltoväli: {STRING}
 STR_CONFIG_SETTING_SERVINT_SHIPS_HELPTEXT                       :Määritä oletushuoltoväli uusille laivoille, mikäli kulkuneuvolle ei ole määritelty erillistä huoltoväliä
-<<<<<<< HEAD
-=======
 STR_CONFIG_SETTING_SERVINT_VALUE                                :{COMMA}{NBSP}päivä{P 0 "" ä}/%
 ###setting-zero-is-special
 STR_CONFIG_SETTING_SERVINT_DISABLED                             :Pois käytöstä
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_NOSERVICE                                    :Poista huollot käytöstä kun kulkuneuvojen rikkoutuminen on poistettu käytöstä: {STRING}
 STR_CONFIG_SETTING_NOSERVICE_HELPTEXT                           :Mikäli käytössä, kulkuneuvoja ei huolleta, jos ne eivät voi rikkoutua
 
@@ -1906,15 +1736,10 @@ STR_CONFIG_SETTING_DISABLE_ELRAILS_HELPTEXT                     :Mikäli käytö
 
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN               :Ensimmäinen kulkuneuvo saapuu pelaajan asemalle: {STRING}
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OWN_HELPTEXT      :Näytä sanomalehti ensimmäisen kulkuneuvon saapuessa pelaajan uudelle asemalle
-<<<<<<< HEAD
-STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER             :Ensimmäinen kulkuneuvo saapuu kilpailijan asemalle.: {STRING}
-STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Näytä sanomalehti ensimmäisen kulkuneuvon saapuessa kilpailijan uudelle asemalle
-=======
 
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER             :Ensimmäinen kulkuneuvo saapuu kilpailijan asemalle.: {STRING}
 STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Näytä sanomalehti ensimmäisen kulkuneuvon saapuessa kilpailijan uudelle asemalle
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Vahingot/onnettomuudet: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Näytä sanomalehti vahingon tai onnettomuuden sattuessa
 
@@ -1942,15 +1767,10 @@ STR_CONFIG_SETTING_NEWS_INDUSTRY_CHANGES_UNSERVED_HELPTEXT      :Näytä sanomal
 
 STR_CONFIG_SETTING_NEWS_ADVICE                                  :Neuvoja / tietoa yhtiön kulkuneuvoista: {STRING}
 STR_CONFIG_SETTING_NEWS_ADVICE_HELPTEXT                         :Näytä viesti kulkuneuvon vaatiessa huomiota
-<<<<<<< HEAD
-STR_CONFIG_SETTING_NEWS_NEW_VEHICLES                            :Uudet kulkuneuvot: {STRING}
-STR_CONFIG_SETTING_NEWS_NEW_VEHICLES_HELPTEXT                   :Näytä sanomalehti kun saatavilla on uusi kulkuneuvotyyppi
-=======
 
 STR_CONFIG_SETTING_NEWS_NEW_VEHICLES                            :Uudet kulkuneuvot: {STRING}
 STR_CONFIG_SETTING_NEWS_NEW_VEHICLES_HELPTEXT                   :Näytä sanomalehti kun saatavilla on uusi kulkuneuvotyyppi
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_NEWS_CHANGES_ACCEPTANCE                      :Rahdin vastaanottamisen muutokset: {STRING}
 STR_CONFIG_SETTING_NEWS_CHANGES_ACCEPTANCE_HELPTEXT             :Näytä viesti kun asemat muuttavat hyväksymäänsä rahtia
 
@@ -1995,10 +1815,7 @@ STR_CONFIG_SETTING_DRAG_SIGNALS_DENSITY_HELPTEXT                :Määrittää e
 STR_CONFIG_SETTING_DRAG_SIGNALS_DENSITY_VALUE                   :{COMMA} ruutu{P 0 "" a}
 STR_CONFIG_SETTING_DRAG_SIGNALS_FIXED_DISTANCE                  :Pidä opastimien etäisyys vakiona vedettäessä: {STRING}
 STR_CONFIG_SETTING_DRAG_SIGNALS_FIXED_DISTANCE_HELPTEXT         :Valitse käyttäytyminen vedettäessä opastimia Ctrl-näppäin pohjassa. Mikäli pois käytöstä, opastimia rakennetaan siltojen ja tunnelien ympärille pitkien opastimista vapaiden alueiden välttämiseksi. Mikäli käytössä, opastimia rakennetaan n ruudun välein, tehden vierekkäisten ratojen opastimien kohdistamisesta helpompaa
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_SEMAPHORE_BUILD_BEFORE_DATE                  :Rakenna ensisijaisesti siipiopastimia ennen vuotta: {STRING}
 STR_CONFIG_SETTING_SEMAPHORE_BUILD_BEFORE_DATE_HELPTEXT         :Valitse vuosi jonka jälkeen käytetään valo-opastimia. Ennen tätä vuotta käytetään siipiopastimia (joilla on sama toiminnallisuus mutta eri ulkonäkö)
 
@@ -2016,32 +1833,17 @@ STR_CONFIG_SETTING_SIGNAL_GUI_MODE_ALL_CYCLE_PATH               :Kaikki opastime
 
 STR_CONFIG_SETTING_TOWN_LAYOUT                                  :Uusissa kunnissa käytettävä tiekaava: {STRING}
 STR_CONFIG_SETTING_TOWN_LAYOUT_HELPTEXT                         :Kuntien käyttämä tieverkon kaava
-<<<<<<< HEAD
-=======
 ###length 5
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_TOWN_LAYOUT_DEFAULT                          :Alkuperäinen
 STR_CONFIG_SETTING_TOWN_LAYOUT_BETTER_ROADS                     :Parempia teitä
 STR_CONFIG_SETTING_TOWN_LAYOUT_2X2_GRID                         :2×2-ruudukko
 STR_CONFIG_SETTING_TOWN_LAYOUT_3X3_GRID                         :3×3-ruudukko
 STR_CONFIG_SETTING_TOWN_LAYOUT_RANDOM                           :Satunnainen
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_ALLOW_TOWN_ROADS                             :Kunnat saavat rakentaa teitä: {STRING}
 STR_CONFIG_SETTING_ALLOW_TOWN_ROADS_HELPTEXT                    :Salli kuntien rakentaa teitä kasvaessaan. Mikäli pois käytöstä, kunnat eivät voi rakentaa teitä itse
 STR_CONFIG_SETTING_ALLOW_TOWN_LEVEL_CROSSINGS                   :Kunnat saavat rakentaa tasoristeyksiä: {STRING}
 STR_CONFIG_SETTING_ALLOW_TOWN_LEVEL_CROSSINGS_HELPTEXT          :Mikäli käytössä, kunnat voivat rakentaa tasoristeyksiä
-<<<<<<< HEAD
-STR_CONFIG_SETTING_NOISE_LEVEL                                  :Käytä kuntien hallitsemaa melutasoa lentokentille: {STRING}
-STR_CONFIG_SETTING_NOISE_LEVEL_HELPTEXT                         :Mikäli pois käytöstä, kunnassa voi olla kaksi lentokentää. Mikäli käytössä, lentokenttien määrä kunnassa rajoittuu kunnan melurajan mukaan. Meluraja riippuu asukasluvusta ja lentokentän koosta sekä etäisyydestä
-STR_CONFIG_SETTING_TOWN_FOUNDING                                :Kuntien perustaminen pelissä: {STRING}
-STR_CONFIG_SETTING_TOWN_FOUNDING_HELPTEXT                       :Mikäli käytössä, pelaajat voivat perustaa uusia kuntia
-STR_CONFIG_SETTING_TOWN_FOUNDING_FORBIDDEN                      :Kielletty
-STR_CONFIG_SETTING_TOWN_FOUNDING_ALLOWED                        :Sallittu
-STR_CONFIG_SETTING_TOWN_FOUNDING_ALLOWED_CUSTOM_LAYOUT          :Sallittu, oma tiekaava
-=======
 
 STR_CONFIG_SETTING_NOISE_LEVEL                                  :Käytä kuntien hallitsemaa melutasoa lentokentille: {STRING}
 STR_CONFIG_SETTING_NOISE_LEVEL_HELPTEXT                         :Mikäli pois käytöstä, kunnassa voi olla kaksi lentokentää. Mikäli käytössä, lentokenttien määrä kunnassa rajoittuu kunnan melurajan mukaan. Meluraja riippuu asukasluvusta ja lentokentän koosta sekä etäisyydestä
@@ -2058,7 +1860,6 @@ STR_CONFIG_SETTING_TOWN_CARGOGENMODE_HELPTEXT                   :Talojen tuottam
 ###length 2
 STR_CONFIG_SETTING_TOWN_CARGOGENMODE_ORIGINAL                   :Neliöllinen (alkuperäinen)
 STR_CONFIG_SETTING_TOWN_CARGOGENMODE_BITCOUNT                   :Lineaarinen
->>>>>>> jgrpp-0.44.0
 
 STR_CONFIG_SETTING_EXTRA_TREE_PLACEMENT                         :Puiden istutus pelissä: {STRING}
 STR_CONFIG_SETTING_EXTRA_TREE_PLACEMENT_HELPTEXT                :Määrittää puiden sattumanvaraisen luomisen. Tämä voi vaikuttaa teollisuuslaitoksiin, jotka ovat riippuvaisia puiden kasvamisesta, esimerkiksi sahat.
@@ -2094,10 +1895,6 @@ STR_CONFIG_SETTING_ZOOM_LVL_NORMAL                              :Tavallinen
 STR_CONFIG_SETTING_ZOOM_LVL_OUT_2X                              :2x
 STR_CONFIG_SETTING_ZOOM_LVL_OUT_4X                              :4x
 STR_CONFIG_SETTING_ZOOM_LVL_OUT_8X                              :8x
-<<<<<<< HEAD
-STR_CONFIG_SETTING_TOWN_GROWTH                                  :Kuntien kasvunopeus: {STRING}
-STR_CONFIG_SETTING_TOWN_GROWTH_HELPTEXT                         :Kunnan kasvunopeus
-=======
 
 STR_CONFIG_SETTING_SPRITE_ZOOM_MIN                              :Korkein käytettävä sprite-resoluutio: {STRING}
 STR_CONFIG_SETTING_SPRITE_ZOOM_MIN_HELPTEXT                     :Rajoita suurinta spriteille käytettävää resoluutiota. Resoluution rajoittaminen estää korkean tarkkuuden grafiikoiden käyttämisen vaikka niitä olisi saatavilla. Tämä voi auttaa pitämään pelin ulkoasun yhtenäisenä käytettäessä sekaisin GRF-tiedostoja, joista osalla on ja osalla ei ole korkean tarkkuuden grafiikoita.
@@ -2109,23 +1906,16 @@ STR_CONFIG_SETTING_SPRITE_ZOOM_LVL_NORMAL                       :1x
 STR_CONFIG_SETTING_TOWN_GROWTH                                  :Kuntien kasvunopeus: {STRING}
 STR_CONFIG_SETTING_TOWN_GROWTH_HELPTEXT                         :Kunnan kasvunopeus
 ###length 5
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_TOWN_GROWTH_NONE                             :Ei kasvua
 STR_CONFIG_SETTING_TOWN_GROWTH_SLOW                             :Hidas
 STR_CONFIG_SETTING_TOWN_GROWTH_NORMAL                           :Tavallinen
 STR_CONFIG_SETTING_TOWN_GROWTH_FAST                             :Nopea
 STR_CONFIG_SETTING_TOWN_GROWTH_VERY_FAST                        :Erittäin nopea
-<<<<<<< HEAD
-STR_CONFIG_SETTING_LARGER_TOWNS                                 :Kaupunkien osuus: {STRING}
-STR_CONFIG_SETTING_LARGER_TOWNS_HELPTEXT                        :Kaupunkien määrä: kaupungit ovat isompia jo alussa ja kasvavat nopeammin kuin muut kunnat
-STR_CONFIG_SETTING_LARGER_TOWNS_VALUE                           :1 / {COMMA}
-=======
 
 STR_CONFIG_SETTING_LARGER_TOWNS                                 :Kaupunkien osuus: {STRING}
 STR_CONFIG_SETTING_LARGER_TOWNS_HELPTEXT                        :Kaupunkien määrä: kaupungit ovat isompia jo alussa ja kasvavat nopeammin kuin muut kunnat
 STR_CONFIG_SETTING_LARGER_TOWNS_VALUE                           :1/{COMMA}
 ###setting-zero-is-special
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_LARGER_TOWNS_DISABLED                        :Ei yhtään
 STR_CONFIG_SETTING_CITY_SIZE_MULTIPLIER                         :Kasvukerroin alussa: {STRING}
 STR_CONFIG_SETTING_CITY_SIZE_MULTIPLIER_HELPTEXT                :Kaupunkien keskimääräinen koko suhteessa muihin kuntiin pelin alussa
@@ -2155,10 +1945,7 @@ STR_CONFIG_SETTING_DEMAND_DISTANCE                              :Välimatkan vai
 STR_CONFIG_SETTING_DEMAND_DISTANCE_HELPTEXT                     :Mikäli asetuksen arvo on määritelty suuremmaksi kuin 0, alkuperäisen aseman A ja mahdollisen määränpään B välimatkalla on vaikutus A:sta B:hen lähetetyn rahdin määrään. Mitä kauempana B on A:sta, sitä vähemmän rahtia lähetetään. Mitä suuremmaksi tämä asetus on määritetty, sitä vähemmän rahtia lähetetään kaukana oleville ja enemmän lähellä oleville asemille.
 STR_CONFIG_SETTING_DEMAND_SIZE                                  :Palautettavan rahdin määrä symmetrisessä tilassa: {STRING}
 STR_CONFIG_SETTING_DEMAND_SIZE_HELPTEXT                         :Mikäli asetuksen arvoksi on määritetty alle 100{NBSP}%, symmetrinen jakauma toimii enemmän epäsymmetrisen jakauman tavoin, ja vähemmän rahtia pakotetaan lähetettäväksi takaisin alkuperäiselle asemalle. Jos arvoksi määritetään 0{NBSP}%, symmetrinen jakauma toimii täysin epäsymmetrisen jakauman tavoin.
-<<<<<<< HEAD
-=======
 
->>>>>>> jgrpp-0.44.0
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION                        :Lyhyiden reittien kuormittuminen ennen vapaampien reittien käyttämistä: {STRING}
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Kahden aseman välillä on usein useita reittejä. Lyhintä reittiä käytetään ensisijaisesti, toiseksi lyhintä ensimmäisen kuormittuessa ja niin edelleen. Kuormitus määritellään arvioidun kapasiteetin ja suunnitellun käytön mukaan. Kaikkien reittien ollessa kuormittuneita reittejä aletaan ylikuormittaa, suurimman kapasiteetin omaavista reiteista aloittaen. Algoritmi ei kuitenkaan aina arvioi kapasiteettia oikein. Tämä asetus mahdollistaa reitin kuormitustason määrittämisen ennen seuraavan reitin käyttämistä. Määritä arvoksi vähemmän kuin 100{NBSP}% välttääksesi ylikuormittuneita asemia, jos kapasiteetti yliarvioidaan.
 
@@ -2286,11 +2073,7 @@ STR_INTRO_ONLINE_CONTENT                                        :{BLACK}Tarkista
 STR_INTRO_SCRIPT_SETTINGS                                       :{BLACK}Tekoälyn/peliskriptin asetukset
 STR_INTRO_QUIT                                                  :{BLACK}Sulje
 
-<<<<<<< HEAD
-STR_INTRO_TOOLTIP_NEW_GAME                                      :{BLACK}Aloita uusi peli. Ctrl+Klik ohittaa kartan asetukset
-=======
 STR_INTRO_TOOLTIP_NEW_GAME                                      :{BLACK}Aloita uusi peli. Ctrl+napsautus ohittaa kartan asetusten valinnan.
->>>>>>> jgrpp-0.44.0
 STR_INTRO_TOOLTIP_LOAD_GAME                                     :{BLACK}Lataa tallennettu peli
 STR_INTRO_TOOLTIP_PLAY_HEIGHTMAP                                :{BLACK}Aloita uusi peli, käyttäen korkeuskarttaa maastona
 STR_INTRO_TOOLTIP_PLAY_SCENARIO                                 :{BLACK}Aloita uusi peli käyttäen omaa skenaariota
@@ -2327,11 +2110,7 @@ STR_ABANDON_SCENARIO_QUERY                                      :{YELLOW}Haluatk
 # Cheat window
 STR_CHEATS                                                      :{WHITE}Huijaukset
 STR_CHEATS_TOOLTIP                                              :{BLACK}Valintaruudut osoittavat, oletko käyttänyt huijausta aiemmin
-<<<<<<< HEAD
-STR_CHEATS_WARNING                                              :{BLACK}Varoitus! Olet juuri pettämässä kanssakilpailijoitasi. Pidä mielessä, että tällainen häväistys pidetään mielessä ikuisuuden ajan
-=======
 STR_CHEATS_NOTE                                                 :{BLACK}Huom.: näiden asetusten käyttö tallentuu pelitallenteeseen
->>>>>>> jgrpp-0.44.0
 STR_CHEAT_MONEY                                                 :{LTBLUE}Anna lisää rahaa: {CURRENCY_LONG}
 STR_CHEAT_CHANGE_COMPANY                                        :{LTBLUE}Hallinnassa oleva yhtiö: {ORANGE}{COMMA}
 STR_CHEAT_EXTRA_DYNAMITE                                        :{LTBLUE}Taikapuskutraktori (poista teollisuutta, liikuttamattomia kohteita): {ORANGE}{STRING}
@@ -2475,10 +2254,6 @@ STR_NETWORK_SERVER_LIST_CLICK_TO_SELECT_LAST                    :{BLACK}Valitse 
 
 STR_NETWORK_SERVER_LIST_GAME_INFO                               :{SILVER}PELITIEDOT
 STR_NETWORK_SERVER_LIST_CLIENTS                                 :{SILVER}Pelaajat: {WHITE}{COMMA} / {COMMA} – {COMMA} / {COMMA}
-<<<<<<< HEAD
-STR_NETWORK_SERVER_LIST_LANGUAGE                                :{SILVER}Kieli: {WHITE}{STRING}
-=======
->>>>>>> jgrpp-0.44.0
 STR_NETWORK_SERVER_LIST_LANDSCAPE                               :{SILVER}Maasto: {WHITE}{STRING}
 STR_NETWORK_SERVER_LIST_MAP_SIZE                                :{SILVER}Kartan koko: {WHITE}{COMMA}x{COMMA}
 STR_NETWORK_SERVER_LIST_SERVER_VERSION                          :{SILVER}Palvelimen versio: {WHITE}{STRING}
@@ -2499,15 +2274,10 @@ STR_NETWORK_SERVER_LIST_JOIN_GAME                               :{BLACK}Liity pe
 STR_NETWORK_SERVER_LIST_REFRESH                                 :{BLACK}Päivitä
 STR_NETWORK_SERVER_LIST_REFRESH_TOOLTIP                         :{BLACK}Päivitä palvelintiedot
 
-<<<<<<< HEAD
-STR_NETWORK_SERVER_LIST_FIND_SERVER                             :{BLACK}Etsi palvelin
-STR_NETWORK_SERVER_LIST_FIND_SERVER_TOOLTIP                     :{BLACK}Etsi palvelin verkosta
-=======
 STR_NETWORK_SERVER_LIST_SEARCH_SERVER_INTERNET                  :{BLACK}Etsi internetistä
 STR_NETWORK_SERVER_LIST_SEARCH_SERVER_INTERNET_TOOLTIP          :{BLACK}Etsi julkisia palvelimia internetistä
 STR_NETWORK_SERVER_LIST_SEARCH_SERVER_LAN                       :{BLACK}Etsi lähiverkosta
 STR_NETWORK_SERVER_LIST_SEARCH_SERVER_LAN_TOOLTIP               :{BLACK}Etsi palvelimia lähiverkosta
->>>>>>> jgrpp-0.44.0
 STR_NETWORK_SERVER_LIST_ADD_SERVER                              :{BLACK}Lisää palvelin
 STR_NETWORK_SERVER_LIST_ADD_SERVER_TOOLTIP                      :{BLACK}Lisää palvelimen luetteloon. Tämä voi olla palvelimen osoite tai kutsukoodi.
 STR_NETWORK_SERVER_LIST_START_SERVER                            :{BLACK}Käynnistä palvelin
@@ -2532,85 +2302,9 @@ STR_NETWORK_START_SERVER_NUMBER_OF_CLIENTS_TOOLTIP              :{BLACK}Pelaajie
 STR_NETWORK_START_SERVER_COMPANIES_SELECT                       :{BLACK}{NUM} yhtiö{P "" tä}
 STR_NETWORK_START_SERVER_NUMBER_OF_COMPANIES                    :{BLACK}Yhtiöiden enimmäismäärä:
 STR_NETWORK_START_SERVER_NUMBER_OF_COMPANIES_TOOLTIP            :{BLACK}Rajoita yhtiöiden määrää palvelimella
-<<<<<<< HEAD
-STR_NETWORK_START_SERVER_SPECTATORS_SELECT                      :{BLACK}{NUM} katsoja{P "" a}
-STR_NETWORK_START_SERVER_NUMBER_OF_SPECTATORS                   :{BLACK}Katsojien enimmäismäärä:
-STR_NETWORK_START_SERVER_NUMBER_OF_SPECTATORS_TOOLTIP           :{BLACK}Rajoita katsojien määrää palvelimella
-STR_NETWORK_START_SERVER_LANGUAGE_SPOKEN                        :{BLACK}Puhuttu kieli:
-STR_NETWORK_START_SERVER_LANGUAGE_TOOLTIP                       :{BLACK}Toiset pelaajat tietävät tästä, mitä kieltä palvelimella puhutaan
 
 STR_NETWORK_START_SERVER_NEW_GAME_NAME_OSKTITLE                 :{BLACK}Syötä nimi verkkopelille
 
-# Network game languages
-############ Leave those lines in this order!!
-STR_NETWORK_LANG_ANY                                            :mikä tahansa
-STR_NETWORK_LANG_ENGLISH                                        :englanti
-STR_NETWORK_LANG_GERMAN                                         :saksa
-STR_NETWORK_LANG_FRENCH                                         :ranska
-STR_NETWORK_LANG_BRAZILIAN                                      :brasilianportugali
-STR_NETWORK_LANG_BULGARIAN                                      :bulgaria
-STR_NETWORK_LANG_CHINESE                                        :kiina
-STR_NETWORK_LANG_CZECH                                          :tšekki
-STR_NETWORK_LANG_DANISH                                         :tanska
-STR_NETWORK_LANG_DUTCH                                          :hollanti
-STR_NETWORK_LANG_ESPERANTO                                      :esperanto
-STR_NETWORK_LANG_FINNISH                                        :suomi
-STR_NETWORK_LANG_HUNGARIAN                                      :unkari
-STR_NETWORK_LANG_ICELANDIC                                      :islanti
-STR_NETWORK_LANG_ITALIAN                                        :italia
-STR_NETWORK_LANG_JAPANESE                                       :japani
-STR_NETWORK_LANG_KOREAN                                         :korea
-STR_NETWORK_LANG_LITHUANIAN                                     :liettua
-STR_NETWORK_LANG_NORWEGIAN                                      :norja
-STR_NETWORK_LANG_POLISH                                         :puola
-STR_NETWORK_LANG_PORTUGUESE                                     :portugali
-STR_NETWORK_LANG_ROMANIAN                                       :romania
-STR_NETWORK_LANG_RUSSIAN                                        :venäjä
-STR_NETWORK_LANG_SLOVAK                                         :slovakia
-STR_NETWORK_LANG_SLOVENIAN                                      :sloveeni
-STR_NETWORK_LANG_SPANISH                                        :espanja
-STR_NETWORK_LANG_SWEDISH                                        :ruotsi
-STR_NETWORK_LANG_TURKISH                                        :turkki
-STR_NETWORK_LANG_UKRAINIAN                                      :ukraina
-STR_NETWORK_LANG_AFRIKAANS                                      :afrikaans
-STR_NETWORK_LANG_CROATIAN                                       :kroatia
-STR_NETWORK_LANG_CATALAN                                        :katalaani
-STR_NETWORK_LANG_ESTONIAN                                       :viro
-STR_NETWORK_LANG_GALICIAN                                       :galego
-STR_NETWORK_LANG_GREEK                                          :kreikka
-STR_NETWORK_LANG_LATVIAN                                        :latvia
-############ End of leave-in-this-order
-
-# Network game lobby
-STR_NETWORK_GAME_LOBBY_CAPTION                                  :{WHITE}Moninpeliaula
-
-STR_NETWORK_GAME_LOBBY_PREPARE_TO_JOIN                          :{BLACK}Valmistautuu yhdistämään: {ORANGE}{STRING}
-STR_NETWORK_GAME_LOBBY_COMPANY_LIST_TOOLTIP                     :{BLACK}Lista pelissä olevista yhtiöistä. Voit joko liittyä yhteen tai perustaa omasi
-
-STR_NETWORK_GAME_LOBBY_COMPANY_INFO                             :{SILVER}YHTIÖN TIEDOT
-STR_NETWORK_GAME_LOBBY_COMPANY_NAME                             :{SILVER}Yhtiön nimi: {WHITE}{STRING}
-STR_NETWORK_GAME_LOBBY_INAUGURATION_YEAR                        :{SILVER}Perustettu: {WHITE}{NUM}
-STR_NETWORK_GAME_LOBBY_VALUE                                    :{SILVER}Yhtiön arvo: {WHITE}{CURRENCY_LONG}
-STR_NETWORK_GAME_LOBBY_CURRENT_BALANCE                          :{SILVER}Nykyinen kate: {WHITE}{CURRENCY_LONG}
-STR_NETWORK_GAME_LOBBY_LAST_YEARS_INCOME                        :{SILVER}Viime vuoden tulot: {WHITE}{CURRENCY_LONG}
-STR_NETWORK_GAME_LOBBY_PERFORMANCE                              :{SILVER}Suorite: {WHITE}{NUM}
-
-STR_NETWORK_GAME_LOBBY_VEHICLES                                 :{SILVER}Kulkuneuvot: {WHITE}{NUM} {TRAIN}, {NUM} {LORRY}, {NUM} {BUS}, {NUM} {SHIP}, {NUM} {PLANE}
-STR_NETWORK_GAME_LOBBY_STATIONS                                 :{SILVER}Asemat: {WHITE}{NUM} {TRAIN}, {NUM} {LORRY}, {NUM} {BUS}, {NUM} {SHIP}, {NUM} {PLANE}
-STR_NETWORK_GAME_LOBBY_PLAYERS                                  :{SILVER}Pelaajat: {WHITE}{STRING}
-
-STR_NETWORK_GAME_LOBBY_NEW_COMPANY                              :{BLACK}Uusi yhtiö
-STR_NETWORK_GAME_LOBBY_NEW_COMPANY_TOOLTIP                      :{BLACK}Perusta uusi yhtiö
-STR_NETWORK_GAME_LOBBY_SPECTATE_GAME                            :{BLACK}Seuraa peliä
-STR_NETWORK_GAME_LOBBY_SPECTATE_GAME_TOOLTIP                    :{BLACK}Seuraa pelin kulkua
-STR_NETWORK_GAME_LOBBY_JOIN_COMPANY                             :{BLACK}Liity yhtiöön
-STR_NETWORK_GAME_LOBBY_JOIN_COMPANY_TOOLTIP                     :{BLACK}Auta tämän yhtiön hallinnassa
-
-=======
-
-STR_NETWORK_START_SERVER_NEW_GAME_NAME_OSKTITLE                 :{BLACK}Syötä nimi verkkopelille
-
->>>>>>> jgrpp-0.44.0
 # Network connecting window
 STR_NETWORK_CONNECTING_CAPTION                                  :{WHITE}Yhdistetään...
 
@@ -2632,7 +2326,6 @@ STR_NETWORK_CONNECTION_DISCONNECT                               :{BLACK}Pura yht
 
 STR_NETWORK_NEED_GAME_PASSWORD_CAPTION                          :{WHITE}Palvelin on suojattu. Anna salasana
 STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Yhtiö on suojattu. Anna salasana
-STR_NETWORK_COMPANY_LIST_CLIENT_LIST_CAPTION                    :{WHITE}Asiakaslista
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Kytkeytyneet pelaajat
@@ -3068,11 +2761,7 @@ STR_WATERWAYS_TOOLBAR_BUILD_DOCK_TOOLTIP                        :{BLACK}Rakenna 
 STR_WATERWAYS_TOOLBAR_BUOY_TOOLTIP                              :{BLACK}Sijoita poiju, jota voi käyttää reittipisteenä. Shift vaihtaa rakennustilan ja kustannusarvion välillä
 STR_WATERWAYS_TOOLBAR_BUILD_AQUEDUCT_TOOLTIP                    :{BLACK}Rakenna akvedukti. Shift vaihtaa rakennustilan ja kustannusarvion välillä
 STR_WATERWAYS_TOOLBAR_CREATE_LAKE_TOOLTIP                       :{BLACK}Määrittele vesialue.{}Tee kanava, paitsi jos Ctrl on painettuna merenpinnalla. Tällöin meri laajenee ympäristöön
-<<<<<<< HEAD
-STR_WATERWAYS_TOOLBAR_CREATE_RIVER_TOOLTIP                      :{BLACK}Sijoita jokia
-=======
 STR_WATERWAYS_TOOLBAR_CREATE_RIVER_TOOLTIP                      :{BLACK}Sijoita jokia. Ctrl valitsee alueen vinottain.
->>>>>>> jgrpp-0.44.0
 
 # Ship depot construction window
 STR_DEPOT_BUILD_SHIP_CAPTION                                    :{WHITE}Telakan suunta
@@ -3156,11 +2845,7 @@ STR_RESET_LANDSCAPE_CONFIRMATION_TEXT                           :{WHITE}Haluatko
 # Town generation window (SE)
 STR_FOUND_TOWN_CAPTION                                          :{WHITE}Luo kuntia
 STR_FOUND_TOWN_NEW_TOWN_BUTTON                                  :{BLACK}Uusi kunta
-<<<<<<< HEAD
-STR_FOUND_TOWN_NEW_TOWN_TOOLTIP                                 :{BLACK}Perusta uusi kunta. Shift+Klik näyttää vain kustannusarvion
-=======
 STR_FOUND_TOWN_NEW_TOWN_TOOLTIP                                 :{BLACK}Perusta uusi kunta. Vaihto+napsautus näyttää vain kustannusarvion.
->>>>>>> jgrpp-0.44.0
 STR_FOUND_TOWN_RANDOM_TOWN_BUTTON                               :{BLACK}Satunnainen kunta
 STR_FOUND_TOWN_RANDOM_TOWN_TOOLTIP                              :{BLACK}Perusta kunta satunnaiseen paikkaan
 STR_FOUND_TOWN_MANY_RANDOM_TOWNS                                :{BLACK}Monta satunnaista kuntaa
@@ -3360,10 +3045,7 @@ STR_FRAMERATE_SPEED_FACTOR                                      :{BLACK}Pelin ny
 STR_FRAMERATE_SPEED_FACTOR_TOOLTIP                              :{BLACK}Pelin tämänhetkinen nopeus verrattuna normaalilla simulaationopeudella odotettavissa olevaan
 STR_FRAMERATE_CURRENT                                           :{WHITE}Nykyinen
 STR_FRAMERATE_AVERAGE                                           :{WHITE}Keskiarvo
-<<<<<<< HEAD
-=======
 STR_FRAMERATE_MEMORYUSE                                         :{WHITE}Muisti
->>>>>>> jgrpp-0.44.0
 STR_FRAMERATE_DATA_POINTS                                       :{BLACK}Data perustuu {COMMA} mittaukseen
 STR_FRAMERATE_MS_GOOD                                           :{LTBLUE}{DECIMAL} ms
 STR_FRAMERATE_MS_WARN                                           :{YELLOW}{DECIMAL} ms
@@ -3371,17 +3053,11 @@ STR_FRAMERATE_MS_BAD                                            :{RED}{DECIMAL} 
 STR_FRAMERATE_FPS_GOOD                                          :{LTBLUE}{DECIMAL} kuvaa/s
 STR_FRAMERATE_FPS_WARN                                          :{YELLOW}{DECIMAL} kuvaa/s
 STR_FRAMERATE_FPS_BAD                                           :{RED}{DECIMAL} kuvaa/s
-<<<<<<< HEAD
-STR_FRAMERATE_GRAPH_MILLISECONDS                                :{TINY_FONT}{COMMA} ms
-STR_FRAMERATE_GRAPH_SECONDS                                     :{TINY_FONT}{COMMA} s
-############ Leave those lines in this order!!
-=======
 STR_FRAMERATE_BYTES_GOOD                                        :{LTBLUE}{BYTES}
 STR_FRAMERATE_GRAPH_MILLISECONDS                                :{TINY_FONT}{COMMA} ms
 STR_FRAMERATE_GRAPH_SECONDS                                     :{TINY_FONT}{COMMA} s
 
 ###length 15
->>>>>>> jgrpp-0.44.0
 STR_FRAMERATE_GAMELOOP                                          :{BLACK}Pelisilmukka yhteensä:
 STR_FRAMERATE_GL_ECONOMY                                        :{BLACK}  Rahdin käsittely:
 STR_FRAMERATE_GL_TRAINS                                         :{BLACK}  Juna-askeleet:
@@ -3397,13 +3073,8 @@ STR_FRAMERATE_SOUND                                             :{BLACK}Äänen 
 STR_FRAMERATE_ALLSCRIPTS                                        :{BLACK}  Peliskriptit/tekoälyt yht.:
 STR_FRAMERATE_GAMESCRIPT                                        :{BLACK}   Peliskripti:
 STR_FRAMERATE_AI                                                :{BLACK}   Tekoäly {NUM} {STRING}
-<<<<<<< HEAD
-############ End of leave-in-this-order
-############ Leave those lines in this order!!
-=======
 
 ###length 15
->>>>>>> jgrpp-0.44.0
 STR_FRAMETIME_CAPTION_GAMELOOP                                  :Pelisilmukka
 STR_FRAMETIME_CAPTION_GL_ECONOMY                                :Rahdin käsittely
 STR_FRAMETIME_CAPTION_GL_TRAINS                                 :Juna-askeleet
@@ -3419,10 +3090,6 @@ STR_FRAMETIME_CAPTION_SOUND                                     :Äänen miksaus
 STR_FRAMETIME_CAPTION_ALLSCRIPTS                                :Peliskriptit ja tekoälyt yht.
 STR_FRAMETIME_CAPTION_GAMESCRIPT                                :Peliskripti
 STR_FRAMETIME_CAPTION_AI                                        :Tekoäly {NUM} {STRING}
-<<<<<<< HEAD
-############ End of leave-in-this-order
-=======
->>>>>>> jgrpp-0.44.0
 
 
 # Save/load game/scenario
@@ -3450,11 +3117,8 @@ STR_SAVELOAD_DETAIL_GRFSTATUS                                   :{SILVER}NewGRF:
 STR_SAVELOAD_FILTER_TITLE                                       :{BLACK}Suodatinteksti:
 STR_SAVELOAD_OVERWRITE_TITLE                                    :{WHITE}Tiedosto on jo olemassa
 STR_SAVELOAD_OVERWRITE_WARNING                                  :{YELLOW}Haluatko varmasti korvata olemassaolevan tiedoston?
-<<<<<<< HEAD
-=======
 STR_SAVELOAD_DIRECTORY                                          :{STRING} (hakemisto)
 STR_SAVELOAD_PARENT_DIRECTORY                                   :{STRING} (ylähakemisto)
->>>>>>> jgrpp-0.44.0
 
 STR_SAVELOAD_OSKTITLE                                           :{BLACK}Syötä nimi tallennustiedostolle
 
@@ -3477,9 +3141,6 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Aavikon 
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Kasvata aavikon peittoa 10 prosentilla
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Vähennä aavikon peittoa 10 prosentilla
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}{NBSP}%
-STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Lumirajan korkeus:
-STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Siirrä lumirajaa yksi taso ylöspäin
-STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Siirrä lumirajaa yksi taso alaspäin
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Maastogeneraattori:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Maaston tyyppi:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Merenpinta:
@@ -3509,7 +3170,6 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Huipun t
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Korkein huippu
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Lumen peitto (%)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Aavikon peitto (%)
-STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Vaihda lumirajan korkeutta
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Vaihda aloitusvuosi
 
 # SE Map generation
@@ -3529,11 +3189,7 @@ STR_GENERATION_ABORT                                            :{BLACK}Peruuta
 STR_GENERATION_ABORT_CAPTION                                    :{WHITE}Keskeytä maailman luominen
 STR_GENERATION_ABORT_MESSAGE                                    :{YELLOW}Haluatko varmasti keskeyttää maan luomisen?
 STR_GENERATION_PROGRESS                                         :{WHITE}{NUM}{NBSP}% valmiina
-<<<<<<< HEAD
-STR_GENERATION_PROGRESS_NUM                                     :{BLACK}{NUM} / {NUM}
-=======
 STR_GENERATION_PROGRESS_NUM                                     :{BLACK}{NUM}/{NUM}
->>>>>>> jgrpp-0.44.0
 STR_GENERATION_WORLD_GENERATION                                 :{BLACK}Maailman luominen
 STR_GENERATION_RIVER_GENERATION                                 :{BLACK}Jokien luominen
 STR_GENERATION_TREE_GENERATION                                  :{BLACK}Puiden luominen
@@ -3742,11 +3398,7 @@ STR_TOWN_DIRECTORY_CAPTION                                      :{WHITE}Kunnat
 STR_TOWN_DIRECTORY_NONE                                         :{ORANGE}- Ei mitään -
 STR_TOWN_DIRECTORY_TOWN                                         :{ORANGE}{TOWN}{BLACK} ({COMMA})
 STR_TOWN_DIRECTORY_CITY                                         :{ORANGE}{TOWN}{YELLOW} (kaupunki){BLACK} ({COMMA})
-<<<<<<< HEAD
-STR_TOWN_DIRECTORY_LIST_TOOLTIP                                 :{BLACK}Kuntien nimet – keskitä päänäkymä kuntaan napsauttamalla nimeä. Ctrl+Klik avaa uuden näkymäikkunan kunnan sijaintiin
-=======
 STR_TOWN_DIRECTORY_LIST_TOOLTIP                                 :{BLACK}Kuntien nimet – keskitä päänäkymä kuntaan napsauttamalla nimeä. Ctrl+napsautus avaa uuden näkymäikkunan kunnan sijaintiin.
->>>>>>> jgrpp-0.44.0
 STR_TOWN_POPULATION                                             :{BLACK}Maailman asukasluku: {COMMA}
 
 # Town view window
@@ -3764,11 +3416,7 @@ STR_TOWN_VIEW_TOWN_GROWS_EVERY                                  :{BLACK}Kunta ka
 STR_TOWN_VIEW_TOWN_GROWS_EVERY_FUNDED                           :{BLACK}Kunta kasvaa {ORANGE}{COMMA}{BLACK}{NBSP}päivän{P "" ""} välein (rahoitettu)
 STR_TOWN_VIEW_TOWN_GROW_STOPPED                                 :{BLACK}Kunta {RED}ei{BLACK} kasva
 STR_TOWN_VIEW_NOISE_IN_TOWN                                     :{BLACK}Meluraja kunnassa: {ORANGE}{COMMA}{BLACK}  maks.: {ORANGE}{COMMA}
-<<<<<<< HEAD
-STR_TOWN_VIEW_CENTER_TOOLTIP                                    :{BLACK}Keskitä näkymä kunnan sijaintiin. Ctrl+Klik avaa uuden näkymäikkunan kunnan sijaintiin
-=======
 STR_TOWN_VIEW_CENTER_TOOLTIP                                    :{BLACK}Keskitä päänäkymä kunnan sijaintiin. Ctrl+napsautus avaa uuden näkymäikkunan kunnan sijaintiin.
->>>>>>> jgrpp-0.44.0
 STR_TOWN_VIEW_LOCAL_AUTHORITY_BUTTON                            :{BLACK}Viranomaiset
 STR_TOWN_VIEW_LOCAL_AUTHORITY_TOOLTIP                           :{BLACK}Näytä tietoja paikallisviranomaisista
 STR_TOWN_VIEW_RENAME_TOOLTIP                                    :{BLACK}Vaihda kunnan nimeä.
@@ -3801,15 +3449,6 @@ STR_LOCAL_AUTHORITY_ACTION_NEW_BUILDINGS                        :Rahoita uusia r
 STR_LOCAL_AUTHORITY_ACTION_EXCLUSIVE_TRANSPORT                  :Osta yksinoikeudet kuljetuksiin
 STR_LOCAL_AUTHORITY_ACTION_BRIBE                                :Lahjo viranomaisia
 
-<<<<<<< HEAD
-STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_SMALL_ADVERTISING            :{YELLOW}Käynnistä pieni mainoskampanja hoikutellaksesi lisää matkustajia ja rahtia kuljetuspalveluihisi.{}Kustannus: {CURRENCY_LONG}
-STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_MEDIUM_ADVERTISING           :{YELLOW}Käynnistä keskikokoinen mainoskampanja houkutellaksesi lisää matkustajia ja rahtia kuljetuspalveluihisi.{}Kustannus: {CURRENCY_LONG}
-STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_LARGE_ADVERTISING            :{YELLOW}Käynnistä suuri mainoskampanja hoikutellaksesi lisää matkustajia ja rahtia kuljetuspalveluihisi.{}Kustannus: {CURRENCY_LONG}
-STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_ROAD_RECONSTRUCTION          :{YELLOW}Rahoita tieverkon uudelleenrakentamista. Aiheuttaa huomattavaa häiriötä tieliikenteessä jopa kuuden kuukauden ajan.{}Kustannus: {CURRENCY_LONG}
-STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_STATUE_OF_COMPANY            :{YELLOW}Rakenna patsas yhtiösi kunniaksi.{}Kustannus: {CURRENCY_LONG}
-STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_NEW_BUILDINGS                :{YELLOW}Rahoita uusien liikerakennusten rakentamista kunnassa.{}Kustannus: {CURRENCY_LONG}
-STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_EXCLUSIVE_TRANSPORT          :{YELLOW}Osta vuoden yksinoikeudet kunnan liikennöintiin. Paikallisviranomaiset eivät salli muiden yhtiöiden kuljettaa matkustajia ja rahtia.{}Kustannus: {CURRENCY_LONG}
-=======
 ###length 8
 STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_SMALL_ADVERTISING            :{YELLOW}Käynnistä pieni mainoskampanja hoikutellaksesi lisää matkustajia ja rahtia kuljetuspalveluihisi.{}Tämä kasvattaa tilapäisesti asemien arvioita pienellä säteellä kunnan keskustan ympärillä.{}Kustannus: {CURRENCY_LONG}
 STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_MEDIUM_ADVERTISING           :{YELLOW}Käynnistä keskikokoinen mainoskampanja houkutellaksesi lisää matkustajia ja rahtia kuljetuspalveluihisi.{}Tämä kasvattaa tilapäisesti asemien arvioita keskikokoisella säteellä kunnan keskustan ympärillä.{}Kustannus: {CURRENCY_LONG}
@@ -3818,31 +3457,21 @@ STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_ROAD_RECONSTRUCTION          :{YELLOW}Rahoita
 STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_STATUE_OF_COMPANY            :{YELLOW}Rakenna patsas yhtiösi kunniaksi.{}Parantaa asemien arvioita pysyvästi tässä kunnassa.{}Kustannus: {CURRENCY_LONG}
 STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_NEW_BUILDINGS                :{YELLOW}Rahoita uusien liikerakennusten rakentamista kunnassa.{}Tämä kiihdyttää tämän kunnan kasvua tilapäisesti.{}Kustannus: {CURRENCY_LONG}
 STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_EXCLUSIVE_TRANSPORT          :{YELLOW}Osta vuoden yksinoikeudet kunnan liikennöintiin.{}Tällöin paikallisviranomaiset eivät salli matkustajien ja rahdin käyttää kilpailijoittesi asemia.{}Kustannus: {CURRENCY_LONG}
->>>>>>> jgrpp-0.44.0
 STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_BRIBE                        :{YELLOW}Lahjo viranomaisia lisätäksesi arviotasi; rangaistus voi olla kuitenkin suuri, jos jäät kiinni.{}Kustannus: {CURRENCY_LONG}
 
 # Goal window
 STR_GOALS_CAPTION                                               :{WHITE}{COMPANY} Tavoitteet
 STR_GOALS_SPECTATOR_CAPTION                                     :{WHITE}Maailmanlaajuiset tavoitteet
 STR_GOALS_SPECTATOR                                             :Maailmanlaajuiset tavoitteet
-<<<<<<< HEAD
-STR_GOALS_GLOBAL_TITLE                                          :{BLACK}Maailmanlaajuiset tavoitteet:
-=======
 STR_GOALS_GLOBAL_BUTTON                                         :{BLACK}Maailmanlaajuiset
 STR_GOALS_GLOBAL_BUTTON_HELPTEXT                                :{BLACK}Näytä maailmanlaajuiset tavoitteet
 STR_GOALS_COMPANY_BUTTON                                        :{BLACK}Yhtiö
 STR_GOALS_COMPANY_BUTTON_HELPTEXT                               :{BLACK}Näytä yhtiön tavoitteet
->>>>>>> jgrpp-0.44.0
 STR_GOALS_TEXT                                                  :{ORANGE}{STRING}
 STR_GOALS_NONE                                                  :{ORANGE}- Ei mitään -
 STR_GOALS_PROGRESS                                              :{ORANGE}{STRING}
 STR_GOALS_PROGRESS_COMPLETE                                     :{GREEN}{STRING}
-<<<<<<< HEAD
-STR_GOALS_COMPANY_TITLE                                         :{BLACK}Yhtiön tavoitteet:
-STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Keskitä päänäkymä laitokseen/kuntaan/ruutuun napsauttamalla tavoitetta. Ctrl+Klik avaa uuden näkymän laitoksen/kunnan/ruudun sijaintiin
-=======
 STR_GOALS_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                    :{BLACK}Keskitä päänäkymä laitokseen/kuntaan/ruutuun napsauttamalla tavoitetta. Ctrl+napsautus avaa uuden näkymäikkunan laitoksen/kunnan/ruudun sijaintiin.
->>>>>>> jgrpp-0.44.0
 
 # Goal question window
 STR_GOAL_QUESTION_CAPTION_QUESTION                              :{BLACK}Kysymys
@@ -3878,11 +3507,7 @@ STR_SUBSIDIES_OFFERED_FROM_TO                                   :{ORANGE}{STRING
 STR_SUBSIDIES_NONE                                              :{ORANGE}- Ei mitään -
 STR_SUBSIDIES_SUBSIDISED_TITLE                                  :{BLACK}Käytetyt tuet:
 STR_SUBSIDIES_SUBSIDISED_FROM_TO                                :{ORANGE}{STRING} välille {STRING}-{STRING}{YELLOW} ({COMPANY}{YELLOW}, {DATE_SHORT} asti)
-<<<<<<< HEAD
-STR_SUBSIDIES_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                :{BLACK}Napsauta palvelua keskittääksesi päänäkymän teollisuuteen/kuntaan. Ctrl+Klik avaa uuden näkymäikkunan teollisuuden/kunnan sijaintiin
-=======
 STR_SUBSIDIES_TOOLTIP_CLICK_ON_SERVICE_TO_CENTER                :{BLACK}Napsauta kuljetusyhteyttä keskittääksesi päänäkymän laitokseen/kuntaan. Ctrl+napsautus avaa uuden näkymäikkunan laitoksen/kunnan sijaintiin.
->>>>>>> jgrpp-0.44.0
 
 # Story book window
 STR_STORY_BOOK_CAPTION                                          :{WHITE}{COMPANY}: historia
@@ -3898,11 +3523,7 @@ STR_STORY_BOOK_NEXT_PAGE_TOOLTIP                                :{BLACK}Siirry s
 STR_STORY_BOOK_INVALID_GOAL_REF                                 :{RED}Virheellinen viittaus tavoitteeseen
 
 # Station list window
-<<<<<<< HEAD
-STR_STATION_LIST_TOOLTIP                                        :{BLACK}Asemien nimet – napsauta nimeä keskittääksesi päänäkymän asemaan. Ctrl+Klik avaa uuden näkymäikkunan aseman sijaintiin
-=======
 STR_STATION_LIST_TOOLTIP                                        :{BLACK}Asemien nimet – napsauta nimeä keskittääksesi päänäkymän asemaan. Ctrl+napsautus avaa uuden näkymäikkunan aseman sijaintiin.
->>>>>>> jgrpp-0.44.0
 STR_STATION_LIST_USE_CTRL_TO_SELECT_MORE                        :{BLACK}Pidä Ctrl-näppäin painettuna valitaksesi useamman kuin yhden vaihtoehdon
 STR_STATION_LIST_CAPTION                                        :{WHITE}{COMPANY} – {COMMA} asema{P "" a}
 STR_STATION_LIST_STATION                                        :{YELLOW}{STATION} {STATION_FEATURES}
@@ -3962,11 +3583,7 @@ STR_CARGO_RATING_VERY_GOOD                                      :Erittäin hyvä
 STR_CARGO_RATING_EXCELLENT                                      :Mainio
 STR_CARGO_RATING_OUTSTANDING                                    :Loistava
 
-<<<<<<< HEAD
-STR_STATION_VIEW_CENTER_TOOLTIP                                 :{BLACK}Keskitä näkymä aseman sijaintiin. Ctrl+Klik avaa uuden näkymäikkunan aseman sijaintiin
-=======
 STR_STATION_VIEW_CENTER_TOOLTIP                                 :{BLACK}Keskitä päänäkymä aseman sijaintiin. Ctrl+napsautus avaa uuden näkymäikkunan aseman sijaintiin.
->>>>>>> jgrpp-0.44.0
 STR_STATION_VIEW_RENAME_TOOLTIP                                 :{BLACK}Muuta aseman nimi
 
 STR_STATION_VIEW_SCHEDULED_TRAINS_TOOLTIP                       :{BLACK}Näytä kaikki junat, joilla on tämä asema käskyissään
@@ -4090,12 +3707,7 @@ STR_COMPANY_INFRASTRUCTURE_VIEW_TOTAL                           :{WHITE}{CURRENC
 # Industry directory
 STR_INDUSTRY_DIRECTORY_CAPTION                                  :{WHITE}Teollisuusala
 STR_INDUSTRY_DIRECTORY_NONE                                     :{ORANGE}- Ei mitään -
-<<<<<<< HEAD
-STR_INDUSTRY_DIRECTORY_ITEM                                     :{ORANGE}{INDUSTRY}{BLACK} ({CARGO_LONG}{STRING}){YELLOW} ({COMMA}{NBSP}% kuljetettu)
-STR_INDUSTRY_DIRECTORY_ITEM_TWO                                 :{ORANGE}{INDUSTRY}{BLACK} ({CARGO_LONG}{STRING}/{CARGO_LONG}{STRING}){YELLOW} ({COMMA}{NBSP}% / {COMMA}{NBSP}% kuljetettu)
-=======
 STR_INDUSTRY_DIRECTORY_ITEM_INFO                                :{BLACK}{CARGO_LONG}{STRING}{YELLOW} ({COMMA}% kuljetettu){BLACK}
->>>>>>> jgrpp-0.44.0
 STR_INDUSTRY_DIRECTORY_ITEM_NOPROD                              :{ORANGE}{INDUSTRY}
 STR_INDUSTRY_DIRECTORY_ITEM_PROD1                               :{ORANGE}{INDUSTRY} {STRING}
 STR_INDUSTRY_DIRECTORY_ITEM_PROD2                               :{ORANGE}{INDUSTRY} {STRING}, {STRING}
@@ -4111,11 +3723,7 @@ STR_INDUSTRY_DIRECTORY_FILTER_NONE                              :Ei mitään
 STR_INDUSTRY_VIEW_CAPTION                                       :{WHITE}{INDUSTRY}
 STR_INDUSTRY_VIEW_PRODUCTION_LAST_MONTH_TITLE                   :{BLACK}Tuotto viime kuussa:
 STR_INDUSTRY_VIEW_TRANSPORTED                                   :{YELLOW}{CARGO_LONG}{STRING}{BLACK} ({COMMA}{NBSP}% kuljetettu)
-<<<<<<< HEAD
-STR_INDUSTRY_VIEW_LOCATION_TOOLTIP                              :{BLACK}Keskitä päänäkymä teollisuuden sijaintiin. Ctrl+Klik avaa uuden näkymäikkunan teollisuuden sijaintiin
-=======
 STR_INDUSTRY_VIEW_LOCATION_TOOLTIP                              :{BLACK}Keskitä päänäkymä tuotantolaitoksen sijaintiin. Ctrl+napsautus avaa uuden näkymäikkunan laitoksen sijaintiin.
->>>>>>> jgrpp-0.44.0
 STR_INDUSTRY_VIEW_PRODUCTION_LEVEL                              :{BLACK}Tuotantotaso: {YELLOW}{COMMA}{NBSP}%
 STR_INDUSTRY_VIEW_INDUSTRY_ANNOUNCED_CLOSURE                    :{YELLOW}Teollisuuslaitos ilmoittaa pikaisesta sulkeutumisestaan!
 
@@ -4131,13 +3739,6 @@ STR_CONFIG_GAME_PRODUCTION                                      :{WHITE}Muokkaa 
 STR_CONFIG_GAME_PRODUCTION_LEVEL                                :{WHITE}Muuta tuotantotasoa (prosentteina, 800{NBSP}%:iin asti)
 
 # Vehicle lists
-<<<<<<< HEAD
-STR_VEHICLE_LIST_TRAIN_CAPTION                                  :{WHITE}{STRING} - {COMMA} juna{P "" a}
-STR_VEHICLE_LIST_ROAD_VEHICLE_CAPTION                           :{WHITE}{STRING} - {COMMA} ajoneuvo{P "" a}
-STR_VEHICLE_LIST_SHIP_CAPTION                                   :{WHITE}{STRING} - {COMMA} laiva{P "" a}
-STR_VEHICLE_LIST_AIRCRAFT_CAPTION                               :{WHITE}{STRING} - {COMMA} lentokone{P "" tta}
-
-=======
 ###length VEHICLE_TYPES
 STR_VEHICLE_LIST_TRAIN_CAPTION                                  :{WHITE}{STRING} – {COMMA} juna{P "" a}
 STR_VEHICLE_LIST_ROAD_VEHICLE_CAPTION                           :{WHITE}{STRING} – {COMMA} ajoneuvo{P "" a}
@@ -4145,34 +3746,20 @@ STR_VEHICLE_LIST_SHIP_CAPTION                                   :{WHITE}{STRING}
 STR_VEHICLE_LIST_AIRCRAFT_CAPTION                               :{WHITE}{STRING} – {COMMA} ilma-alus{P "" ta}
 
 ###length VEHICLE_TYPES
->>>>>>> jgrpp-0.44.0
 STR_VEHICLE_LIST_TRAIN_LIST_TOOLTIP                             :{BLACK}Junat – napsauta junaa saadaksesi tietoja
 STR_VEHICLE_LIST_ROAD_VEHICLE_TOOLTIP                           :{BLACK}Ajoneuvot – napsauta ajoneuvoa saadaksesi tietoja
 STR_VEHICLE_LIST_SHIP_TOOLTIP                                   :{BLACK}Laivat – napsauta laivaa saadaksesi tietoja
 STR_VEHICLE_LIST_AIRCRAFT_TOOLTIP                               :{BLACK}Lentokoneet – napsauta lentokonetta saadaksesi tietoja
 
-<<<<<<< HEAD
-STR_VEHICLE_LIST_PROFIT_THIS_YEAR_LAST_YEAR                     :{TINY_FONT}{BLACK}Tuotto tänä vuonna: {CURRENCY_LONG} (viime vuonna: {CURRENCY_LONG})
-
-=======
 ###length VEHICLE_TYPES
->>>>>>> jgrpp-0.44.0
 STR_VEHICLE_LIST_AVAILABLE_TRAINS                               :Käytettävissä olevat junat
 STR_VEHICLE_LIST_AVAILABLE_ROAD_VEHICLES                        :Käytettävissä olevat ajoneuvot
 STR_VEHICLE_LIST_AVAILABLE_SHIPS                                :Käytettävissä olevat laivat
 STR_VEHICLE_LIST_AVAILABLE_AIRCRAFT                             :Käytettävissä olevat ilma-alukset
-<<<<<<< HEAD
-STR_VEHICLE_LIST_AVAILABLE_ENGINES_TOOLTIP                      :{BLACK}Näytä lista saatavilla olevista moottorityypeistä tälle kulkuneuvotyypille
-
-STR_VEHICLE_LIST_MANAGE_LIST                                    :{BLACK}Muokkaa listaa
-STR_VEHICLE_LIST_MANAGE_LIST_TOOLTIP                            :{BLACK}Ohjaa kaikkia listan kulkuneuvoja
-STR_VEHICLE_LIST_REPLACE_VEHICLES                               :Korvaa liikennevälineitä
-=======
 
 STR_VEHICLE_LIST_MANAGE_LIST                                    :{BLACK}Muokkaa listaa
 STR_VEHICLE_LIST_MANAGE_LIST_TOOLTIP                            :{BLACK}Ohjaa kaikkia listan kulkuneuvoja
 STR_VEHICLE_LIST_REPLACE_VEHICLES                               :Korvaa kulkuneuvoja
->>>>>>> jgrpp-0.44.0
 STR_VEHICLE_LIST_SEND_FOR_SERVICING                             :Lähetä huoltoon
 STR_VEHICLE_LIST_PROFIT_THIS_YEAR_LAST_YEAR                     :{TINY_FONT}{BLACK}Tuotto tänä vuonna: {CURRENCY_LONG} (viime vuonna: {CURRENCY_LONG})
 
@@ -4200,30 +3787,19 @@ STR_GROUP_DEFAULT_ROAD_VEHICLES                                 :Muut ajoneuvot
 STR_GROUP_DEFAULT_SHIPS                                         :Muut laivat
 STR_GROUP_DEFAULT_AIRCRAFTS                                     :Muut ilma-alukset
 
-<<<<<<< HEAD
-=======
 STR_GROUP_COUNT_WITH_SUBGROUP                                   :{TINY_FONT}{COMMA} (+{COMMA})
 
->>>>>>> jgrpp-0.44.0
 STR_GROUPS_CLICK_ON_GROUP_FOR_TOOLTIP                           :{BLACK}Ryhmät – napsauta ryhmää nähdäksesi kaikki kulkuneuvot tässä ryhmässä. Järjestä ryhmiä vetämällä ja pudottamalla.
 STR_GROUP_CREATE_TOOLTIP                                        :{BLACK}Luo ryhmä
 STR_GROUP_DELETE_TOOLTIP                                        :{BLACK}Poista valittu ryhmä
 STR_GROUP_RENAME_TOOLTIP                                        :{BLACK}Nimeä valittu ryhmä
 STR_GROUP_LIVERY_TOOLTIP                                        :{BLACK}Muuta valitun ryhmän väritystä
-<<<<<<< HEAD
-STR_GROUP_REPLACE_PROTECTION_TOOLTIP                            :{BLACK}Poista ryhmä automaattisesti korvattavien joukosta
-=======
 STR_GROUP_REPLACE_PROTECTION_TOOLTIP                            :{BLACK}Napsauta suojataksesi tämä ryhmä yleiseltä automaattikorvaukselta. Ctrl+napsautus suojaa myös aliryhmät.
->>>>>>> jgrpp-0.44.0
 
 STR_QUERY_GROUP_DELETE_CAPTION                                  :{WHITE}Poista ryhmä
 STR_GROUP_DELETE_QUERY_TEXT                                     :{WHITE}Haluatko varmasti poistaa tämän ryhmän ja sen alaryhmät?
 
-<<<<<<< HEAD
-STR_GROUP_ADD_SHARED_VEHICLE                                    :Lisää jaettuja kulkuneuvoja
-=======
 STR_GROUP_ADD_SHARED_VEHICLE                                    :Lisää jaetut kulkuneuvot
->>>>>>> jgrpp-0.44.0
 STR_GROUP_REMOVE_ALL_VEHICLES                                   :Poista kaikki kulkuneuvot
 
 STR_GROUP_RENAME_CAPTION                                        :{BLACK}Nimeä ryhmä
@@ -4271,10 +3847,7 @@ STR_PURCHASE_INFO_PWAGPOWER_PWAGWEIGHT                          :{BLACK}Moottoro
 STR_PURCHASE_INFO_REFITTABLE_TO                                 :{BLACK}Sovitettavissa: {GOLD}{STRING}
 STR_PURCHASE_INFO_ALL_TYPES                                     :Kaikki rahtityypit
 STR_PURCHASE_INFO_NONE                                          :Ei mitään
-<<<<<<< HEAD
-=======
 STR_PURCHASE_INFO_ENGINES_ONLY                                  :Vain veturit
->>>>>>> jgrpp-0.44.0
 STR_PURCHASE_INFO_ALL_BUT                                       :Kaikki paitsi {CARGO_LIST}
 STR_PURCHASE_INFO_MAX_TE                                        :{BLACK}Suurin vetovoima: {GOLD}{FORCE}
 STR_PURCHASE_INFO_AIRCRAFT_RANGE                                :{BLACK}Toimintasäde: {GOLD}{COMMA} ruutua
@@ -4316,10 +3889,7 @@ STR_BUY_VEHICLE_ROAD_VEHICLE_RENAME_BUTTON                      :{BLACK}Nimeä
 STR_BUY_VEHICLE_SHIP_RENAME_BUTTON                              :{BLACK}Nimeä
 STR_BUY_VEHICLE_AIRCRAFT_RENAME_BUTTON                          :{BLACK}Nimeä
 
-<<<<<<< HEAD
-=======
 ###length VEHICLE_TYPES
->>>>>>> jgrpp-0.44.0
 STR_BUY_VEHICLE_TRAIN_RENAME_TOOLTIP                            :{BLACK}Nimeä yksikön tyyppi uudelleen
 STR_BUY_VEHICLE_ROAD_VEHICLE_RENAME_TOOLTIP                     :{BLACK}Nimeä ajoneuvon tyyppi uudelleen
 STR_BUY_VEHICLE_SHIP_RENAME_TOOLTIP                             :{BLACK}Nimeä laivatyyppi uudelleen
@@ -4366,19 +3936,11 @@ STR_DEPOT_ROAD_VEHICLE_LIST_TOOLTIP                             :{BLACK}Ajoneuvo
 STR_DEPOT_SHIP_LIST_TOOLTIP                                     :{BLACK}Laivat – napsauta laivaa oikealla hiiren painikkeella saadaksesi tietoja.
 STR_DEPOT_AIRCRAFT_LIST_TOOLTIP                                 :{BLACK}Lentokoneet – napsauta lentokonetta oikealla hiiren painikkeella saadaksesi tietoja
 
-<<<<<<< HEAD
-=======
 ###length VEHICLE_TYPES
->>>>>>> jgrpp-0.44.0
 STR_DEPOT_TRAIN_SELL_TOOLTIP                                    :{BLACK}Vedä yksikkö tähän myydäksesi sen
 STR_DEPOT_ROAD_VEHICLE_SELL_TOOLTIP                             :{BLACK}Vedä ajoneuvo tähän myydäksesi sen
 STR_DEPOT_SHIP_SELL_TOOLTIP                                     :{BLACK}Vedä laiva tähän myydäksesi sen
 STR_DEPOT_AIRCRAFT_SELL_TOOLTIP                                 :{BLACK}Vedä lentokone tähän myydäksesi sen
-<<<<<<< HEAD
-
-STR_DEPOT_DRAG_WHOLE_TRAIN_TO_SELL_TOOLTIP                      :{BLACK}Vedä junan veturi tähän myydäksesi koko junan
-=======
->>>>>>> jgrpp-0.44.0
 
 ###length VEHICLE_TYPES
 STR_DEPOT_SELL_ALL_BUTTON_TRAIN_TOOLTIP                         :{BLACK}Myy kaikki veturitallilla olevat junat
@@ -4398,10 +3960,7 @@ STR_DEPOT_ROAD_VEHICLE_NEW_VEHICLES_BUTTON                      :{BLACK}Uudet aj
 STR_DEPOT_SHIP_NEW_VEHICLES_BUTTON                              :{BLACK}Uudet laivat
 STR_DEPOT_AIRCRAFT_NEW_VEHICLES_BUTTON                          :{BLACK}Uudet lentokoneet
 
-<<<<<<< HEAD
-=======
 ###length VEHICLE_TYPES
->>>>>>> jgrpp-0.44.0
 STR_DEPOT_TRAIN_NEW_VEHICLES_TOOLTIP                            :{BLACK}Osta uusi yksikkö
 STR_DEPOT_ROAD_VEHICLE_NEW_VEHICLES_TOOLTIP                     :{BLACK}Osta uusi ajoneuvo
 STR_DEPOT_SHIP_NEW_VEHICLES_TOOLTIP                             :{BLACK}Osta uusi laiva
@@ -4443,23 +4002,12 @@ STR_DEPOT_MASS_START_DEPOT_ROAD_VEHICLE_TOOLTIP                 :{BLACK}Käynnis
 STR_DEPOT_MASS_START_DEPOT_SHIP_TOOLTIP                         :{BLACK}Käynnistä kaikki telakalla olevat laivat napsauttamalla
 STR_DEPOT_MASS_START_HANGAR_TOOLTIP                             :{BLACK}Käynnistä kaikki hallissa olevat ilma-alukset napsauttamalla
 
-<<<<<<< HEAD
-=======
 STR_DEPOT_DRAG_WHOLE_TRAIN_TO_SELL_TOOLTIP                      :{BLACK}Vedä junan veturi tähän myydäksesi koko junan
->>>>>>> jgrpp-0.44.0
 STR_DEPOT_SELL_CONFIRMATION_TEXT                                :{YELLOW}Olet myymässä kaikki varikon kulkuneuvot. Oletko varma?
 
 # Engine preview window
 STR_ENGINE_PREVIEW_CAPTION                                      :{WHITE}Viesti kulkuneuvovalmistajalta
 STR_ENGINE_PREVIEW_MESSAGE                                      :{GOLD}Olemme juuri suunnitelleet uuden {STRING} – oletteko kiinnostunut vuoden yksinoikeutetusta kokeilusta, jotta näemme miten tuote suoriutuu ennen kuin julkistamme sen yleiseen käyttöön?
-<<<<<<< HEAD
-STR_ENGINE_PREVIEW_RAILROAD_LOCOMOTIVE                          :veturin
-STR_ENGINE_PREVIEW_ROAD_VEHICLE                                 :ajoneuvon
-STR_ENGINE_PREVIEW_AIRCRAFT                                     :lentokoneen
-STR_ENGINE_PREVIEW_SHIP                                         :laivan
-STR_ENGINE_PREVIEW_MONORAIL_LOCOMOTIVE                          :yksiraiteisen veturin
-STR_ENGINE_PREVIEW_MAGLEV_LOCOMOTIVE                            :maglev-veturin
-=======
 
 STR_ENGINE_PREVIEW_RAILROAD_LOCOMOTIVE                          :veturi
 STR_ENGINE_PREVIEW_ELRAIL_LOCOMOTIVE                            :sähköradan veturi
@@ -4471,7 +4019,6 @@ STR_ENGINE_PREVIEW_TRAM_VEHICLE                                 :raitiovaunu
 
 STR_ENGINE_PREVIEW_AIRCRAFT                                     :ilma-alus
 STR_ENGINE_PREVIEW_SHIP                                         :laiva
->>>>>>> jgrpp-0.44.0
 
 STR_ENGINE_PREVIEW_COST_WEIGHT_SPEED_POWER                      :{BLACK}Hinta: {CURRENCY_LONG} Paino: {WEIGHT_SHORT}{}Nopeus: {VELOCITY}  Teho: {POWER}{}Käyttökustannukset: {CURRENCY_LONG}/vuosi{}Kapasiteetti: {CARGO_LONG}
 STR_ENGINE_PREVIEW_COST_WEIGHT_SPEED_POWER_MAX_TE               :{BLACK}Hinta: {CURRENCY_LONG} Paino: {WEIGHT_SHORT}{}Nopeus: {VELOCITY}  Teho: {POWER}  Maks. vetovoima: {6:FORCE}{}Käyttökustannukset: {4:CURRENCY_LONG}/v{}Kapasiteetti: {5:CARGO_LONG}
@@ -4483,13 +4030,6 @@ STR_ENGINE_PREVIEW_COST_MAX_SPEED_TYPE_RANGE_CAP_RUNCOST        :{BLACK}Hinta: {
 
 # Autoreplace window
 STR_REPLACE_VEHICLES_WHITE                                      :{WHITE}Korvaa {STRING} – {STRING}
-<<<<<<< HEAD
-STR_REPLACE_VEHICLE_TRAIN                                       :junia
-STR_REPLACE_VEHICLE_ROAD_VEHICLE                                :ajoneuvoja
-STR_REPLACE_VEHICLE_SHIP                                        :laivoja
-STR_REPLACE_VEHICLE_AIRCRAFT                                    :lentokoneita
-=======
->>>>>>> jgrpp-0.44.0
 
 STR_REPLACE_VEHICLE_VEHICLES_IN_USE                             :{YELLOW}Käytössä olevat kulkuneuvot
 STR_REPLACE_VEHICLE_VEHICLES_IN_USE_TOOLTIP                     :{BLACK}Sarake kulkuneuvoille, jotka omistat
@@ -4506,13 +4046,8 @@ STR_REPLACE_HELP_LEFT_ARRAY                                     :{BLACK}Valitse 
 STR_REPLACE_HELP_RIGHT_ARRAY                                    :{BLACK}Valitse vasemmalla näkyvän veturityypinn korvaava uusi veturityyppi.
 
 STR_REPLACE_VEHICLES_START                                      :{BLACK}Aloita kulkuneuvojen korvaaminen
-<<<<<<< HEAD
-STR_REPLACE_VEHICLES_NOW                                        :Korvaa kaikki liikennevälineet nyt
-STR_REPLACE_VEHICLES_WHEN_OLD                                   :Korvaa vain vanhat liikennevälineet
-=======
 STR_REPLACE_VEHICLES_NOW                                        :Korvaa kaikki kulkuneuvot heti
 STR_REPLACE_VEHICLES_WHEN_OLD                                   :Korvaa vain vanhat kulkuneuvot
->>>>>>> jgrpp-0.44.0
 STR_REPLACE_HELP_START_BUTTON                                   :{BLACK}Napsauta aloittaaksesi vasemmalta valitun veturityypin korvauksen oikealta valitulla veturityypillä.
 STR_REPLACE_NOT_REPLACING                                       :{BLACK}Ei korvata
 STR_REPLACE_NOT_REPLACING_VEHICLE_SELECTED                      :{BLACK}Ei kulkuneuvoa valittuna
@@ -4547,35 +4082,6 @@ STR_REPLACE_REMOVE_WAGON_GROUP_HELP                             :{STRING}. Ctrl+
 # Vehicle view
 STR_VEHICLE_VIEW_CAPTION                                        :{WHITE}{VEHICLE}
 
-<<<<<<< HEAD
-STR_VEHICLE_VIEW_TRAIN_LOCATION_TOOLTIP                         :{BLACK}Keskitä näkymä junan sijaintiin. Ctrl+Klik seuraa junaa näkymässä
-STR_VEHICLE_VIEW_ROAD_VEHICLE_LOCATION_TOOLTIP                  :{BLACK}Keskitä näkymä ajoneuvon sijaintiin. Ctrl+Klik seuraa ajoneuvoa päänäkymässä
-STR_VEHICLE_VIEW_SHIP_LOCATION_TOOLTIP                          :{BLACK}Keskitä näkymä laivan sijaintiin. Ctrl+Click seuraa laivaa näkymässä
-STR_VEHICLE_VIEW_AIRCRAFT_LOCATION_TOOLTIP                      :{BLACK}Keskitä näkymä lentokoneen sijaintiin. Ctrl+Klik seuraa lentokonetta päänäkymässä
-
-STR_VEHICLE_VIEW_TRAIN_SEND_TO_DEPOT_TOOLTIP                    :{BLACK}Lähetä juna veturitalliin. Ctrl+Klik suorittaa vain huollon
-STR_VEHICLE_VIEW_ROAD_VEHICLE_SEND_TO_DEPOT_TOOLTIP             :{BLACK}Lähetä ajoneuvo varikolle. Ctrl+Klik suorittaa vain huollon
-STR_VEHICLE_VIEW_SHIP_SEND_TO_DEPOT_TOOLTIP                     :{BLACK}Lähetä laiva telakalle. Ctrl+Klik suorittaa vain huollon
-STR_VEHICLE_VIEW_AIRCRAFT_SEND_TO_DEPOT_TOOLTIP                 :{BLACK}Lähetä lentokone lentokonehalliin. Ctrl+Klik suorittaa vain huollon
-
-STR_VEHICLE_VIEW_CLONE_TRAIN_INFO                               :{BLACK}Tämä ostaa kopion junasta vaunuineen. Ctrl+Klik jakaa komennot. Shift+Klik näyttää kustannusarvion ostamatta kopiota
-STR_VEHICLE_VIEW_CLONE_ROAD_VEHICLE_INFO                        :{BLACK}Tämä ostaa kopion ajoneuvosta. Ctrl+Klik jakaa komennot. Shift+Klik näyttää kustannusarvion ostamatta kopiota
-STR_VEHICLE_VIEW_CLONE_SHIP_INFO                                :{BLACK}Tämä ostaa kopion laivasta. Ctrl+Klik jakaa komennot. Shift+Klik näyttää kustannusarvion ostamatta kopiota
-STR_VEHICLE_VIEW_CLONE_AIRCRAFT_INFO                            :{BLACK}Tämä ostaa kopion lentokoneesta. Ctrl+Klik jakaa komennot. Shift+Klik näyttää kustannusarvion ostamatta kopiota
-
-STR_VEHICLE_VIEW_TRAIN_IGNORE_SIGNAL_TOOLTIP                    :{BLACK}Anna junalle lupa ohittaa punainen opastin
-
-STR_VEHICLE_VIEW_TRAIN_REFIT_TOOLTIP                            :{BLACK}Sovita juna kuljettamaan muuta rahtityyppiä
-STR_VEHICLE_VIEW_ROAD_VEHICLE_REFIT_TOOLTIP                     :{BLACK}Muuta ajoneuvo kuljettamaan muuta rahtityyppiä
-STR_VEHICLE_VIEW_SHIP_REFIT_TOOLTIP                             :{BLACK}Sovita laiva eri rahtityypille
-STR_VEHICLE_VIEW_AIRCRAFT_REFIT_TOOLTIP                         :{BLACK}Sovita lentokone eri rahtityypille.
-
-STR_VEHICLE_VIEW_TRAIN_REVERSE_TOOLTIP                          :{BLACK}Käännä junan suunta
-STR_VEHICLE_VIEW_ROAD_VEHICLE_REVERSE_TOOLTIP                   :{BLACK}Pakota ajoneuvo kääntymään ympäri
-
-STR_VEHICLE_VIEW_TRAIN_ORDERS_TOOLTIP                           :{BLACK}Näytä junan käskyt. Ctrl+Klik näyttää junan aikataulun
-STR_VEHICLE_VIEW_ROAD_VEHICLE_ORDERS_TOOLTIP                    :{BLACK}Näytä ajoneuvon käskyt. Ctrl+Klik näyttää ajoneuvon aikataulun
-=======
 ###length VEHICLE_TYPES
 STR_VEHICLE_VIEW_TRAIN_CENTER_TOOLTIP                           :{BLACK}Keskitä päänäkymä junan sijaintiin. Kaksoisnapsauta seurataksesi junaa päänäkymässä. Ctrl+napsautus avaa uuden näkymäikkunan junan sijaintiin.
 STR_VEHICLE_VIEW_ROAD_VEHICLE_CENTER_TOOLTIP                    :{BLACK}Keskitä päänäkymä ajoneuvon sijaintiin. Kaksoisnapsauta seurataksesi ajoneuvoa päänäkymässä. Ctrl+napsautus avaa uuden näkymäikkunan ajoneuvon sijaintiin.
@@ -4608,21 +4114,9 @@ STR_VEHICLE_VIEW_AIRCRAFT_REFIT_TOOLTIP                         :{BLACK}Sovita i
 ###length VEHICLE_TYPES
 STR_VEHICLE_VIEW_TRAIN_ORDERS_TOOLTIP                           :{BLACK}Näytä junan käskyt. Ctrl+napsautus näyttää junan aikataulun.
 STR_VEHICLE_VIEW_ROAD_VEHICLE_ORDERS_TOOLTIP                    :{BLACK}Näytä ajoneuvon käskyt. Ctrl+napsautus näyttää ajoneuvon aikataulun.
->>>>>>> jgrpp-0.44.0
 STR_VEHICLE_VIEW_SHIP_ORDERS_TOOLTIP                            :{BLACK}Näytä laivan käskyt. Ctrl+Click näyttää laivan aikataulun
 STR_VEHICLE_VIEW_AIRCRAFT_ORDERS_TOOLTIP                        :{BLACK}Näytä ilma-aluksen käskyt. Ctrl+napsautus näyttää ilma-aluksen aikataulun.
 
-<<<<<<< HEAD
-STR_VEHICLE_VIEW_TRAIN_SHOW_DETAILS_TOOLTIP                     :{BLACK}Näytä junan tiedot
-STR_VEHICLE_VIEW_ROAD_VEHICLE_SHOW_DETAILS_TOOLTIP              :{BLACK}Näytä ajoneuvon tiedot
-STR_VEHICLE_VIEW_SHIP_SHOW_DETAILS_TOOLTIP                      :{BLACK}Näytä laivan tiedot
-STR_VEHICLE_VIEW_AIRCRAFT_SHOW_DETAILS_TOOLTIP                  :{BLACK}Näytä lentokoneen tiedot.
-
-STR_VEHICLE_VIEW_TRAIN_STATE_START_STOP_TOOLTIP                 :{BLACK}Valitun junan toiminnot – napsauta pysäyttääksesi/käynnistääksesi junan. Ctrl+Klik vierittääksesi kohteeseen
-STR_VEHICLE_VIEW_ROAD_VEHICLE_STATE_START_STOP_TOOLTIP          :{BLACK}Nykyisen ajoneuvon toiminnot – napsauta pysäyttääksesi/käynnistääksesi ajoneuvon. Ctrl+Klik vierittääksesi kohteeseen
-STR_VEHICLE_VIEW_SHIP_STATE_START_STOP_TOOLTIP                  :{BLACK}Nykyisen laivat toiminnot – napsauta pysäyttääksesi/käynnistääksesi laivan. Ctrl+Klik vierittääksesi kohteeseen
-STR_VEHICLE_VIEW_AIRCRAFT_STATE_START_STOP_TOOLTIP              :{BLACK}Nykyisen lentokoneen toiminnot – napsauta pysäyttääksesi/käynnistääksesi lentokoneen. Ctrl+Klik vierittääksesi kohteeseen
-=======
 ###length VEHICLE_TYPES
 STR_VEHICLE_VIEW_TRAIN_SHOW_DETAILS_TOOLTIP                     :{BLACK}Näytä junan tiedot
 STR_VEHICLE_VIEW_ROAD_VEHICLE_SHOW_DETAILS_TOOLTIP              :{BLACK}Näytä ajoneuvon tiedot
@@ -4634,7 +4128,6 @@ STR_VEHICLE_VIEW_TRAIN_STATUS_START_STOP_TOOLTIP                :{BLACK}Nykyisen
 STR_VEHICLE_VIEW_ROAD_VEHICLE_STATUS_START_STOP_TOOLTIP         :{BLACK}Nykyisen ajoneuvon toiminnot – napsauta pysäyttääksesi/käynnistääksesi
 STR_VEHICLE_VIEW_SHIP_STATE_STATUS_STOP_TOOLTIP                 :{BLACK}Nykyisen laivan toiminnot – napsauta pysäyttääksesi/käynnistääksesi
 STR_VEHICLE_VIEW_AIRCRAFT_STATUS_START_STOP_TOOLTIP             :{BLACK}Nykyisen ilma-aluksen toiminnot – napsauta pysäyttääksesi/käynnistääksesi
->>>>>>> jgrpp-0.44.0
 
 # Messages in the start stop button in the vehicle view
 STR_VEHICLE_STATUS_LOADING_UNLOADING                            :{LTBLUE}Lastataan/puretaan
@@ -4699,13 +4192,8 @@ STR_VEHICLE_INFO_FEEDER_CARGO_VALUE                             :{BLACK}Siirron 
 
 STR_VEHICLE_DETAILS_SERVICING_INTERVAL_DAYS                     :{BLACK}Huoltoväli: {LTBLUE}{COMMA}{NBSP}päivää{BLACK}   Viimeisin huolto: {LTBLUE}{DATE_LONG}
 STR_VEHICLE_DETAILS_SERVICING_INTERVAL_PERCENT                  :{BLACK}Huoltoväli: {LTBLUE}{COMMA}{NBSP}%{BLACK}   Viime huolto: {LTBLUE}{DATE_LONG}
-<<<<<<< HEAD
-STR_VEHICLE_DETAILS_INCREASE_SERVICING_INTERVAL_TOOLTIP         :{BLACK}Kasvata huoltoväliä kymmenellä. Ctrl+Klik kasvattaa huoltoväliä viidellä
-STR_VEHICLE_DETAILS_DECREASE_SERVICING_INTERVAL_TOOLTIP         :{BLACK}Pienennä huoltoväliä kymmenellä. Ctrl+Klik vähentää huoltoväliä viidellä
-=======
 STR_VEHICLE_DETAILS_INCREASE_SERVICING_INTERVAL_TOOLTIP         :{BLACK}Kasvata huoltoväliä kymmenellä. Ctrl+napsautus kasvattaa huoltoväliä viidellä.
 STR_VEHICLE_DETAILS_DECREASE_SERVICING_INTERVAL_TOOLTIP         :{BLACK}Pienennä huoltoväliä kymmenellä. Ctrl+napsautus pienentää huoltoväliä viidellä.
->>>>>>> jgrpp-0.44.0
 
 STR_SERVICE_INTERVAL_DROPDOWN_TOOLTIP                           :{BLACK}Muuta huoltovälien tyyppiä
 STR_VEHICLE_DETAILS_DEFAULT                                     :Oletus
@@ -4752,11 +4240,7 @@ STR_REFIT_SELECT_VEHICLES_TOOLTIP                               :{BLACK}Valitse 
 
 ###length VEHICLE_TYPES
 STR_REFIT_TRAIN_LIST_TOOLTIP                                    :{BLACK}Valitse junan rahtityyppi
-<<<<<<< HEAD
-STR_REFIT_ROAD_VEHICLE_LIST_TOOLTIP                             :{BLACK}Valitse ajoneuvolla ajettava rahti
-=======
 STR_REFIT_ROAD_VEHICLE_LIST_TOOLTIP                             :{BLACK}Valitse ajoneuvolla kuljetettava rahti
->>>>>>> jgrpp-0.44.0
 STR_REFIT_SHIP_LIST_TOOLTIP                                     :{BLACK}Valitse laivan kuljettama rahtityyppi
 STR_REFIT_AIRCRAFT_LIST_TOOLTIP                                 :{BLACK}Valitse kuljetettavan rahdin tyyppi
 
@@ -4766,14 +4250,9 @@ STR_REFIT_ROAD_VEHICLE_REFIT_BUTTON                             :{BLACK}Sovita a
 STR_REFIT_SHIP_REFIT_BUTTON                                     :{BLACK}Sovita laiva
 STR_REFIT_AIRCRAFT_REFIT_BUTTON                                 :{BLACK}Sovita ilma-alus
 
-<<<<<<< HEAD
-STR_REFIT_TRAIN_REFIT_TOOLTIP                                   :{BLACK}Sovita juna kuljettamaan valittua rahtityyppiä
-STR_REFIT_ROAD_VEHICLE_REFIT_TOOLTIP                            :{BLACK}Muuta ajoneuvo rahtaamaan korostettua rahtityyppiä.
-=======
 ###length VEHICLE_TYPES
 STR_REFIT_TRAIN_REFIT_TOOLTIP                                   :{BLACK}Sovita juna kuljettamaan valittua rahtityyppiä
 STR_REFIT_ROAD_VEHICLE_REFIT_TOOLTIP                            :{BLACK}Muuta ajoneuvo kuljettamaan korostettua rahtityyppiä.
->>>>>>> jgrpp-0.44.0
 STR_REFIT_SHIP_REFIT_TOOLTIP                                    :{BLACK}Sovita laiva valitulle rahtityypille
 STR_REFIT_AIRCRAFT_REFIT_TOOLTIP                                :{BLACK}Sovita lentokone kuljettamaan valittua rahtityyppiä
 
@@ -4782,11 +4261,7 @@ STR_ORDERS_CAPTION                                              :{WHITE}{VEHICLE
 STR_ORDERS_TIMETABLE_VIEW                                       :{BLACK}Aikataulu
 STR_ORDERS_TIMETABLE_VIEW_TOOLTIP                               :{BLACK}Näytä aikataulu
 
-<<<<<<< HEAD
-STR_ORDERS_LIST_TOOLTIP                                         :{BLACK}Käskyt – napsauta käskyä korostaaksesi sen. Ctrl+Klik siirtää näkymän kohteeseen
-=======
 STR_ORDERS_LIST_TOOLTIP                                         :{BLACK}Käskyt – napsauta käskyä korostaaksesi sen. Ctrl+napsautus siirtää näkymän käskyn kohteeseen.
->>>>>>> jgrpp-0.44.0
 STR_ORDER_INDEX                                                 :{COMMA}:{NBSP}
 STR_ORDER_TEXT                                                  :{STRING} {STRING} {STRING}
 
@@ -4818,11 +4293,7 @@ STR_ORDER_TOOLTIP_UNLOAD                                        :{BLACK}Muuta ko
 STR_ORDER_REFIT                                                 :{BLACK}Sovita
 STR_ORDER_REFIT_TOOLTIP                                         :{BLACK}Valitse, mille rahtityypille kulkuneuvo sovitetaan tässä käskyssä. Ctrl+napsautus poistaa sovitusmääräyksen.
 STR_ORDER_REFIT_AUTO                                            :{BLACK}Uudelleensovitus asemalla
-<<<<<<< HEAD
-STR_ORDER_REFIT_AUTO_TOOLTIP                                    :{BLACK}Valitse tällä määräyksellä sovitettava rahtityyppi. Ctrl+Klik poistaaksesi sovitusmääräyksen. Sovitus suoritetaan vain, jos kulkuneuvo sallii sen
-=======
 STR_ORDER_REFIT_AUTO_TOOLTIP                                    :{BLACK}Valitse, mille rahtityypille kulkuneuvo sovitetaan tässä käskyssä. Ctrl+napsautus poistaa sovitusmääräyksen. Uudelleensovittamisen edellytyksenä on, että kulkuneuvo sallii sen.
->>>>>>> jgrpp-0.44.0
 STR_ORDER_DROP_REFIT_AUTO                                       :Määrätty rahti
 STR_ORDER_DROP_REFIT_AUTO_ANY                                   :Saatavilla oleva rahti
 
@@ -4844,10 +4315,7 @@ STR_ORDER_CONDITIONAL_REQUIRES_SERVICE                          :Vaatii huoltoa
 STR_ORDER_CONDITIONAL_UNCONDITIONALLY                           :Aina
 STR_ORDER_CONDITIONAL_REMAINING_LIFETIME                        :Jäljelläoleva elinikä (vuotta)
 STR_ORDER_CONDITIONAL_MAX_RELIABILITY                           :Enimmäisluotettavuus
-<<<<<<< HEAD
-=======
 ###next-name-looks-similar
->>>>>>> jgrpp-0.44.0
 
 STR_ORDER_CONDITIONAL_COMPARATOR_TOOLTIP                        :{BLACK}Miten kulkuneuvon tietoja verrataan annettuihin arvoihin
 STR_ORDER_CONDITIONAL_COMPARATOR_EQUALS                         :on yhtä kuin
@@ -4983,11 +4451,7 @@ STR_TIMETABLE_STATUS_NOT_STARTED                                :{BLACK}Tämä a
 STR_TIMETABLE_STATUS_START_AT                                   :{BLACK}Tämä aikataulu alkaa {STRING}
 
 STR_TIMETABLE_STARTING_DATE                                     :{BLACK}Aloituspäivä
-<<<<<<< HEAD
-STR_TIMETABLE_STARTING_DATE_TOOLTIP                             :{BLACK}Valitse päivämäärä aikataulun aloituspäiväksi. Ctrl+Klik määrittää aikataulun aloituspäivän ja jakaa aikataulun tasaisesti kaikkien sitä käyttävien kulkuneuvojen kesken niiden järjestyksen mukaan.
-=======
 STR_TIMETABLE_STARTING_DATE_TOOLTIP                             :{BLACK}Valitse päivämäärä aikataulun aloitusajankohdaksi. Ctrl+napsautus asettaa aikataulun aloituspäivän ja levittää kaikki tämän käskyjoukon jakavat kulkuneuvot tasaisesti niiden keskinäisen järjestyksen mukaan, mikäli käskyjoukko on kokonaan aikataulutettu.
->>>>>>> jgrpp-0.44.0
 
 STR_TIMETABLE_CHANGE_TIME                                       :{BLACK}Muuta aikaa
 STR_TIMETABLE_WAIT_TIME_TOOLTIP                                 :{BLACK}Aseta kuinka kauan käskyn tulisi kestää
@@ -5150,11 +4614,7 @@ STR_ERROR_UNABLE_TO_DELETE_FILE                                 :{WHITE}Tiedosto
 STR_ERROR_GAME_LOAD_FAILED                                      :{WHITE}Lataus epäonnistui.{}{STRING}
 STR_GAME_SAVELOAD_ERROR_BROKEN_INTERNAL_ERROR                   :Sisäinen virhe: {STRING}
 STR_GAME_SAVELOAD_ERROR_BROKEN_SAVEGAME                         :Viallinen tallennus – {STRING}
-<<<<<<< HEAD
-STR_GAME_SAVELOAD_ERROR_TOO_NEW_SAVEGAME                        :Tallennus on tehty uudemalla versiolla
-=======
 STR_GAME_SAVELOAD_ERROR_TOO_NEW_SAVEGAME                        :Tallennus on tehty uudemmalla versiolla
->>>>>>> jgrpp-0.44.0
 STR_GAME_SAVELOAD_ERROR_FILE_NOT_READABLE                       :Tiedostoa ei voi lukea
 STR_GAME_SAVELOAD_ERROR_FILE_NOT_WRITEABLE                      :Tiedostoa ei voi kirjoittaa
 STR_GAME_SAVELOAD_ERROR_DATA_INTEGRITY_CHECK_FAILED             :Tietojen varmistustarkistus epäonnistui
@@ -5186,10 +4646,7 @@ STR_WARNING_FALLBACK_SOUNDSET                                   :{WHITE}Vain til
 STR_WARNING_SCREENSHOT_SIZE_CAPTION                             :{WHITE}Suuri kuvankaappaus
 STR_WARNING_SCREENSHOT_SIZE_MESSAGE                             :{YELLOW}Kuvankaappauksen tarkkuus tulee olemaan {COMMA} x {COMMA} pikseliä. Kuvankaappauksen ottaminen voi kestää jonkin aikaa. Haluatko jatkaa?
 
-<<<<<<< HEAD
-=======
 STR_MESSAGE_HEIGHTMAP_SUCCESSFULLY                              :{WHITE}Korkeuskartta tallennettu nimellä ”{STRING}”. Korkein huippu on {NUM}
->>>>>>> jgrpp-0.44.0
 STR_MESSAGE_SCREENSHOT_SUCCESSFULLY                             :{WHITE}Kuvakaappaus tallennettu nimellä ”{STRING}”.
 STR_ERROR_SCREENSHOT_FAILED                                     :{WHITE}Kuvakaappaus epäonnistui!
 
@@ -5456,10 +4913,7 @@ STR_ERROR_GROUP_CAN_T_CREATE                                    :{WHITE}Ei voi l
 STR_ERROR_GROUP_CAN_T_DELETE                                    :{WHITE}Ryhmää ei voi poistaa.
 STR_ERROR_GROUP_CAN_T_RENAME                                    :{WHITE}Ryhmää ei voi nimetä.
 STR_ERROR_GROUP_CAN_T_SET_PARENT                                :{WHITE}Pääryhmää ei voi määrittää...
-<<<<<<< HEAD
-=======
 STR_ERROR_GROUP_CAN_T_SET_PARENT_RECURSION                      :{WHITE}... ryhmähierarkiassa ei saa olla silmukoita
->>>>>>> jgrpp-0.44.0
 STR_ERROR_GROUP_CAN_T_REMOVE_ALL_VEHICLES                       :{WHITE}Ryhmän kaikkia kulkuneuvoja ei voi poistaa.
 STR_ERROR_GROUP_CAN_T_ADD_VEHICLE                               :{WHITE}Ei voi lisätä kulkuneuvoa ryhmään.
 STR_ERROR_GROUP_CAN_T_ADD_SHARED_VEHICLE                        :{WHITE}Ei voi lisätä jaettuja kulkuneuvoja ryhmään.
@@ -5520,14 +4974,6 @@ STR_ERROR_CAN_T_SELL_ROAD_VEHICLE                               :{WHITE}Ajoneuvo
 STR_ERROR_CAN_T_SELL_SHIP                                       :{WHITE}Laivaa ei voi myydä...
 STR_ERROR_CAN_T_SELL_AIRCRAFT                                   :{WHITE}Ilma-alusta ei voi myydä...
 
-<<<<<<< HEAD
-STR_ERROR_RAIL_VEHICLE_NOT_AVAILABLE                            :{WHITE}Juna tai vaunu ei ole saatavilla
-STR_ERROR_ROAD_VEHICLE_NOT_AVAILABLE                            :{WHITE}Ajoneuvo ei ole saatavilla
-STR_ERROR_SHIP_NOT_AVAILABLE                                    :{WHITE}Laiva ei ole saatavilla
-STR_ERROR_AIRCRAFT_NOT_AVAILABLE                                :{WHITE}Lentokone ei ole saatavilla
-
-=======
->>>>>>> jgrpp-0.44.0
 STR_ERROR_TOO_MANY_VEHICLES_IN_GAME                             :{WHITE}Liian monta kulkuneuvoa pelissä.
 STR_ERROR_CAN_T_CHANGE_SERVICING                                :{WHITE}Huoltoväliä ei voi muuttaa.
 
@@ -5593,11 +5039,6 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Alkuperäinen T
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Alkuperäinen Transport Tycoon Deluxen DOS-version musiikki.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Alkuperäinen Transport Tycoonin (alkuperäinen / World Editor) DOS-version musiikki.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Musiikkipaketti, jossa ei ole musiikkia.
-
-STR_TRADITIONAL_TRAIN_NAME                                      :Juna {COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Ajoneuvo {COMMA}
-STR_TRADITIONAL_SHIP_NAME                                       :Laiva {COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME                                   :Ilma-alus {COMMA}
 
 ##id 0x2000
 # Town building names

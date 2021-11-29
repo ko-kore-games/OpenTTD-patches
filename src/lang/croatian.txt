@@ -291,10 +291,6 @@ STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}{NBSP}mp
 STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}km/h
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}m/s
 
-STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mph
-STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
-STR_UNIT_NAME_VELOCITY_SI                                       :m/s
-
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}KS
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}KS
 STR_UNITS_POWER_SI                                              :{COMMA}{NBSP}kW
@@ -333,7 +329,6 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Odaberi 
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Odaberi kriterij za sortiranje
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Odaberi kriterij filtriranja
 STR_BUTTON_SORT_BY                                              :{BLACK}Sortiraj prema
-STR_BUTTON_RENAME                                               :{BLACK}Preimenuj
 STR_BUTTON_CATCHMENT                                            :{BLACK}Područje pokrivanja
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Uključi prikaz područja pokrivanja
 
@@ -2328,7 +2323,6 @@ STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Tvrtka j
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Popis klijenata
-STR_NETWORK_COMPANY_LIST_SPECTATE                               :Promatraj
 
 # Network client list
 
@@ -3049,9 +3043,6 @@ STR_MAPGEN_BY                                                   :{BLACK}*
 STR_MAPGEN_NUMBER_OF_TOWNS                                      :{BLACK}Broj gradova:
 STR_MAPGEN_DATE                                                 :{BLACK}Datum:
 STR_MAPGEN_NUMBER_OF_INDUSTRIES                                 :{BLACK}Broj industrija:
-STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Visina linije snijega
-STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Pomakni visinu linije snijega za jedan gore
-STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Pomakni visinu linije snijega za jedan dolje
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Izrađivač zemljišta:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Vrsta terena:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Razina mora:
@@ -3077,7 +3068,6 @@ STR_MAPGEN_HEIGHTMAP_NAME                                       :{BLACK}Ime visi
 STR_MAPGEN_HEIGHTMAP_SIZE_LABEL                                 :{BLACK}Veličina:
 STR_MAPGEN_HEIGHTMAP_SIZE                                       :{ORANGE}{NUM} x {NUM}
 
-STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Promijeni visinu linije snijega
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Promijeni početnu godinu
 
 # SE Map generation
@@ -3570,7 +3560,6 @@ STR_COMPANY_VIEW_RELOCATE_HQ                                    :{BLACK}Premjest
 STR_COMPANY_VIEW_RELOCATE_COMPANY_HEADQUARTERS                  :{BLACK}Izgradi sjedište tvrtke negdje drugdje za 1% troška od cjelokupne vrijednosti tvrtke. Shift+Klik prikazuje trošak bez premještanja sjedišta tvrtke.
 STR_COMPANY_VIEW_INFRASTRUCTURE_BUTTON                          :{BLACK}Detalji
 STR_COMPANY_VIEW_INFRASTRUCTURE_TOOLTIP                         :{BLACK}Pogledaj detaljne podatke infrastrukture
-STR_COMPANY_VIEW_GIVE_MONEY_BUTTON                              :{BLACK}Daj novac
 
 STR_COMPANY_VIEW_NEW_FACE_BUTTON                                :{BLACK}Novo lice
 STR_COMPANY_VIEW_NEW_FACE_TOOLTIP                               :{BLACK}Odaberi novo lice direktora
@@ -3588,7 +3577,6 @@ STR_COMPANY_VIEW_SELL_SHARE_TOOLTIP                             :{BLACK}Prodaj 2
 
 STR_COMPANY_VIEW_COMPANY_NAME_QUERY_CAPTION                     :Ime tvrtke
 STR_COMPANY_VIEW_PRESIDENT_S_NAME_QUERY_CAPTION                 :Ime direktora
-STR_COMPANY_VIEW_GIVE_MONEY_QUERY_CAPTION                       :Unesite iznos novca koji želite dati
 
 STR_BUY_COMPANY_MESSAGE                                         :{WHITE}Tražimo prijevoznu tvrtku koja bi preuzela našu tvrtku.{}{}Želiš li kupiti tvrtku {COMPANY} za {CURRENCY_LONG}?
 
@@ -3830,10 +3818,7 @@ STR_DEPOT_VEHICLE_TOOLTIP                                       :{BLACK}{ENGINE}
 STR_DEPOT_VEHICLE_TOOLTIP_CHAIN                                 :{BLACK}{NUM} vozil{P o a a}{STRING}
 STR_DEPOT_VEHICLE_TOOLTIP_CARGO                                 :{}{CARGO_LONG} ({CARGO_SHORT})
 
-<<<<<<< HEAD
-=======
 ###length VEHICLE_TYPES
->>>>>>> jgrpp-0.44.0
 STR_DEPOT_TRAIN_LIST_TOOLTIP                                    :{BLACK}Vlakovi - drži lijevi klik i vuci vozilo za dodavanje/skidanje iz vlaka, desni klik za informacije. Drži tipku Ctrl da obje funkcije rade na slijedu
 STR_DEPOT_ROAD_VEHICLE_LIST_TOOLTIP                             :{BLACK}Vozila - desni klik na vozilo za informacije
 STR_DEPOT_SHIP_LIST_TOOLTIP                                     :{BLACK}Brodovi - desni klik na brod za informacije
@@ -4921,11 +4906,6 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Originalna glaz
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Originalna glazba za Transport Tycoon Deluxe DOS izdanje.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Originalna glazba za Transport Tycoon (original/editor svijeta) DOS izdanje.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Glazbeni paket bez ikakve glazbe.
-
-STR_TRADITIONAL_TRAIN_NAME                                      :Vlak {COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Cestovno vozilo {COMMA}
-STR_TRADITIONAL_SHIP_NAME                                       :Brod {COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME                                   :Zrakoplov {COMMA}
 
 ##id 0x2000
 # Town building names

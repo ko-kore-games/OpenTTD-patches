@@ -613,15 +613,11 @@ void StartupCompanies()
 /** Start a new competitor company if possible. */
 static void MaybeStartNewCompany()
 {
-<<<<<<< HEAD
 #ifdef ENABLE_NETWORK
 	if (_networking && Company::GetNumItems() >= _settings_client.network.max_companies) return;
 #endif /* ENABLE_NETWORK */
 
 	Company *c;
-=======
-	if (_networking && Company::GetNumItems() >= _settings_client.network.max_companies) return false;
->>>>>>> jgrpp-0.44.0
 
 	/* count number of competitors */
 	uint n = 0;
@@ -740,12 +736,8 @@ void OnTick_Companies()
 	}
 
 	if (_next_competitor_start == 0) {
-<<<<<<< HEAD
-		_next_competitor_start = AI::GetStartNextTime() * DAY_TICKS;
-=======
 		/* AI::GetStartNextTime() can return 0. */
 		_next_competitor_start = std::max(1, AI::GetStartNextTime() * DAY_TICKS);
->>>>>>> jgrpp-0.44.0
 	}
 
 	if (AI::CanStartNew() && _game_mode != GM_MENU && --_next_competitor_start == 0) {

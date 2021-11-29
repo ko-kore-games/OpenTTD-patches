@@ -257,10 +257,6 @@ STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}χ
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}τετραγωνίδια/ημέρα
 
-STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :μίλια/ώρα
-STR_UNIT_NAME_VELOCITY_METRIC                                   :χλμ/ώρα
-STR_UNIT_NAME_VELOCITY_SI                                       :m/s
-
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}hp
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}hp
 STR_UNITS_POWER_SI                                              :{COMMA}{NBSP}kW
@@ -299,7 +295,6 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Επιλ
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Επιλογή κριτηρίου ταξινόμησης
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Επιλέξτε κριτήρια φιλτραρίσματος
 STR_BUTTON_SORT_BY                                              :{BLACK}Ταξινόμηση κατά
-STR_BUTTON_RENAME                                               :{BLACK}Μετονομασία
 STR_BUTTON_CATCHMENT                                            :{BLACK}Κάλυψη
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Εναλλαγή επίδειξης περιοχής κάλυψης
 
@@ -553,7 +548,6 @@ STR_TOOLBAR_SOUND_MUSIC                                         :Ήχος/Μου
 STR_NEWS_MENU_LAST_MESSAGE_NEWS_REPORT                          :Τελευταίο μήνυμα/αναφορά ειδήσεων
 STR_NEWS_MENU_MESSAGE_HISTORY_MENU                              :Ιστορικό μηνυμάτων
 STR_NEWS_MENU_DELETE_ALL_MESSAGES                               :Διαγραφή όλων των μηνυμάτων
-############ range ends here
 
 # About menu
 ###length 10
@@ -562,9 +556,6 @@ STR_ABOUT_MENU_SEPARATOR                                        :
 STR_ABOUT_MENU_TOGGLE_CONSOLE                                   :Εναλλαγή κονσόλας
 STR_ABOUT_MENU_AI_DEBUG                                         :Αποσφαλμάτωση AI και δέσμης ενεργειών παιχνιδιού
 STR_ABOUT_MENU_SCREENSHOT                                       :Στιγμιότυπο οθόνης
-STR_ABOUT_MENU_ZOOMIN_SCREENSHOT                                :Στιγμιότυπο οθόνης μέγιστης μεγέθυνσης
-STR_ABOUT_MENU_DEFAULTZOOM_SCREENSHOT                           :Στιγμιότυπο οθόνης τυπικής μεγέθυνσης
-STR_ABOUT_MENU_GIANT_SCREENSHOT                                 :Στιγμιότυπο οθόνης για ολό τον χάρτη
 STR_ABOUT_MENU_SHOW_FRAMERATE                                   :Εμφάνιση ρυθμού καρέ
 STR_ABOUT_MENU_ABOUT_OPENTTD                                    :Σχετικά με το 'OpenTTD'
 STR_ABOUT_MENU_SPRITE_ALIGNER                                   :Ευθυγραμμιστής στοιχεών
@@ -1859,6 +1850,8 @@ STR_CONFIG_SETTING_NEWS_ARRIVAL_FIRST_VEHICLE_OTHER_HELPTEXT    :Παρουσί�
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS                     :Ατυχήματα / καταστροφές: {STRING}
 STR_CONFIG_SETTING_NEWS_ACCIDENTS_DISASTERS_HELPTEXT            :Προβάλλει εφημερίδα όταν συμβαίνουν ατυχήματα ή καταστροφές
 
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER                          :Ατυχήματα των ανταγωνιστικών οχημάτων: {STRING}
+STR_CONFIG_SETTING_NEWS_ACCIDENT_OTHER_HELPTEXT                 :Εμφάνιση εφημερίδας για τα διαλυμένα οχήματα για τους ανταγωνιστές
 
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION                     :Πληροφορίες εταιρίας: {STRING}
 STR_CONFIG_SETTING_NEWS_COMPANY_INFORMATION_HELPTEXT            :Προβάλλει εφημερίδα όταν αρχίζει νέα εταιρεία ή όταν οι εταιρίες ρισκάρουν χρεωκοπία
@@ -2442,7 +2435,6 @@ STR_NETWORK_CONNECTION_DISCONNECT                               :{BLACK}Αποσ
 
 STR_NETWORK_NEED_GAME_PASSWORD_CAPTION                          :{WHITE}Η πρόσβαση στον διακομιστή προστατεύεται. Εισάγετε τον κωδικό
 STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Η εταιρεία προστατεύεται από κωδικό. Εισάγετε κωδικό
-STR_NETWORK_COMPANY_LIST_CLIENT_LIST_CAPTION                    :{WHITE}Λίστα συμμετεχόντων
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Συνδεδεμένοι παίκτες
@@ -3190,8 +3182,6 @@ STR_FRAMERATE_SOUND                                             :{BLACK}Μίξη
 STR_FRAMERATE_ALLSCRIPTS                                        :Σύνολο GS/AI:
 STR_FRAMERATE_GAMESCRIPT                                        :{BLACK}   Δέσμη ενεργειών παιχνιδιού:
 STR_FRAMERATE_AI                                                :{BLACK}   AI {NUM} {STRING}
-############ End of leave-in-this-order
-############ Leave those lines in this order!!
 
 ###length 15
 STR_FRAMETIME_CAPTION_GAMELOOP                                  :Βρόγχος παιχνιδιού
@@ -3209,7 +3199,6 @@ STR_FRAMETIME_CAPTION_SOUND                                     :Μίξη ήχο
 STR_FRAMETIME_CAPTION_ALLSCRIPTS                                :Σύνολο GS/AI δεσμών ενεργειών
 STR_FRAMETIME_CAPTION_GAMESCRIPT                                :Δέσμη Ενεργειών παιχνιδιού
 STR_FRAMETIME_CAPTION_AI                                        :AI {NUM} {STRING}
-############ End of leave-in-this-order
 
 
 # Save/load game/scenario
@@ -3261,9 +3250,6 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Κάλυ
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Αύξηση κάλυψης ερήμου κατά δέκα τοις εκατό
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Μείωση κάλυψης ερήμου κατά δέκα τοις εκατό
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}%
-STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Ύψος γραμμής χιονιού:
-STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Μετακίνηση του ύψους της γραμμής χιονιού ένα πάνω
-STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Μετακίνηση του ύψους της γραμμής χιονιού ένα κάτω
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Δημιουργός εδάφους:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Τύπος εδάφους:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Επίπεδο θάλασσας:
@@ -3293,7 +3279,6 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Αναμ
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Υψηλότερη κορυφή
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Κάλυψη χιονιού (%)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Κάλυψη ερήμου (%)
-STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Άλλαγη του ύψους της γράμμης χιονιού
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Αλλαγή έτους έναρξης
 
 # SE Map generation
@@ -3587,7 +3572,6 @@ STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_BRIBE                        :{YELLOW}Δωρ�
 STR_GOALS_CAPTION                                               :{WHITE}{COMPANY} Στόχοι:
 STR_GOALS_SPECTATOR_CAPTION                                     :{WHITE}Καθολικοί στόχοι:
 STR_GOALS_SPECTATOR                                             :Καθολικοί στόχοι
-STR_GOALS_GLOBAL_TITLE                                          :{BLACK}Καθολικοί στόχοι:
 STR_GOALS_GLOBAL_BUTTON                                         :{BLACK}Καθολικοί στόχοι
 STR_GOALS_GLOBAL_BUTTON_HELPTEXT                                :{BLACK}Εμφάνιση καθολικών στόχων
 STR_GOALS_COMPANY_BUTTON                                        :{BLACK}Εταιρία
@@ -5170,15 +5154,6 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Αρχική μ
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Αρχική μουσική από το Transport Tycoon Deluxe έκδοση DOS.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Αρχική μουσική από το Transport Tycoon (Αρχικός Επεξεργαστής Κόσμου) έκδοση DOS.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Ένα πάκετο μουσικής χωρίς πραγματική μουσική.
-
-STR_TRADITIONAL_TRAIN_NAME                                      :{G=n}Τρένο {COMMA}
-STR_TRADITIONAL_TRAIN_NAME.geniki                               :Τρένου {COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :{G=n}Όχημα Δρόμου {COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME.geniki                        :Οχήματος Δρόμου {COMMA}
-STR_TRADITIONAL_SHIP_NAME                                       :{G=n}Πλοίο {COMMA}
-STR_TRADITIONAL_SHIP_NAME.geniki                                :Πλοίου {COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME                                   :{G=n}Αεροσκάφος {COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME.geniki                            :Αεροσκάφους {COMMA}
 
 ##id 0x2000
 # Town building names

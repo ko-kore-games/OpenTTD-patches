@@ -3097,11 +3097,7 @@ struct IndustryCargoesWindow : public Window {
 		}
 	}
 
-<<<<<<< HEAD
-	bool OnTooltip(Point pt, int widget, TooltipCloseCondition close_cond)
-=======
 	bool OnTooltip(Point pt, int widget, TooltipCloseCondition close_cond) override
->>>>>>> jgrpp-0.44.0
 	{
 		if (widget != WID_IC_PANEL) return false;
 
@@ -3125,11 +3121,7 @@ struct IndustryCargoesWindow : public Window {
 
 			case CFT_INDUSTRY:
 				if (fld->u.industry.ind_type < NUM_INDUSTRYTYPES && (this->ind_cargo >= NUM_INDUSTRYTYPES || fieldxy.x != 2)) {
-<<<<<<< HEAD
-					GuiShowTooltips(this, STR_INDUSTRY_CARGOES_INDUSTRY_TOOLTIP, 0, NULL, close_cond);
-=======
 					GuiShowTooltips(this, STR_INDUSTRY_CARGOES_INDUSTRY_TOOLTIP, 0, nullptr, close_cond);
->>>>>>> jgrpp-0.44.0
 				}
 				return true;
 

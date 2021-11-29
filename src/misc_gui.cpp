@@ -806,8 +806,6 @@ struct TooltipsWindow : public Window
 			case TCC_RIGHT_CLICK: if (!_right_button_down) delete this; break;
 			case TCC_HOVER: if (!_mouse_hovering) delete this; break;
 			case TCC_NONE: break;
-<<<<<<< HEAD
-=======
 			case TCC_NEXT_LOOP: this->delete_next_mouse_loop = true; break;
 
 			case TCC_HOVER_VIEWPORT:
@@ -828,7 +826,6 @@ struct TooltipsWindow : public Window
 				if (w == nullptr || IsPtInWindowViewport(w, _cursor.pos.x, _cursor.pos.y) == nullptr) delete this;
 				break;
 			}
->>>>>>> jgrpp-0.44.0
 		}
 	}
 };

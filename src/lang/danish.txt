@@ -196,10 +196,6 @@ STR_UNITS_VELOCITY_METRIC                                       :{COMMA} km/t
 STR_UNITS_VELOCITY_SI                                           :{COMMA} m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}felter/dag
 
-STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :miles/t
-STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
-STR_UNIT_NAME_VELOCITY_SI                                       :m/s
-
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}hk
 STR_UNITS_POWER_METRIC                                          :{COMMA}hk
 STR_UNITS_POWER_SI                                              :{COMMA}kW
@@ -238,7 +234,6 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Vælg so
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Vælg sorteringskriterie
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Vælg filtreringskriterier
 STR_BUTTON_SORT_BY                                              :{BLACK}Sortér på
-STR_BUTTON_RENAME                                               :{BLACK}Omdøb
 STR_BUTTON_CATCHMENT                                            :{BLACK}Dækning
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Aktiver visning af dækningsområde
 
@@ -402,7 +397,6 @@ STR_SETTINGS_MENU_CONFIG_SETTINGS_TREE                          :Indstillinger
 STR_SETTINGS_MENU_SCRIPT_SETTINGS                               :AI/spilscript-indstillinger
 STR_SETTINGS_MENU_NEWGRF_SETTINGS                               :NewGRF indstillinger
 STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS                          :Gennemsigtighedsvalg
-STR_SETTINGS_MENU_ZONING                                        :Zoning
 STR_SETTINGS_MENU_TOWN_NAMES_DISPLAYED                          :Bynavne vist
 STR_SETTINGS_MENU_STATION_NAMES_DISPLAYED                       :Stationsnavne vist
 STR_SETTINGS_MENU_WAYPOINTS_DISPLAYED                           :Waypointnavne vist
@@ -3149,9 +3143,6 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Ørkend�
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Forøger ørkendækningen med ti procent
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Sænker ørkendækningen med ti procent
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}%
-STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Snegrænse
-STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Flyt snegrænsen een op
-STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Flyt snegrænsen een ned
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Terrængenerator:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Terræntype:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Havniveau
@@ -3181,7 +3172,6 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Ønsket 
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Højeste bjergtop
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Snedække (i %)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Ørkendækning (i %)
-STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Ændre snegrænsen
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Ændre startår
 
 # SE Map generation
@@ -5051,11 +5041,6 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Originalmusik f
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Originalmusik fra Transport Tycoon Deluxe DOS-version.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Originalmusik fra Transport Tycoon (Original/World Editor) DOS-version.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :En musikpakke uden musik.
-
-STR_TRADITIONAL_TRAIN_NAME                                      :Tog {COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Vejkøretøj {COMMA}
-STR_TRADITIONAL_SHIP_NAME                                       :Skib {COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME                                   :Fly {COMMA}
 
 ##id 0x2000
 # Town building names

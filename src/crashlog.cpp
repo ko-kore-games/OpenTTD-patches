@@ -228,12 +228,7 @@ char *CrashLog::LogConfiguration(char *buffer, const char *last) const
 			FontCache::Get(FS_MONO)->GetFontName()
 	);
 
-<<<<<<< HEAD
 	buffer += seprintf(buffer, last, "AI Configuration (local: %i) (current: %i):\n", (int)_local_company, (int)_current_company);
-	const Company *c;
-	FOR_ALL_COMPANIES(c) {
-		if (c->ai_info == NULL) {
-=======
 	buffer += seprintf(buffer, last, "Map size: 0x%X (%u x %u)%s\n\n", MapSize(), MapSizeX(), MapSizeY(), (!_m || !_me) ? ", NO MAP ALLOCATED" : "");
 
 	if (_settings_game.debug.chicken_bits != 0) {
@@ -242,8 +237,7 @@ char *CrashLog::LogConfiguration(char *buffer, const char *last) const
 
 	buffer += seprintf(buffer, last, "AI Configuration (local: %i) (current: %i):\n", (int)_local_company, (int)_current_company);
 	for (const Company *c : Company::Iterate()) {
-		if (c->ai_info == nullptr) {
->>>>>>> jgrpp-0.44.0
+		if (c->ai_info == NULL) {
 			buffer += seprintf(buffer, last, " %2i: Human\n", (int)c->index);
 		} else {
 			buffer += seprintf(buffer, last, " %2i: %s (v%d)\n", (int)c->index, c->ai_info->GetName(), c->ai_info->GetVersion());

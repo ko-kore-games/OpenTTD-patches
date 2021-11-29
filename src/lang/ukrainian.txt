@@ -314,18 +314,12 @@ STR_COLOUR_BROWN                                                :Коричне�
 STR_COLOUR_GREY                                                 :Сірий
 STR_COLOUR_WHITE                                                :Білий
 STR_COLOUR_RANDOM                                               :Випадково
-STR_COLOUR_DEFAULT                                              :Звичайний
 
 # Units used in OpenTTD
 STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}{NBSP}миль/год
 STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}км/год
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}м/с
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}клітинок/день
-
-STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :миль/год
-STR_UNIT_NAME_VELOCITY_METRIC                                   :км/год
-STR_UNIT_NAME_VELOCITY_SI                                       :м/с
-STR_UNIT_NAME_VELOCITY_GAMEUNITS                                :клітинок/день
 
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}к.с.
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}к.с.
@@ -365,7 +359,6 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Обер
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Оберіть критерій сортування
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Оберіть критерій фільтру
 STR_BUTTON_SORT_BY                                              :{BLACK}Сортувати
-STR_BUTTON_RENAME                                               :{BLACK}Назва
 STR_BUTTON_CATCHMENT                                            :{BLACK}Покриття
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Вкл./викл. відображення області покриття
 
@@ -619,7 +612,6 @@ STR_TOOLBAR_SOUND_MUSIC                                         :Звук/Муз
 STR_NEWS_MENU_LAST_MESSAGE_NEWS_REPORT                          :Останнє повідомлення
 STR_NEWS_MENU_MESSAGE_HISTORY_MENU                              :Історія повідомлень
 STR_NEWS_MENU_DELETE_ALL_MESSAGES                               :Видалити всі повідомлення
-############ range ends here
 
 # About menu
 ###length 10
@@ -628,9 +620,6 @@ STR_ABOUT_MENU_SEPARATOR                                        :
 STR_ABOUT_MENU_TOGGLE_CONSOLE                                   :Вкл./відкл. консоль
 STR_ABOUT_MENU_AI_DEBUG                                         :Налагодження АІ / Ігрового Скрипта
 STR_ABOUT_MENU_SCREENSHOT                                       :Знімок екрану
-STR_ABOUT_MENU_ZOOMIN_SCREENSHOT                                :Знімок екрану з максимальним збільшенням
-STR_ABOUT_MENU_DEFAULTZOOM_SCREENSHOT                           :Знімок екрану зі стандартним збільшенням
-STR_ABOUT_MENU_GIANT_SCREENSHOT                                 :Знімок всієї карти
 STR_ABOUT_MENU_SHOW_FRAMERATE                                   :Швидкість генерації гри
 STR_ABOUT_MENU_ABOUT_OPENTTD                                    :Про гру 'OpenTTD'
 STR_ABOUT_MENU_SPRITE_ALIGNER                                   :Вирівнювання спрайтів
@@ -1097,10 +1086,6 @@ STR_GAME_OPTIONS_CURRENCY_GEL                                   :Грузинс�
 STR_GAME_OPTIONS_CURRENCY_IRR                                   :Іранський ріал (IRR)
 STR_GAME_OPTIONS_CURRENCY_RUB                                   :Російський новий рубель (RUB)
 STR_GAME_OPTIONS_CURRENCY_MXN                                   :Мексиканське песо (MXN)
-############ end of currency region
-
-STR_GAME_OPTIONS_ROAD_VEHICLES_FRAME                            :{BLACK}Сторона руху транспорту
-STR_GAME_OPTIONS_ROAD_VEHICLES_DROPDOWN_TOOLTIP                 :{BLACK}Виберіть, по якій стороні рухається дорожній транспорт
 STR_GAME_OPTIONS_CURRENCY_NTD                                   :Новий тайваньський долар (NTD)
 STR_GAME_OPTIONS_CURRENCY_CNY                                   :Китайські ренміні (CNY)
 STR_GAME_OPTIONS_CURRENCY_HKD                                   :Гонконгський долар (HKD)
@@ -2468,7 +2453,6 @@ STR_NETWORK_CONNECTION_DISCONNECT                               :{BLACK}Роз'�
 
 STR_NETWORK_NEED_GAME_PASSWORD_CAPTION                          :{WHITE}Сервер захищено паролем. Введіть пароль
 STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Компанія захищена паролем. Введіть пароль
-STR_NETWORK_COMPANY_LIST_CLIENT_LIST_CAPTION                    :{WHITE}Список клієнтів
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Гравців у мережі
@@ -3218,8 +3202,6 @@ STR_FRAMERATE_SOUND                                             :{BLACK}Обро
 STR_FRAMERATE_ALLSCRIPTS                                        :{BLACK}  Виконання скриптів:
 STR_FRAMERATE_GAMESCRIPT                                        :{BLACK}   Ігровий Скрипт:
 STR_FRAMERATE_AI                                                :{BLACK}   ШІ {NUM} {STRING}
-############ End of leave-in-this-order
-############ Leave those lines in this order!!
 
 ###length 15
 STR_FRAMETIME_CAPTION_GAMELOOP                                  :Прорахунок ігрового циклу
@@ -3237,7 +3219,6 @@ STR_FRAMETIME_CAPTION_SOUND                                     :Обробка 
 STR_FRAMETIME_CAPTION_ALLSCRIPTS                                :Час виконання скриптів
 STR_FRAMETIME_CAPTION_GAMESCRIPT                                :Час виконання ігрового скрипту
 STR_FRAMETIME_CAPTION_AI                                        :ШІ {NUM} {STRING}
-############ End of leave-in-this-order
 
 
 # Save/load game/scenario
@@ -3289,9 +3270,6 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Покр
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Збільшити покриття пустелею на 10%
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Зменшити покриття пустелею на 10%
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}{NUM}%
-STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Висота лінії снігу:
-STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Підвищити лінію снігу
-STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Понизити лінію снігу
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Ландшафт:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Тип ландшафту:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Рівень моря:
@@ -3321,7 +3299,6 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Висо
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}Найвища гора
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Покриття снігом (у відсотках)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Покриття пустелею, у відсотках
-STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Змінити висоту лінії снігу
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Змінити рік початку гри
 
 # SE Map generation
@@ -3615,7 +3592,6 @@ STR_LOCAL_AUTHORITY_ACTION_TOOLTIP_BRIBE                        :{YELLOW}Під�
 STR_GOALS_CAPTION                                               :{WHITE}Цілі {COMPANY}
 STR_GOALS_SPECTATOR_CAPTION                                     :{WHITE}Глобальні цілі:
 STR_GOALS_SPECTATOR                                             :Загальні задачі
-STR_GOALS_GLOBAL_TITLE                                          :{BLACK}Глобальні цілі:
 STR_GOALS_GLOBAL_BUTTON                                         :{BLACK}Глобальні
 STR_GOALS_GLOBAL_BUTTON_HELPTEXT                                :{BLACK}Показати глобальні цілі
 STR_GOALS_COMPANY_BUTTON                                        :{BLACK}Компанія
@@ -4918,7 +4894,6 @@ STR_ERROR_DRIVE_THROUGH_ON_TOWN_ROAD                            :{WHITE}... ця
 STR_ERROR_DRIVE_THROUGH_DIRECTION                               :{WHITE}... дорога не в тому напрямку
 STR_ERROR_DRIVE_THROUGH_CORNER                                  :{WHITE}... проїзні зупинки не можуть мати поворотів
 STR_ERROR_DRIVE_THROUGH_JUNCTION                                :{WHITE}... проїзні зупинки не можуть мати перехресть
-STR_ERROR_DRIVE_THROUGH_ON_ONEWAY_ROAD                          :{WHITE}... дорога одностороння або заблокована
 
 # Station destruction related errors
 STR_ERROR_CAN_T_REMOVE_PART_OF_STATION                          :{WHITE}Не можна зруйнувати частину станції...
@@ -5193,11 +5168,6 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Оригіна�
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Оригінальна музика Transport Tycoon Deluxe(DOS)
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Оригінальна музика Transport Tycoon Deluxe(DOS)
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Порожній набір музики.
-
-STR_TRADITIONAL_TRAIN_NAME                                      :Поїзд №{COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Автотранспорт №{COMMA}
-STR_TRADITIONAL_SHIP_NAME                                       :Судно №{COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME                                   :Борт №{COMMA}
 
 ##id 0x2000
 # Town building names

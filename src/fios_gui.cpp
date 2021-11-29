@@ -442,22 +442,14 @@ public:
 
 				uint y = r.top + WD_FRAMERECT_TOP;
 				uint scroll_pos = this->vscroll->GetPosition();
-<<<<<<< HEAD
-				for (uint row = 0; row < this->fios_items.Length(); row++) {
-=======
 				for (uint row = 0; row < this->fios_items.size(); row++) {
->>>>>>> jgrpp-0.44.0
 					if (!this->fios_items_shown[row]) {
 						/* The current item is filtered out : we do not show it */
 						scroll_pos++;
 						continue;
 					}
 					if (row < scroll_pos) continue;
-<<<<<<< HEAD
-					const FiosItem *item = this->fios_items.Get(row);
-=======
 					const FiosItem *item = &this->fios_items[row];
->>>>>>> jgrpp-0.44.0
 
 					if (item == this->selected) {
 						GfxFillRect(r.left + 1, y, r.right, y + this->resize.step_height, PC_DARK_BLUE);

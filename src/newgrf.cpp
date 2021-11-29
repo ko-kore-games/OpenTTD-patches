@@ -4993,11 +4993,7 @@ static void FeatureChangeInfo(ByteReader *buf)
 	grfmsg(6, "FeatureChangeInfo: Feature 0x%02X, %d properties, to apply to %d+%d",
 	               feature, numprops, engine, numinfo);
 
-<<<<<<< HEAD
-	if (feature >= lengthof(handler) || handler[feature] == NULL) {
-=======
-	if (handler[feature] == nullptr) {
->>>>>>> jgrpp-0.44.0
+	if (feature >= lengthof(handler) || handler[feature] == nullptr) {
 		if (feature != GSF_CARGOES) grfmsg(1, "FeatureChangeInfo: Unsupported feature 0x%02X, skipping", feature);
 		return;
 	}

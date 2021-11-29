@@ -3702,10 +3702,6 @@ bool AfterLoadGame()
 		}
 	}
 
-<<<<<<< HEAD
-	{
-		/* Update water class for trees for all current savegame versions. */
-=======
 	if (IsSavegameVersionBefore(SLV_TOWN_CARGOGEN)) {
 		/* Ensure the original cargo generation mode is used */
 		_settings_game.economy.town_cargogen_mode = TCGM_ORIGINAL;
@@ -3730,14 +3726,11 @@ bool AfterLoadGame()
 
 	if (IsSavegameVersionBefore(SLV_TREES_WATER_CLASS) && !SlXvIsFeaturePresent(XSLFI_CHUNNEL, 2)) {
 		/* Update water class for trees. */
->>>>>>> jgrpp-0.44.0
 		for (TileIndex t = 0; t < map_size; t++) {
 			if (IsTileType(t, MP_TREES)) SetWaterClass(t, GetTreeGround(t) == TREE_GROUND_SHORE ? WATER_CLASS_SEA : WATER_CLASS_INVALID);
 		}
 	}
 
-<<<<<<< HEAD
-=======
 	/* Update structures for multitile docks */
 	if (IsSavegameVersionBefore(SLV_MULTITILE_DOCKS)) {
 		for (TileIndex t = 0; t < map_size; t++) {
@@ -3799,7 +3792,6 @@ bool AfterLoadGame()
 	/* Compute station catchment areas. This is needed here in case UpdateStationAcceptance is called below. */
 	Station::RecomputeCatchmentForAll();
 
->>>>>>> jgrpp-0.44.0
 	/* Station acceptance is some kind of cache */
 	if (IsSavegameVersionBefore(SLV_127)) {
 		for (Station *st : Station::Iterate()) UpdateStationAcceptance(st, false);

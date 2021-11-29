@@ -197,10 +197,6 @@ STR_UNITS_VELOCITY_METRIC                                       :{COMMA}{NBSP}km
 STR_UNITS_VELOCITY_SI                                           :{COMMA}{NBSP}m/s
 STR_UNITS_VELOCITY_GAMEUNITS                                    :{DECIMAL}{NBSP}karo/gün
 
-STR_UNIT_NAME_VELOCITY_IMPERIAL                                 :mil/s
-STR_UNIT_NAME_VELOCITY_METRIC                                   :km/h
-STR_UNIT_NAME_VELOCITY_SI                                       :m/s
-
 STR_UNITS_POWER_IMPERIAL                                        :{COMMA}{NBSP}bg
 STR_UNITS_POWER_METRIC                                          :{COMMA}{NBSP}bg
 STR_UNITS_POWER_SI                                              :{COMMA}{NBSP}kW
@@ -239,7 +235,6 @@ STR_TOOLTIP_SORT_ORDER                                          :{BLACK}Sıralam
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}Sıralama kriterini seçin
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}Süzme kriterini seçin
 STR_BUTTON_SORT_BY                                              :{BLACK}Sırala
-STR_BUTTON_RENAME                                               :{BLACK}Yeni ad
 STR_BUTTON_CATCHMENT                                            :{BLACK}Kapsama alanı
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}Kapsama alanını göstermeyi aç/kapa
 
@@ -3145,9 +3140,6 @@ STR_MAPGEN_DESERT_COVERAGE                                      :{BLACK}Çöl ö
 STR_MAPGEN_DESERT_COVERAGE_UP                                   :{BLACK}Çöl örtüsünü yüzde on arttır
 STR_MAPGEN_DESERT_COVERAGE_DOWN                                 :{BLACK}Çöl örtüsünü yüzde on azalt
 STR_MAPGEN_DESERT_COVERAGE_TEXT                                 :{BLACK}%{NUM}
-STR_MAPGEN_SNOW_LINE_HEIGHT                                     :{BLACK}Kar yüksekliği:
-STR_MAPGEN_SNOW_LINE_UP                                         :{BLACK}Kar yüksekliğini bir arttır
-STR_MAPGEN_SNOW_LINE_DOWN                                       :{BLACK}Kar yüksekliğini bir azalt
 STR_MAPGEN_LAND_GENERATOR                                       :{BLACK}Harita üretici:
 STR_MAPGEN_TERRAIN_TYPE                                         :{BLACK}Arazi türü:
 STR_MAPGEN_QUANTITY_OF_SEA_LAKES                                :{BLACK}Deniz seviyesi:
@@ -3177,7 +3169,6 @@ STR_MAPGEN_TERRAIN_TYPE_QUERY_CAPT                              :{WHITE}Hedef zi
 STR_MAPGEN_HEIGHTMAP_HEIGHT_QUERY_CAPT                          :{WHITE}En yüksek tepe
 STR_MAPGEN_SNOW_COVERAGE_QUERY_CAPT                             :{WHITE}Kar örtüsü (% olarak)
 STR_MAPGEN_DESERT_COVERAGE_QUERY_CAPT                           :{WHITE}Çöl örtüsü (% olarak)
-STR_MAPGEN_SNOW_LINE_QUERY_CAPT                                 :{WHITE}Kar yüksekliğini değiştir
 STR_MAPGEN_START_DATE_QUERY_CAPT                                :{WHITE}Başlangıç yılını değiştir
 
 # SE Map generation
@@ -5047,11 +5038,6 @@ STR_BASEMUSIC_WIN_DESCRIPTION                                   :Özgün Transpo
 STR_BASEMUSIC_DOS_DESCRIPTION                                   :Özgün Transport Tycoon Deluxe DOS sürüm müziği.
 STR_BASEMUSIC_TTO_DESCRIPTION                                   :Özgün Transport Tycoon Deluxe (Original/World Editor) DOS sürümü müzikleri.
 STR_BASEMUSIC_NONE_DESCRIPTION                                  :Müzik içermeyen boş bir müzik paketi.
-
-STR_TRADITIONAL_TRAIN_NAME                                      :Tren {COMMA}
-STR_TRADITIONAL_ROAD_VEHICLE_NAME                               :Karayolu Aracı {COMMA}
-STR_TRADITIONAL_SHIP_NAME                                       :Gemi {COMMA}
-STR_TRADITIONAL_AIRCRAFT_NAME                                   :Uçak {COMMA}
 
 ##id 0x2000
 # Town building names
