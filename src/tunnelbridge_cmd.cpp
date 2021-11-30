@@ -639,10 +639,18 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 				return_cmd_error(STR_ERROR_BRIDGE_TOO_HIGH_FOR_TERRAIN);
 			}
 
+// Begin for Allow to cross 2 bridges
+			int z_existing = 0; // We need it here and further (later below) too. 
 			if (IsBridgeAbove(tile)) {
 				/* Disallow crossing bridges for the time being */
-				return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+				// return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+				// Allow crossing (orthogonal) bridges only, but not parallel bridges one under (above) another. 
+				if (direction == GetBridgeAxis(tile)) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
+				//z_existing = GetBridgeHeight(tile);
+				z_existing = GetBridgeHeight(GetSouthernBridgeEnd(tile));
+				if (abs(z_start + 1 - z_existing) < 1) return_cmd_error(STR_ERROR_MUST_DEMOLISH_BRIDGE_FIRST);
 			}
+// End   for Allow to cross 2 bridges
 
 			switch (GetTileType(tile)) {
 				case MP_WATER:
@@ -739,7 +747,13 @@ CommandCost CmdBuildBridge(TileIndex end_tile, DoCommandFlag flags, uint32 p1, u
 				/* We do this here because when replacing a bridge with another
 				 * type calling SetBridgeMiddle isn't needed. After all, the
 				 * tile already has the has_bridge_above bits set. */
-				SetBridgeMiddle(tile, direction);
+//  for Allow to cross 2 bridges
+				// SetBridgeMiddle(tile, direction);
+				// Set or leave the direction of the heighest of 2 "crossing" bridges: new or existing. 
+				if (z_start + 1 > z_existing) {
+					ClearBridgeMiddle(tile);
+					SetBridgeMiddle(tile, direction);
+				}
 			}
 		}
 
@@ -1511,6 +1525,33 @@ static CommandCost DoClearBridge(TileIndex tile, DoCommandFlag flags)
 		if (IsTunnelBridgeSignalSimulationEntrance(tile)) ClearBridgeEntranceSimulatedSignals(tile);
 		if (IsTunnelBridgeSignalSimulationEntrance(endtile)) ClearBridgeEntranceSimulatedSignals(endtile);
 
+//  for Allow to cross 2 bridges
+// Begin for Allow to cross 2 bridges
+
+		Axis axis = DiagDirToAxis(direction);
+
+		// Check if any lower bridge is under this bridge.
+
+		bool is_lower_crossing_bridge_here;
+		Axis axis_orthogonal = OtherAxis(axis);
+		TileIndexDiff tile_diffxy_orthogonal_1_to_south = TileDiffXY(1 - axis_orthogonal, axis_orthogonal);
+		DiagDirection diagdiraxis_orth_to_south = AxisToDiagDir(axis_orthogonal);
+		DiagDirection diagdiraxis_orth_to_north = ReverseDiagDir(AxisToDiagDir(axis_orthogonal));
+		TileIndex tile_orth_offset_1_to_south;
+		TileIndex tile_orth_offset_1_to_north;
+		TileIndex tile_orth_offset_2_to_south;
+		TileIndex tile_orth_offset_2_to_north;
+		TileIndex tile_orth_offset_3_to_south;
+		TileIndex tile_orth_offset_3_to_north;
+		TileIndex tile_orth_offset_4_to_south;
+		TileIndex tile_orth_offset_4_to_north;
+		TileIndex tile_orth_offset_5_to_south;
+		TileIndex tile_orth_offset_5_to_north;
+		TileIndex tile_orth_offset_6_to_south;
+		TileIndex tile_orth_offset_6_to_north;
+		TileIndex tile_orth_offset_7_to_south;
+		TileIndex tile_orth_offset_7_to_north;
+
 		DoClearSquare(tile);
 		DoClearSquare(endtile);
 
@@ -1522,9 +1563,173 @@ static CommandCost DoClearBridge(TileIndex tile, DoCommandFlag flags)
 				int minz = GetTileMaxZ(c) + 3;
 				if (height < minz) SetRoadside(c, ROADSIDE_PAVED);
 			}
-			ClearBridgeMiddle(c);
-			MarkTileDirtyByTile(c, VMDF_NOT_MAP_MODE, height - TileHeight(c));
+//  for Allow to cross 2 bridges
+			// ClearBridgeMiddle(c);
+			ClearSingleBridgeMiddle(c, axis);
+
+			is_lower_crossing_bridge_here = false;
+
+/*
+			tile_orth_offset_1_to_south = c + TileDiffXY(1 - axis_orthogonal, axis_orthogonal);
+			// WRONG LOGIC
+			// 2nd variant (looks like better optimized)
+			if (IsBridgeAbove(tile_orth_offset_1_to_south)) {
+				is_lower_crossing_bridge_here = (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal);
+				if (!is_lower_crossing_bridge_here && IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE)) {
+					DiagDirection diagdiraxis_orth_to_north = ReverseDiagDir(AxisToDiagDir(axis_orthogonal));
+					// Because here can be a bridge of 2 tiles length, then the next row (below) would generate the error: IsBridgeMiddle(c) == true without corresponding end of bridge. 
+					// is_lower_crossing_bridge_here = (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north);
+					// But the next 2 rows allow to avoid such error. 
+					TileIndex tile_orth_offset_1_to_north = c - TileDiffXY(1 - axis_orthogonal, axis_orthogonal);
+					is_lower_crossing_bridge_here = (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis_orthogonal);
+				}
+			}
+/**/
+
+			tile_orth_offset_1_to_south = c + tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_1_to_north = c - tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_2_to_south = tile_orth_offset_1_to_south + tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_2_to_north = tile_orth_offset_1_to_north - tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_3_to_south = tile_orth_offset_2_to_south + tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_3_to_north = tile_orth_offset_2_to_north - tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_4_to_south = tile_orth_offset_3_to_south + tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_4_to_north = tile_orth_offset_3_to_north - tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_5_to_south = tile_orth_offset_4_to_south + tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_5_to_north = tile_orth_offset_4_to_north - tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_6_to_south = tile_orth_offset_5_to_south + tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_6_to_north = tile_orth_offset_5_to_north - tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_7_to_south = tile_orth_offset_6_to_south + tile_diffxy_orthogonal_1_to_south;
+			tile_orth_offset_7_to_north = tile_orth_offset_6_to_north - tile_diffxy_orthogonal_1_to_south;
+
+/*
+			// if 2 heigher bridges cross over some lower bridge, then this program do not draw sections of lower bridge, which are under heigher 2 bridges 
+			is_lower_crossing_bridge_here = (IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north)) 
+										 && (IsBridgeAbove(tile_orth_offset_1_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_north) == diagdiraxis_orth_to_south));
+/**/
+/*
+			// ++ but WRONG with end of lower bridge
+			is_lower_crossing_bridge_here = (IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north))
+										 && (IsBridgeAbove(tile_orth_offset_1_to_north) && (true)
+				|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_north) == diagdiraxis_orth_to_south));
+/**/
+/*
+			// --- WRONG LOGIC: This don't account if(IsTileType(tile_orth_offset_[i]_to_south(north), MP_TUNNELBRIDGE) == true), i=2..4
+			is_lower_crossing_bridge_here = (  IsBridgeAbove(tile_orth_offset_1_to_south) && ((GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+											|| IsBridgeAbove(tile_orth_offset_2_to_south) && ((GetBridgeAxis(tile_orth_offset_2_to_south) == axis_orthogonal)
+											|| IsBridgeAbove(tile_orth_offset_3_to_south) && ((GetBridgeAxis(tile_orth_offset_3_to_south) == axis_orthogonal)
+											|| IsBridgeAbove(tile_orth_offset_4_to_south) &&  (GetBridgeAxis(tile_orth_offset_4_to_south) == axis_orthogonal))))
+				|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north))
+										 && (  IsBridgeAbove(tile_orth_offset_1_to_north) && ((GetBridgeAxis(tile_orth_offset_1_to_north) == axis_orthogonal)
+											|| IsBridgeAbove(tile_orth_offset_2_to_north) && ((GetBridgeAxis(tile_orth_offset_2_to_north) == axis_orthogonal)
+											|| IsBridgeAbove(tile_orth_offset_3_to_north) && ((GetBridgeAxis(tile_orth_offset_3_to_north) == axis_orthogonal)
+											|| IsBridgeAbove(tile_orth_offset_4_to_north) &&  (GetBridgeAxis(tile_orth_offset_4_to_north) == axis_orthogonal))))
+				|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_north) == diagdiraxis_orth_to_south));
+/**/
+/*
+			//  OK for <= 4 neibour parallel bridges
+			is_lower_crossing_bridge_here =	(  IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis) 
+										&&    (IsBridgeAbove(tile_orth_offset_2_to_south) && (GetBridgeAxis(tile_orth_offset_2_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_2_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_2_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_2_to_south) && (GetBridgeAxis(tile_orth_offset_2_to_south) == axis) 
+										&&    (IsBridgeAbove(tile_orth_offset_3_to_south) && (GetBridgeAxis(tile_orth_offset_3_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_3_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_3_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_3_to_south) && (GetBridgeAxis(tile_orth_offset_3_to_south) == axis) 
+										&&    (IsBridgeAbove(tile_orth_offset_4_to_south) && (GetBridgeAxis(tile_orth_offset_4_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_4_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_4_to_south) == diagdiraxis_orth_to_north)
+												))))
+										&&  (  IsBridgeAbove(tile_orth_offset_1_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_1_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis) 
+										&&    (IsBridgeAbove(tile_orth_offset_2_to_north) && (GetBridgeAxis(tile_orth_offset_2_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_2_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_2_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_2_to_north) && (GetBridgeAxis(tile_orth_offset_2_to_north) == axis) 
+										&&    (IsBridgeAbove(tile_orth_offset_3_to_north) && (GetBridgeAxis(tile_orth_offset_3_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_3_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_3_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_3_to_north) && (GetBridgeAxis(tile_orth_offset_3_to_north) == axis) 
+										&&    (IsBridgeAbove(tile_orth_offset_4_to_north) && (GetBridgeAxis(tile_orth_offset_4_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_4_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_4_to_north) == diagdiraxis_orth_to_south)
+												))));
+/**/
+/*
+			//  WRONG (Bad results with end of lower bridge)
+			is_lower_crossing_bridge_here =	(  IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_2_to_south) && (GetBridgeAxis(tile_orth_offset_2_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_2_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_2_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_2_to_south) && (GetBridgeAxis(tile_orth_offset_2_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_3_to_south) && (GetBridgeAxis(tile_orth_offset_3_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_3_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_3_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_3_to_south) && (GetBridgeAxis(tile_orth_offset_3_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_4_to_south) && (GetBridgeAxis(tile_orth_offset_4_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_4_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_4_to_south) == diagdiraxis_orth_to_north)
+												))))
+										&&  (  IsBridgeAbove(tile_orth_offset_1_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (true)
+												);
+/**/
+/**/
+			//  OK for <= 7 neibour parallel bridges
+			is_lower_crossing_bridge_here =	(  IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_2_to_south) && (GetBridgeAxis(tile_orth_offset_2_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_2_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_2_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_2_to_south) && (GetBridgeAxis(tile_orth_offset_2_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_3_to_south) && (GetBridgeAxis(tile_orth_offset_3_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_3_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_3_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_3_to_south) && (GetBridgeAxis(tile_orth_offset_3_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_4_to_south) && (GetBridgeAxis(tile_orth_offset_4_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_4_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_4_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_4_to_south) && (GetBridgeAxis(tile_orth_offset_4_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_5_to_south) && (GetBridgeAxis(tile_orth_offset_5_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_5_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_5_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_5_to_south) && (GetBridgeAxis(tile_orth_offset_5_to_south) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_6_to_south) && (GetBridgeAxis(tile_orth_offset_6_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_6_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_6_to_south) == diagdiraxis_orth_to_north)
+											|| IsBridgeAbove(tile_orth_offset_6_to_south) && (GetBridgeAxis(tile_orth_offset_6_to_south) == axis)
+
+										&&    (IsBridgeAbove(tile_orth_offset_7_to_south) && (GetBridgeAxis(tile_orth_offset_7_to_south) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_7_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_7_to_south) == diagdiraxis_orth_to_north)
+												)))))))
+
+										&&  (  IsBridgeAbove(tile_orth_offset_1_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_1_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_2_to_north) && (GetBridgeAxis(tile_orth_offset_2_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_2_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_2_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_2_to_north) && (GetBridgeAxis(tile_orth_offset_2_to_north) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_3_to_north) && (GetBridgeAxis(tile_orth_offset_3_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_3_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_3_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_3_to_north) && (GetBridgeAxis(tile_orth_offset_3_to_north) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_4_to_north) && (GetBridgeAxis(tile_orth_offset_4_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_4_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_4_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_4_to_north) && (GetBridgeAxis(tile_orth_offset_4_to_north) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_5_to_north) && (GetBridgeAxis(tile_orth_offset_5_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_5_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_5_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_5_to_north) && (GetBridgeAxis(tile_orth_offset_5_to_north) == axis)
+										&&    (IsBridgeAbove(tile_orth_offset_6_to_north) && (GetBridgeAxis(tile_orth_offset_6_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_6_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_6_to_north) == diagdiraxis_orth_to_south)
+											|| IsBridgeAbove(tile_orth_offset_6_to_north) && (GetBridgeAxis(tile_orth_offset_6_to_north) == axis)
+
+										&&    (IsBridgeAbove(tile_orth_offset_7_to_north) && (GetBridgeAxis(tile_orth_offset_7_to_north) == axis_orthogonal)
+				|| IsTileType(tile_orth_offset_7_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_7_to_north) == diagdiraxis_orth_to_south)
+												)))))));
+/**/
+
+
+			if (is_lower_crossing_bridge_here) {
+				// Change (set) axis to axis_orthogonal (for lower bridge)
+				SetBridgeMiddle(c, axis_orthogonal);
+			}
+			MarkTileDirtyByTile(c, height - TileHeight(c));
 		}
+// End   for Allow to cross 2 bridges
 
 		if (rail) {
 			/* cannot use INVALID_DIAGDIR for signal update because the bridge doesn't exist anymore */
@@ -2481,11 +2686,88 @@ void DrawBridgeMiddle(const TileInfo *ti)
 
 	if (!IsBridgeAbove(ti->tile)) return;
 
+//  for Allow to cross 2 bridges
+// Begin for Allow to cross 2 bridges
+	// Check if any lower bridge is under this bridge.
+
+	Axis axis = GetBridgeAxis(ti->tile);
+
+	bool is_lower_crossing_bridge_here = false;
+	Axis axis_orthogonal = OtherAxis(axis);
+	DiagDirection diagdiraxis_orth_to_south = AxisToDiagDir(axis_orthogonal);
+	DiagDirection diagdiraxis_orth_to_north = ReverseDiagDir(AxisToDiagDir(axis_orthogonal));
+	// TileIndex tile_orth_offset_1_to_south = ti->tile + TileDiffXY(1 - axis_orthogonal, axis_orthogonal);
+	// TileIndex tile_orth_offset_1_to_north = ti->tile - TileDiffXY(1 - axis_orthogonal, axis_orthogonal);
+	TileIndexDiff tile_diffxy_orthogonal_1_to_south = TileDiffXY(1 - axis_orthogonal, axis_orthogonal);
+	TileIndex tile_orth_offset_1_to_south = ti->tile + tile_diffxy_orthogonal_1_to_south;
+	TileIndex tile_orth_offset_1_to_north = ti->tile - tile_diffxy_orthogonal_1_to_south;
+
+/*
+// 1st variant
+	if (IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE)) {
+		DiagDirection diagdiraxis_orth_to_north = ReverseDiagDir(AxisToDiagDir(axis_orthogonal));
+		// if (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north) is_lower_crossing_bridge_here = true;
+		is_lower_crossing_bridge_here = (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north);
+	} else {
+		if (IsBridgeAbove(tile_orth_offset_1_to_south)) is_lower_crossing_bridge_here = (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal);
+	}
+/**/
+/*
+// 2nd variant (looks like better optimized)
+	if (IsBridgeAbove(tile_orth_offset_1_to_south)) {
+		is_lower_crossing_bridge_here = (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal);
+		if (!is_lower_crossing_bridge_here && IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE)) {
+			DiagDirection diagdiraxis_orth_to_north = ReverseDiagDir(AxisToDiagDir(axis_orthogonal));
+			// if (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north) is_lower_crossing_bridge_here = true;
+			is_lower_crossing_bridge_here = (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north);
+		}
+	}
+/**/
+
+	// tile_orth_offset_1_to_south = ti->tile + tile_diffxy_orthogonal_1_to_south;
+	// tile_orth_offset_1_to_north = ti->tile - tile_diffxy_orthogonal_1_to_south;
+/*
+	// if 2 heigher bridges cross over some lower bridge, then this program do not draw sections of lower bridge, which are under heigher 2 bridges 
+	is_lower_crossing_bridge_here = (IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+			|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north))
+								 && (IsBridgeAbove(tile_orth_offset_1_to_north) && (GetBridgeAxis(tile_orth_offset_1_to_north) == axis_orthogonal)
+			|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_north) == diagdiraxis_orth_to_south));
+/**/
+	// ??? 
+	is_lower_crossing_bridge_here = (IsBridgeAbove(tile_orth_offset_1_to_south) && (GetBridgeAxis(tile_orth_offset_1_to_south) == axis_orthogonal)
+			|| IsTileType(tile_orth_offset_1_to_south, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_south) == diagdiraxis_orth_to_north))
+								 && (IsBridgeAbove(tile_orth_offset_1_to_north) && (true)
+			|| IsTileType(tile_orth_offset_1_to_north, MP_TUNNELBRIDGE) && (GetTunnelBridgeDirection(tile_orth_offset_1_to_north) == diagdiraxis_orth_to_south));
+
+	if (is_lower_crossing_bridge_here) {
+
+		// Change axis to axis_orthogonal (for lower bridge)
+		ClearSingleBridgeMiddle(ti->tile, axis);
+		SetBridgeMiddle(ti->tile, axis_orthogonal);
+
+		// This is neccecary to avoid infinite cycle:
+		TileIndex tile_parallel_offset_1_to_south = ti->tile + TileDiffXY(1 - axis, axis);
+		ClearSingleBridgeMiddle(tile_parallel_offset_1_to_south, axis);
+
+		// Draw lower bridge (maybe, only some parts of it?)
+		DrawBridgeMiddle(ti);
+
+		// Change axis_orthogonal to asis back (for heigher bridge)
+		ClearSingleBridgeMiddle(ti->tile, axis_orthogonal);
+		SetBridgeMiddle(ti->tile, axis);
+
+		// Don't forget to set this part of heigher bridge back:
+		SetBridgeMiddle(tile_parallel_offset_1_to_south, axis);
+	}
+
+// End   for Allow to cross 2 bridges
+
 	TileIndex rampnorth = GetNorthernBridgeEnd(ti->tile);
 	TileIndex rampsouth = GetSouthernBridgeEnd(ti->tile);
 	TransportType transport_type = GetTunnelBridgeTransportType(rampsouth);
 
-	Axis axis = GetBridgeAxis(ti->tile);
+//  for Allow to cross 2 bridges
+	//	Axis axis = GetBridgeAxis(ti->tile);
 	BridgePieces piece = CalcBridgePiece(
 		GetTunnelBridgeLength(ti->tile, rampnorth) + 1,
 		GetTunnelBridgeLength(ti->tile, rampsouth) + 1
