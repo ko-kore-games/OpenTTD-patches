@@ -1412,6 +1412,7 @@ STR_CONFIG_SETTING_ORDER_REVIEW_ON                              :Vun allen Gefie
 
 STR_CONFIG_SETTING_WARN_INCOME_LESS                             :Warnen wann en Gefier en negativt Akommes huet: {STRING}
 STR_CONFIG_SETTING_WARN_INCOME_LESS_HELPTEXT                    :Wann ugeschalt, gëtt e Noorichtemessage gesent, wann e Gefier ee Joer laang kee Profit gemeet huet
+
 STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES                        :Gefierer lafen nie of: {STRING}
 STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES_HELPTEXT               :Wann ugeschalt, bleiwen all Modeller vu Gefierer éiweg verfügbar
 
@@ -4761,7 +4762,6 @@ STR_ERROR_DRIVE_THROUGH_ON_TOWN_ROAD                            :{WHITE}... d'St
 STR_ERROR_DRIVE_THROUGH_DIRECTION                               :{WHITE}... Strooss geet an dei falsch Richtung
 STR_ERROR_DRIVE_THROUGH_CORNER                                  :{WHITE}... Duerchfahrtstops kënnen keng Kéiren hunn
 STR_ERROR_DRIVE_THROUGH_JUNCTION                                :{WHITE}... Duerchfahrtstops kënnen keng Kräizungen hunn
-STR_ERROR_DRIVE_THROUGH_ON_ONEWAY_ROAD                          :{WHITE}... Einbahnstrooss oder blockéiert
 
 # Station destruction related errors
 STR_ERROR_CAN_T_REMOVE_PART_OF_STATION                          :{WHITE}Kann den Deel vun der Gare net ofrappen...

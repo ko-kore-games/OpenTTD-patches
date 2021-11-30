@@ -1255,6 +1255,7 @@ STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :Quando activo, 
 
 STR_CONFIG_SETTING_DISASTERS                                    :Desastres: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :Activa desastres que podem ocasionalmente bloquear ou destruir veículos ou infraestruturas
+
 STR_CONFIG_SETTING_CITY_APPROVAL                                :Atitude do Concelho Municipal em relação a reestruturação de áreas: {STRING}
 STR_CONFIG_SETTING_CITY_APPROVAL_HELPTEXT                       :Escolha quanto ruído e estragos ambientais causados pelas empresas afecta o rating da povoação e futuras acções de construção na área
 
@@ -1276,6 +1277,7 @@ STR_CONFIG_SETTING_SERVE_NEUTRAL_INDUSTRIES_HELPTEXT            :Quando activo, 
 
 STR_CONFIG_SETTING_EXTRADYNAMITE                                :Permite remover mais estradas, pontes e túneis detidos pela cidade: {STRING}
 STR_CONFIG_SETTING_EXTRADYNAMITE_HELPTEXT                       :Facilitar a remoçar de edifícios e infraestruturas detidas pela localidade
+
 STR_CONFIG_SETTING_TRAIN_LENGTH                                 :Tamanho máximo de comboios: {STRING}
 STR_CONFIG_SETTING_TRAIN_LENGTH_HELPTEXT                        :Assignar o tamanho máximo dos comboios
 STR_CONFIG_SETTING_TILE_LENGTH                                  :{COMMA} quadrado{P 0 "" s}
@@ -1383,6 +1385,7 @@ STR_CONFIG_SETTING_PLANE_CRASHES_HELPTEXT                       :Indicar a hipó
 STR_CONFIG_SETTING_PLANE_CRASHES_NONE                           :Nenhum*
 STR_CONFIG_SETTING_PLANE_CRASHES_REDUCED                        :Reduzido
 STR_CONFIG_SETTING_PLANE_CRASHES_NORMAL                         :Normal
+
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD                            :Permite estações de passagem em estradas das localidades: {STRING}
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD_HELPTEXT                   :Permite construção de paragens drive-through em ruas que são prorpiedade das povoações
 STR_CONFIG_SETTING_STOP_ON_COMPETITOR_ROAD                      :Permite estações de passagem em estradas do adversário: {STRING}
@@ -1416,6 +1419,7 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_VEHICLES_HELPTEXT               :Quando activo, 
 
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE                            :Auto-renovação de veículos quando ficam velhos: {STRING}
 STR_CONFIG_SETTING_AUTORENEW_VEHICLE_HELPTEXT                   :Quando activo, um veículo a chegar ao fim de vida é automaticamente substituído quando as condições de renovação estão reunidas
+
 STR_CONFIG_SETTING_AUTORENEW_MONTHS                             :Renovar automaticamente quando um veículo chega a {STRING} a idade máxima
 STR_CONFIG_SETTING_AUTORENEW_MONTHS_HELPTEXT                    :Idade relativa a partir da qual um veículo deva ser indicado para auto-renovação
 ###length 2
@@ -1434,6 +1438,7 @@ STR_CONFIG_SETTING_HOVER_DELAY_HELPTEXT                         :Atraso após o 
 STR_CONFIG_SETTING_HOVER_DELAY_VALUE                            :Parar o rato por {COMMA} milisegundo{P 0 "" s}
 ###setting-zero-is-special
 STR_CONFIG_SETTING_HOVER_DELAY_DISABLED                         :Clique com botão direito
+
 STR_CONFIG_SETTING_POPULATION_IN_LABEL                          :Mostra população da localidade na identificação da mesma: {STRING}
 STR_CONFIG_SETTING_POPULATION_IN_LABEL_HELPTEXT                 :Mostrar a população das povoações na sua etiqueta no mapa
 
@@ -1834,6 +1839,7 @@ STR_CONFIG_SETTING_TOWN_LAYOUT_BETTER_ROADS                     :Estradas melhor
 STR_CONFIG_SETTING_TOWN_LAYOUT_2X2_GRID                         :grelha 2x2
 STR_CONFIG_SETTING_TOWN_LAYOUT_3X3_GRID                         :grelha 3x3
 STR_CONFIG_SETTING_TOWN_LAYOUT_RANDOM                           :Aleatório
+
 STR_CONFIG_SETTING_ALLOW_TOWN_ROADS                             :As localidades têm permissão para construir estradas: {STRING}
 STR_CONFIG_SETTING_ALLOW_TOWN_ROADS_HELPTEXT                    :Permite às localidades a construção de estradas para crescimento. Desactivar para não permitir às autoridades a construção de estradas
 STR_CONFIG_SETTING_ALLOW_TOWN_LEVEL_CROSSINGS                   :Localidades podem construir passagens de nível: {STRING}
@@ -1905,6 +1911,7 @@ STR_CONFIG_SETTING_TOWN_GROWTH_SLOW                             :Lento
 STR_CONFIG_SETTING_TOWN_GROWTH_NORMAL                           :Normal
 STR_CONFIG_SETTING_TOWN_GROWTH_FAST                             :Rápido
 STR_CONFIG_SETTING_TOWN_GROWTH_VERY_FAST                        :Muito Rápido
+
 STR_CONFIG_SETTING_LARGER_TOWNS                                 :Proporção de localidades que chegarão a cidades: {STRING}
 STR_CONFIG_SETTING_LARGER_TOWNS_HELPTEXT                        :Quantidade de localidades que se tornarão cidades, ou seja uma localidade que começa maior e crescerá mais depressa.
 STR_CONFIG_SETTING_LARGER_TOWNS_VALUE                           :1 em {COMMA}
@@ -2843,6 +2850,7 @@ STR_FOUND_TOWN_RANDOM_TOWN_BUTTON                               :{BLACK}Localida
 STR_FOUND_TOWN_RANDOM_TOWN_TOOLTIP                              :{BLACK}Fundar uma localidade num local aleatório
 STR_FOUND_TOWN_MANY_RANDOM_TOWNS                                :{BLACK}Várias localidades aleatórias
 STR_FOUND_TOWN_RANDOM_TOWNS_TOOLTIP                             :{BLACK}Cobrir o mapa com localidades colocadas aleatoriamente
+
 STR_FOUND_TOWN_NAME_TITLE                                       :{YELLOW}Nome da localidade:
 STR_FOUND_TOWN_NAME_EDITOR_TITLE                                :{BLACK}Introduza o nome da localidade
 STR_FOUND_TOWN_NAME_EDITOR_HELP                                 :{BLACK}Clique para introduzir o nome da localidade

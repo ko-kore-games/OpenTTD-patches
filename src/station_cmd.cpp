@@ -1561,7 +1561,7 @@ CommandCost CmdBuildRailStation(TileIndex tile_org, DoCommandFlag flags, uint32 
 
 		} else {
 
-			for (uint i = 0; i < affected_vehicles.Length(); ++i) {
+			for (uint i = 0; i < affected_vehicles.size(); ++i) {
 				/* Restore reservations of trains. */
 				RestoreTrainReservation(affected_vehicles[i]);
 			}
@@ -4158,47 +4158,8 @@ CommandCost CmdRenameStation(TileIndex tile, DoCommandFlag flags, uint32 p1, uin
 
 static void AddNearbyStationsByCatchment(TileIndex tile, StationList *stations, StationList &nearby)
 {
-	/* area to search = producer plus station catchment radius */
-	uint max_rad = (_settings_game.station.modified_catchment ? MAX_CATCHMENT : CA_UNMODIFIED);
-
-	uint x = TileX(location.tile);
-	uint y = TileY(location.tile);
-
-	uint min_x = (x > max_rad) ? x - max_rad : 0;
-	uint max_x = x + location.w + max_rad;
-	uint min_y = (y > max_rad) ? y - max_rad : 0;
-	uint max_y = y + location.h + max_rad;
-
-	if (min_x == 0 && _settings_game.construction.freeform_edges) min_x = 1;
-	if (min_y == 0 && _settings_game.construction.freeform_edges) min_y = 1;
-	if (max_x >= MapSizeX()) max_x = MapSizeX() - 1;
-	if (max_y >= MapSizeY()) max_y = MapSizeY() - 1;
-
-	for (uint cy = min_y; cy < max_y; cy++) {
-		for (uint cx = min_x; cx < max_x; cx++) {
-			TileIndex cur_tile = TileXY(cx, cy);
-//  for Existing objects tunnels and bridges as stations
-			// if (!IsTileType(cur_tile, MP_STATION)) continue;
-			if (!IsTileType(cur_tile, MP_STATION) && !IsTileType(cur_tile, MP_TUNNELBRIDGE)) continue;
-
-			Station *st = Station::GetByTile(cur_tile);
-			/* st can be NULL in case of waypoints */
-			if (st == NULL) continue;
-
-			if (_settings_game.station.modified_catchment) {
-				int rad = st->GetCatchmentRadius();
-				int rad_x = cx - x;
-				int rad_y = cy - y;
-
-				if (rad_x < -rad || rad_x >= rad + location.w) continue;
-				if (rad_y < -rad || rad_y >= rad + location.h) continue;
-			}
-
-			/* Insert the station in the set. This will fail if it has
-			 * already been added.
-			 */
-			stations->insert(st);
-		}
+	for (Station *st : nearby) {
+		if (st->TileIsInCatchment(tile)) stations->insert(st);
 	}
 }
 

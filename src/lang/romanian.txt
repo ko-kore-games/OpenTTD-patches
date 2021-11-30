@@ -1496,6 +1496,7 @@ STR_CONFIG_SETTING_TREE_PLACER_HELPTEXT                         :Alegeți distri
 STR_CONFIG_SETTING_TREE_PLACER_NONE                             :Niciunul
 STR_CONFIG_SETTING_TREE_PLACER_ORIGINAL                         :Original
 STR_CONFIG_SETTING_TREE_PLACER_IMPROVED                         :Îmbunătăţit
+
 STR_CONFIG_SETTING_ROAD_SIDE                                    :Autovehicule: {STRING}
 STR_CONFIG_SETTING_ROAD_SIDE_HELPTEXT                           :Alege banda pentru condus
 

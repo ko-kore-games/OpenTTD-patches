@@ -590,7 +590,7 @@ void StartupCompanies()
 }
 
 /** Start a new competitor company if possible. */
-static void MaybeStartNewCompany()
+static bool MaybeStartNewCompany()
 {
 	if (_networking && Company::GetNumItems() >= _settings_client.network.max_companies) return false;
 

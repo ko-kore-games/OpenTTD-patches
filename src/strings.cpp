@@ -75,7 +75,7 @@ int64 StringParameters::GetInt64(WChar type)
 	}
 	if (this->type != nullptr) {
 		if (this->type[this->offset] != 0 && this->type[this->offset] != type) {
-			DEBUG(misc, 0, "Trying to read string parameter with wrong type");
+			Debug(misc, 0, "Trying to read string parameter with wrong type");
 			return 0;
 		}
 		this->type[this->offset] = type;

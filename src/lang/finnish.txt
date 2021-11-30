@@ -189,7 +189,6 @@ STR_COLOUR_BROWN                                                :Ruskea
 STR_COLOUR_GREY                                                 :Harmaa
 STR_COLOUR_WHITE                                                :Valkoinen
 STR_COLOUR_RANDOM                                               :Satunnainen
-STR_COLOUR_DEFAULT                                              :Oletus
 
 # Units used in OpenTTD
 STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}{NBSP}mph
@@ -728,6 +727,7 @@ STR_SMALLMAP_TYPE_ROUTEMAP                                      :Rahtivirta
 STR_SMALLMAP_TYPE_ROUTES                                        :Reitit
 STR_SMALLMAP_TYPE_VEGETATION                                    :Kasvillisuus
 STR_SMALLMAP_TYPE_OWNERS                                        :Omistajat
+
 STR_SMALLMAP_TOOLTIP_SHOW_LAND_CONTOURS_ON_MAP                  :{BLACK}Näytä korkeuserot kartalla
 STR_SMALLMAP_TOOLTIP_SHOW_VEHICLES_ON_MAP                       :{BLACK}Näytä liikennevälineet kartalla
 STR_SMALLMAP_TOOLTIP_SHOW_INDUSTRIES_ON_MAP                     :{BLACK}Näytä teollisuuslaitokset kartalla
@@ -1229,6 +1229,7 @@ STR_CONFIG_SETTING_RUNNING_COSTS_HELPTEXT                       :Määritä kulk
 
 STR_CONFIG_SETTING_CONSTRUCTION_SPEED                           :Rakennusnopeus: {STRING}
 STR_CONFIG_SETTING_CONSTRUCTION_SPEED_HELPTEXT                  :Rajoita tekoälyn rakennustoimien määrää
+
 STR_CONFIG_SETTING_VEHICLE_BREAKDOWNS                           :Kulkuneuvojen hajoaminen: {STRING}
 STR_CONFIG_SETTING_VEHICLE_BREAKDOWNS_HELPTEXT                  :Määritä, kuinka usein puutteellisesti huolletut ajoneuvot voivat hajota
 
@@ -1253,6 +1254,7 @@ STR_CONFIG_SETTING_TRAIN_REVERSING_HELPTEXT                     :Mikäli käytö
 
 STR_CONFIG_SETTING_DISASTERS                                    :Onnettomuudet: {STRING}
 STR_CONFIG_SETTING_DISASTERS_HELPTEXT                           :Ottaa käyttöön onnettomuudet jotka saattavat ajoittain estää tai tuhota liikennettä tai infrastruktuuria
+
 STR_CONFIG_SETTING_CITY_APPROVAL                                :Valtuuston asenne alueiden uudelleenjärjestelyyn: {STRING}
 STR_CONFIG_SETTING_CITY_APPROVAL_HELPTEXT                       :Valitse, kuinka paljon yhtiöiden aiheuttama melu ja ympäristövahingot vaikuttavat niiden arvioihin sekä tuleviin rakennustoimiin alueella
 
@@ -1281,6 +1283,7 @@ STR_CONFIG_SETTING_TILE_LENGTH                                  :{COMMA} ruutu{P
 
 STR_CONFIG_SETTING_SMOKE_AMOUNT                                 :Kulkuneuvon savun/kipinöiden määrä: {STRING}
 STR_CONFIG_SETTING_SMOKE_AMOUNT_HELPTEXT                        :Määrittää kuinka paljon savua tai kipinöitä kulkuneuvot saavat aikaan
+
 STR_CONFIG_SETTING_TRAIN_ACCELERATION_MODEL                     :Junien kiihdytysmalli: {STRING}
 STR_CONFIG_SETTING_TRAIN_ACCELERATION_MODEL_HELPTEXT            :Valitsee junien käyttämän fysiikkamallin. "Alkuperäinen" malli hidastaa junia mäissä tasapuolisesti. "Realistinen" malli hidastaa junia mäissä ja mutkissa junan ominaisuuksista riippuen
 
@@ -1290,6 +1293,7 @@ STR_CONFIG_SETTING_ROAD_VEHICLE_ACCELERATION_MODEL_HELPTEXT     :Valitsee ajoneu
 STR_CONFIG_SETTING_TRAIN_SLOPE_STEEPNESS                        :Mäkien jyrkkyys junille: {STRING}
 STR_CONFIG_SETTING_TRAIN_SLOPE_STEEPNESS_HELPTEXT               :Mäkien jyrkkyys junille. Korkeammat arvot tekevät mäkien nousemisesta vaikeampaa
 STR_CONFIG_SETTING_PERCENTAGE                                   :{COMMA}{NBSP}%
+
 STR_CONFIG_SETTING_ROAD_VEHICLE_SLOPE_STEEPNESS                 :Mäkien jyrkkyys ajoneuvoille: {STRING}
 STR_CONFIG_SETTING_ROAD_VEHICLE_SLOPE_STEEPNESS_HELPTEXT        :Mäkien jyrkkyys ajoneuvoille. Korkeammat arvot tekevät mäkien nousemisesta vaikeampaa
 
@@ -1380,6 +1384,7 @@ STR_CONFIG_SETTING_PLANE_CRASHES_HELPTEXT                       :Määrittää l
 STR_CONFIG_SETTING_PLANE_CRASHES_NONE                           :Ei yhtään¹
 STR_CONFIG_SETTING_PLANE_CRASHES_REDUCED                        :Vähennetty
 STR_CONFIG_SETTING_PLANE_CRASHES_NORMAL                         :Tavallinen
+
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD                            :Läpiajettavat pysäkit kuntien omistamille teille: {STRING}
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD_HELPTEXT                   :Sallii pysäkkien rakentamisen kuntien omistamille teille
 STR_CONFIG_SETTING_STOP_ON_COMPETITOR_ROAD                      :Salli läpiajettavat pysäkit kilpailijoiden omistamilla teillä: {STRING}
@@ -1397,6 +1402,7 @@ STR_CONFIG_SETTING_NEVER_EXPIRE_AIRPORTS_HELPTEXT               :Mikäli käytö
 
 STR_CONFIG_SETTING_WARN_LOST_VEHICLE                            :Varoita, jos kulkuneuvo on eksynyt: {STRING}
 STR_CONFIG_SETTING_WARN_LOST_VEHICLE_HELPTEXT                   :Lähetä viesti, jos kulkuneuvo ei löydä reittiä määränpäähänsä
+
 STR_CONFIG_SETTING_ORDER_REVIEW                                 :Tarkista kulkuneuvojen pysähdykset: {STRING}
 STR_CONFIG_SETTING_ORDER_REVIEW_HELPTEXT                        :Mikäli käytössä, kulkuneuvojen määräykset tarkistetaan väliajoin ja havaituista ongelmista ilmoitetaan uutisviestillä
 ###length 3
@@ -1808,6 +1814,7 @@ STR_CONFIG_SETTING_DRAG_SIGNALS_DENSITY_HELPTEXT                :Määrittää e
 STR_CONFIG_SETTING_DRAG_SIGNALS_DENSITY_VALUE                   :{COMMA} ruutu{P 0 "" a}
 STR_CONFIG_SETTING_DRAG_SIGNALS_FIXED_DISTANCE                  :Pidä opastimien etäisyys vakiona vedettäessä: {STRING}
 STR_CONFIG_SETTING_DRAG_SIGNALS_FIXED_DISTANCE_HELPTEXT         :Valitse käyttäytyminen vedettäessä opastimia Ctrl-näppäin pohjassa. Mikäli pois käytöstä, opastimia rakennetaan siltojen ja tunnelien ympärille pitkien opastimista vapaiden alueiden välttämiseksi. Mikäli käytössä, opastimia rakennetaan n ruudun välein, tehden vierekkäisten ratojen opastimien kohdistamisesta helpompaa
+
 STR_CONFIG_SETTING_SEMAPHORE_BUILD_BEFORE_DATE                  :Rakenna ensisijaisesti siipiopastimia ennen vuotta: {STRING}
 STR_CONFIG_SETTING_SEMAPHORE_BUILD_BEFORE_DATE_HELPTEXT         :Valitse vuosi jonka jälkeen käytetään valo-opastimia. Ennen tätä vuotta käytetään siipiopastimia (joilla on sama toiminnallisuus mutta eri ulkonäkö)
 
@@ -1831,6 +1838,7 @@ STR_CONFIG_SETTING_TOWN_LAYOUT_BETTER_ROADS                     :Parempia teitä
 STR_CONFIG_SETTING_TOWN_LAYOUT_2X2_GRID                         :2×2-ruudukko
 STR_CONFIG_SETTING_TOWN_LAYOUT_3X3_GRID                         :3×3-ruudukko
 STR_CONFIG_SETTING_TOWN_LAYOUT_RANDOM                           :Satunnainen
+
 STR_CONFIG_SETTING_ALLOW_TOWN_ROADS                             :Kunnat saavat rakentaa teitä: {STRING}
 STR_CONFIG_SETTING_ALLOW_TOWN_ROADS_HELPTEXT                    :Salli kuntien rakentaa teitä kasvaessaan. Mikäli pois käytöstä, kunnat eivät voi rakentaa teitä itse
 STR_CONFIG_SETTING_ALLOW_TOWN_LEVEL_CROSSINGS                   :Kunnat saavat rakentaa tasoristeyksiä: {STRING}
@@ -1936,6 +1944,7 @@ STR_CONFIG_SETTING_DEMAND_DISTANCE                              :Välimatkan vai
 STR_CONFIG_SETTING_DEMAND_DISTANCE_HELPTEXT                     :Mikäli asetuksen arvo on määritelty suuremmaksi kuin 0, alkuperäisen aseman A ja mahdollisen määränpään B välimatkalla on vaikutus A:sta B:hen lähetetyn rahdin määrään. Mitä kauempana B on A:sta, sitä vähemmän rahtia lähetetään. Mitä suuremmaksi tämä asetus on määritetty, sitä vähemmän rahtia lähetetään kaukana oleville ja enemmän lähellä oleville asemille.
 STR_CONFIG_SETTING_DEMAND_SIZE                                  :Palautettavan rahdin määrä symmetrisessä tilassa: {STRING}
 STR_CONFIG_SETTING_DEMAND_SIZE_HELPTEXT                         :Mikäli asetuksen arvoksi on määritetty alle 100{NBSP}%, symmetrinen jakauma toimii enemmän epäsymmetrisen jakauman tavoin, ja vähemmän rahtia pakotetaan lähetettäväksi takaisin alkuperäiselle asemalle. Jos arvoksi määritetään 0{NBSP}%, symmetrinen jakauma toimii täysin epäsymmetrisen jakauman tavoin.
+
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION                        :Lyhyiden reittien kuormittuminen ennen vapaampien reittien käyttämistä: {STRING}
 STR_CONFIG_SETTING_SHORT_PATH_SATURATION_HELPTEXT               :Kahden aseman välillä on usein useita reittejä. Lyhintä reittiä käytetään ensisijaisesti, toiseksi lyhintä ensimmäisen kuormittuessa ja niin edelleen. Kuormitus määritellään arvioidun kapasiteetin ja suunnitellun käytön mukaan. Kaikkien reittien ollessa kuormittuneita reittejä aletaan ylikuormittaa, suurimman kapasiteetin omaavista reiteista aloittaen. Algoritmi ei kuitenkaan aina arvioi kapasiteettia oikein. Tämä asetus mahdollistaa reitin kuormitustason määrittämisen ennen seuraavan reitin käyttämistä. Määritä arvoksi vähemmän kuin 100{NBSP}% välttääksesi ylikuormittuneita asemia, jos kapasiteetti yliarvioidaan.
 
@@ -2316,7 +2325,6 @@ STR_NETWORK_CONNECTION_DISCONNECT                               :{BLACK}Pura yht
 
 STR_NETWORK_NEED_GAME_PASSWORD_CAPTION                          :{WHITE}Palvelin on suojattu. Anna salasana
 STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Yhtiö on suojattu. Anna salasana
-STR_NETWORK_COMPANY_LIST_CLIENT_LIST_CAPTION                    :{WHITE}Asiakaslista
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Kytkeytyneet pelaajat

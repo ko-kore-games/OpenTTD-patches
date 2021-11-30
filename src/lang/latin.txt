@@ -1189,9 +1189,6 @@ STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_2X_ZOOM                     :Duplex
 STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_4X_ZOOM                     :Quadruplex
 
 
-STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_NORMAL                      :Simplex
-STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_2X_ZOOM                     :Duplex
-STR_GAME_OPTIONS_FONT_ZOOM_DROPDOWN_4X_ZOOM                     :Quadruplex
 
 STR_GAME_OPTIONS_BASE_GRF                                       :{BLACK}Fundamentum graphicum
 STR_GAME_OPTIONS_BASE_GRF_TOOLTIP                               :{BLACK}Eligere fundamentum graphicum adhibendum
@@ -2390,7 +2387,6 @@ STR_NETWORK_CONNECTION_DISCONNECT                               :{BLACK}Disiunge
 
 STR_NETWORK_NEED_GAME_PASSWORD_CAPTION                          :{WHITE}Servatrum tutum est. Tesseram inscribe
 STR_NETWORK_NEED_COMPANY_PASSWORD_CAPTION                       :{WHITE}Societas tuta est. Tesseram inscribe
-STR_NETWORK_COMPANY_LIST_CLIENT_LIST_CAPTION                    :{WHITE}Index clientum
 
 # Network company list added strings
 STR_NETWORK_COMPANY_LIST_CLIENT_LIST                            :Index clientum
