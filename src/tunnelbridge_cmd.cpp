@@ -1727,7 +1727,7 @@ static CommandCost DoClearBridge(TileIndex tile, DoCommandFlag flags)
 				// Change (set) axis to axis_orthogonal (for lower bridge)
 				SetBridgeMiddle(c, axis_orthogonal);
 			}
-			MarkTileDirtyByTile(c, height - TileHeight(c));
+			MarkTileDirtyByTile(c, VMDF_NONE, height - TileHeight(c));
 		}
 // End   for Allow to cross 2 bridges
 

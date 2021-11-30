@@ -617,8 +617,6 @@ static void MaybeStartNewCompany()
 	if (_networking && Company::GetNumItems() >= _settings_client.network.max_companies) return;
 #endif /* ENABLE_NETWORK */
 
-	Company *c;
-
 	/* count number of competitors */
 	uint n = 0;
 	for (const Company *c : Company::Iterate()) {
