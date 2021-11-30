@@ -403,7 +403,7 @@ static Order GetOrderCmdFromTile(const Vehicle *v, TileIndex tile)
 // End   for Existing objects tunnels and bridges as stations 
 		const Station *st = nullptr;
 
-		if (IsTileType(tile, MP_STATION)) {
+		if (IsTileType(tile, MP_STATION) || IsTileType(tile, MP_TUNNELBRIDGE)) {
 			st = Station::GetByTile(tile);
 		} else {
 			const Industry *in = Industry::GetByTile(tile);
