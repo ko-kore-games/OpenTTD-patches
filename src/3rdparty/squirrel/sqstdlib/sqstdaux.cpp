@@ -17,7 +17,7 @@ void sqstd_printcallstack(HSQUIRRELVM v)
 		SQFloat f;
 		const SQChar *s;
 		SQInteger level=1; //1 is to skip this function that is level 0
-		const SQChar *name=0;
+		const SQChar *name=nullptr;
 		SQInteger seq=0;
 		pf(v,"\nCALLSTACK\n");
 		while(SQ_SUCCEEDED(sq_stackinfos(v,level,&si)))
@@ -38,7 +38,7 @@ void sqstd_printcallstack(HSQUIRRELVM v)
 					src = si.source;
 				}
 			}
-			pf(v,"*FUNCTION [%s()] %s line [%d]\n",fn,src,si.line);
+			pf(v,"*FUNCTION [%s()] %s line [" OTTD_PRINTF64 "]\n",fn,src,si.line);
 			level++;
 		}
 		level=0;
@@ -56,7 +56,7 @@ void sqstd_printcallstack(HSQUIRRELVM v)
 					break;
 				case OT_INTEGER:
 					sq_getinteger(v,-1,&i);
-					pf(v,"[%s] %d\n",name,i);
+					pf(v,"[%s] " OTTD_PRINTF64 "\n",name,i);
 					break;
 				case OT_FLOAT:
 					sq_getfloat(v,-1,&f);
@@ -116,7 +116,7 @@ static SQInteger _sqstd_aux_printerror(HSQUIRRELVM v)
 {
 	SQPRINTFUNCTION pf = sq_getprintfunc(v);
 	if(pf) {
-		const SQChar *sErr = 0;
+		const SQChar *sErr = nullptr;
 		if(sq_gettop(v)>=1) {
 			if(SQ_SUCCEEDED(sq_getstring(v,2,&sErr)))	{
 				pf(v,"\nAN ERROR HAS OCCURRED [%s]\n",sErr);
@@ -134,7 +134,7 @@ void _sqstd_compiler_error(HSQUIRRELVM v,const SQChar *sErr,const SQChar *sSourc
 {
 	SQPRINTFUNCTION pf = sq_getprintfunc(v);
 	if(pf) {
-		pf(v,"%s line = (%d) column = (%d) : error %s\n",sSource,line,column,sErr);
+		pf(v,"%s line = (" OTTD_PRINTF64 ") column = (" OTTD_PRINTF64 ") : error %s\n",sSource,line,column,sErr);
 	}
 }
 

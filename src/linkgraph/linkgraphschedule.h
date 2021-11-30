@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -41,7 +39,7 @@ private:
 	~LinkGraphSchedule();
 	typedef std::list<LinkGraph *> GraphList;
 	typedef std::list<LinkGraphJob *> JobList;
-	friend const SaveLoad *GetLinkGraphScheduleDesc();
+	friend SaveLoadTable GetLinkGraphScheduleDesc();
 
 protected:
 	ComponentHandler *handlers[6]; ///< Handlers to be run for each job.
@@ -53,10 +51,11 @@ public:
 	static const uint SPAWN_JOIN_TICK = 21; ///< Tick when jobs are spawned or joined every day.
 	static LinkGraphSchedule instance;
 
-	static void Run(void *j);
+	static void Run(LinkGraphJob *job);
 	static void Clear();
 
 	void SpawnNext();
+	bool IsJoinWithUnfinishedJobDue() const;
 	void JoinNext();
 	void SpawnAll();
 	void ShiftDates(int interval);
@@ -77,5 +76,8 @@ public:
 	 */
 	void Unqueue(LinkGraph *lg) { this->schedule.remove(lg); }
 };
+
+void StateGameLoop_LinkGraphPauseControl();
+void AfterLoad_LinkGraphPauseControl();
 
 #endif /* LINKGRAPHSCHEDULE_H */

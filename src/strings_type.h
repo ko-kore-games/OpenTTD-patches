@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -88,14 +86,6 @@ enum SpecialStrings {
 	SPECSTR_SILLY_NAME         = 0x70E5,
 	SPECSTR_ANDCO_NAME         = 0x70E6,
 	SPECSTR_PRESIDENT_NAME     = 0x70E7,
-
-	/* reserve MAX_LANG strings for the *.lng files */
-	SPECSTR_LANGUAGE_START     = 0x7100,
-	SPECSTR_LANGUAGE_END       = SPECSTR_LANGUAGE_START + MAX_LANG - 1,
-
-	/* reserve 32 strings for various screen resolutions */
-	SPECSTR_RESOLUTION_START   = SPECSTR_LANGUAGE_END + 1,
-	SPECSTR_RESOLUTION_END     = SPECSTR_RESOLUTION_START + 0x1F,
 };
 
 #endif /* STRINGS_TYPE_H */

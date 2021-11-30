@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,6 +15,15 @@
 
 typedef OverflowSafeInt64 Money;
 
+/** Type of the game economy. */
+enum EconomyType : uint8 {
+	ET_BEGIN = 0,
+	ET_ORIGINAL = 0,
+	ET_SMOOTH = 1,
+	ET_FROZEN = 2,
+	ET_END = 3,
+};
+
 /** Data of the economy. */
 struct Economy {
 	Money max_loan;                       ///< NOSAVE: Maximum possible loan
@@ -27,7 +34,7 @@ struct Economy {
 	uint32 industry_daily_change_counter; ///< Bits 31-16 are number of industry to be performed, 15-0 are fractional collected daily
 	uint32 industry_daily_increment;      ///< The value which will increment industry_daily_change_counter. Computed value. NOSAVE
 	uint64 inflation_prices;              ///< Cumulated inflation of prices since game start; 16 bit fractional part
-	uint64 inflation_payment;             ///< Cumulated inflation of cargo paypent since game start; 16 bit fractional part
+	uint64 inflation_payment;             ///< Cumulated inflation of cargo payment since game start; 16 bit fractional part
 
 	/* Old stuff for savegame conversion only */
 	Money old_max_loan_unround;           ///< Old: Unrounded max loan
@@ -147,7 +154,7 @@ typedef Money Prices[PR_END]; ///< Prices of everything. @see Price
 typedef int8 PriceMultipliers[PR_END];
 
 /** Types of expenses. */
-enum ExpensesType {
+enum ExpensesType : byte {
 	EXPENSES_CONSTRUCTION =  0,   ///< Construction costs.
 	EXPENSES_NEW_VEHICLES,        ///< New vehicles.
 	EXPENSES_TRAIN_RUN,           ///< Running costs trains.
@@ -167,7 +174,6 @@ enum ExpensesType {
 
 /** Define basic enum properties for ExpensesType */
 template <> struct EnumPropsT<ExpensesType> : MakeEnumPropsT<ExpensesType, byte, EXPENSES_CONSTRUCTION, EXPENSES_END, INVALID_EXPENSES, 8> {};
-typedef TinyEnumT<ExpensesType> ExpensesTypeByte; ///< typedefing-enumification of ExpensesType
 
 /**
  * Categories of a price bases.
@@ -190,6 +196,8 @@ struct PriceBaseSpec {
 
 /** The "steps" in loan size, in British Pounds! */
 static const int LOAN_INTERVAL = 10000;
+/** The size of loan for a new company, in British Pounds! */
+static const int64 INITIAL_LOAN = 100000;
 
 /**
  * Maximum inflation (including fractional part) without causing overflows in int64 price computations.
@@ -214,6 +222,10 @@ static const int INVALID_PRICE_MODIFIER = MIN_PRICE_MODIFIER - 1;
 static const uint TUNNELBRIDGE_TRACKBIT_FACTOR = 4;
 /** Multiplier for how many regular track bits a level crossing counts. */
 static const uint LEVELCROSSING_TRACKBIT_FACTOR = 2;
+/** Multiplier for how many regular track bits a road depot counts. */
+static const uint ROAD_DEPOT_TRACKBIT_FACTOR = 2;
+/** Multiplier for how many regular track bits a bay stop counts. */
+static const uint ROAD_STOP_TRACKBIT_FACTOR = 2;
 /** Multiplier for how many regular tiles a lock counts. */
 static const uint LOCK_DEPOT_TILE_FACTOR = 2;
 

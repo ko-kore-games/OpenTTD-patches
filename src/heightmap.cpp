@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -25,6 +23,40 @@
 #include "safeguards.h"
 
 /**
+ * Maximum number of pixels for one dimension of a heightmap image.
+ * Do not allow images for which the longest side is twice the maximum number of
+ * tiles along the longest side of the (tile) map.
+ */
+static const uint MAX_HEIGHTMAP_SIDE_LENGTH_IN_PIXELS = 2 * MAX_MAP_SIZE;
+
+/*
+ * Maximum size in pixels of the heightmap image.
+ */
+static const uint MAX_HEIGHTMAP_SIZE_PIXELS = 256 << 20; // ~256 million
+/*
+ * When loading a PNG or BMP the 24 bpp variant requires at least 4 bytes per pixel
+ * of memory to load the data. Make sure the "reasonable" limit is well within the
+ * maximum amount of memory allocatable on 32 bit platforms.
+ */
+static_assert(MAX_HEIGHTMAP_SIZE_PIXELS < UINT32_MAX / 8);
+
+/**
+ * Check whether the loaded dimension of the heightmap image are considered valid enough
+ * to attempt to load the image. In other words, the width and height are not beyond the
+ * #MAX_HEIGHTMAP_SIDE_LENGTH_IN_PIXELS limit and the total number of pixels does not
+ * exceed #MAX_HEIGHTMAP_SIZE_PIXELS. A width or height less than 1 are disallowed too.
+ * @param width The width of the to be loaded height map.
+ * @param height The height of the to be loaded height map.
+ * @return True iff the dimensions are within the limits.
+ */
+static inline bool IsValidHeightmapDimension(size_t width, size_t height)
+{
+	return (uint64)width * height <= MAX_HEIGHTMAP_SIZE_PIXELS &&
+		width > 0 && width <= MAX_HEIGHTMAP_SIDE_LENGTH_IN_PIXELS &&
+		height > 0 && height <= MAX_HEIGHTMAP_SIDE_LENGTH_IN_PIXELS;
+}
+
+/**
  * Convert RGB colours to Grayscale using 29.9% Red, 58.7% Green, 11.4% Blue
  *  (average luminosity formula, NTSC Colour Space)
  */
@@ -47,7 +79,7 @@ static void ReadHeightmapPNGImageData(byte *map, png_structp png_ptr, png_infop 
 {
 	uint x, y;
 	byte gray_palette[256];
-	png_bytep *row_pointers = NULL;
+	png_bytep *row_pointers = nullptr;
 	bool has_palette = png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_PALETTE;
 	uint channels = png_get_channels(png_ptr, info_ptr);
 
@@ -99,33 +131,33 @@ static void ReadHeightmapPNGImageData(byte *map, png_structp png_ptr, png_infop 
 
 /**
  * Reads the heightmap and/or size of the heightmap from a PNG file.
- * If map == NULL only the size of the PNG is read, otherwise a map
+ * If map == nullptr only the size of the PNG is read, otherwise a map
  * with grayscale pixels is allocated and assigned to *map.
  */
 static bool ReadHeightmapPNG(const char *filename, uint *x, uint *y, byte **map)
 {
 	FILE *fp;
-	png_structp png_ptr = NULL;
-	png_infop info_ptr  = NULL;
+	png_structp png_ptr = nullptr;
+	png_infop info_ptr  = nullptr;
 
 	fp = FioFOpenFile(filename, "rb", HEIGHTMAP_DIR);
-	if (fp == NULL) {
+	if (fp == nullptr) {
 		ShowErrorMessage(STR_ERROR_PNGMAP, STR_ERROR_PNGMAP_FILE_NOT_FOUND, WL_ERROR);
 		return false;
 	}
 
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if (png_ptr == NULL) {
+	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+	if (png_ptr == nullptr) {
 		ShowErrorMessage(STR_ERROR_PNGMAP, STR_ERROR_PNGMAP_MISC, WL_ERROR);
 		fclose(fp);
 		return false;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL || setjmp(png_jmpbuf(png_ptr))) {
+	if (info_ptr == nullptr || setjmp(png_jmpbuf(png_ptr))) {
 		ShowErrorMessage(STR_ERROR_PNGMAP, STR_ERROR_PNGMAP_MISC, WL_ERROR);
 		fclose(fp);
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
 		return false;
 	}
 
@@ -134,29 +166,28 @@ static bool ReadHeightmapPNG(const char *filename, uint *x, uint *y, byte **map)
 	/* Allocate memory and read image, without alpha or 16-bit samples
 	 * (result is either 8-bit indexed/grayscale or 24-bit RGB) */
 	png_set_packing(png_ptr);
-	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_PACKING | PNG_TRANSFORM_STRIP_ALPHA | PNG_TRANSFORM_STRIP_16, NULL);
+	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_PACKING | PNG_TRANSFORM_STRIP_ALPHA | PNG_TRANSFORM_STRIP_16, nullptr);
 
 	/* Maps of wrong colour-depth are not used.
 	 * (this should have been taken care of by stripping alpha and 16-bit samples on load) */
 	if ((png_get_channels(png_ptr, info_ptr) != 1) && (png_get_channels(png_ptr, info_ptr) != 3) && (png_get_bit_depth(png_ptr, info_ptr) != 8)) {
 		ShowErrorMessage(STR_ERROR_PNGMAP, STR_ERROR_PNGMAP_IMAGE_TYPE, WL_ERROR);
 		fclose(fp);
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
 		return false;
 	}
 
 	uint width = png_get_image_width(png_ptr, info_ptr);
 	uint height = png_get_image_height(png_ptr, info_ptr);
 
-	/* Check if image dimensions don't overflow a size_t to avoid memory corruption. */
-	if ((uint64)width * height >= (size_t)-1) {
+	if (!IsValidHeightmapDimension(width, height)) {
 		ShowErrorMessage(STR_ERROR_PNGMAP, STR_ERROR_HEIGHTMAP_TOO_LARGE, WL_ERROR);
 		fclose(fp);
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
 		return false;
 	}
 
-	if (map != NULL) {
+	if (map != nullptr) {
 		*map = MallocT<byte>(width * height);
 		ReadHeightmapPNGImageData(*map, png_ptr, info_ptr);
 	}
@@ -165,7 +196,7 @@ static bool ReadHeightmapPNG(const char *filename, uint *x, uint *y, byte **map)
 	*y = height;
 
 	fclose(fp);
-	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+	png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
 	return true;
 }
 
@@ -180,7 +211,7 @@ static void ReadHeightmapBMPImageData(byte *map, BmpInfo *info, BmpData *data)
 	uint x, y;
 	byte gray_palette[256];
 
-	if (data->palette != NULL) {
+	if (data->palette != nullptr) {
 		uint i;
 		bool all_gray = true;
 
@@ -229,7 +260,7 @@ static void ReadHeightmapBMPImageData(byte *map, BmpInfo *info, BmpData *data)
 
 /**
  * Reads the heightmap and/or size of the heightmap from a BMP file.
- * If map == NULL only the size of the BMP is read, otherwise a map
+ * If map == nullptr only the size of the BMP is read, otherwise a map
  * with grayscale pixels is allocated and assigned to *map.
  */
 static bool ReadHeightmapBMP(const char *filename, uint *x, uint *y, byte **map)
@@ -243,7 +274,7 @@ static bool ReadHeightmapBMP(const char *filename, uint *x, uint *y, byte **map)
 	memset(&data, 0, sizeof(data));
 
 	f = FioFOpenFile(filename, "rb", HEIGHTMAP_DIR);
-	if (f == NULL) {
+	if (f == nullptr) {
 		ShowErrorMessage(STR_ERROR_BMPMAP, STR_ERROR_PNGMAP_FILE_NOT_FOUND, WL_ERROR);
 		return false;
 	}
@@ -257,15 +288,14 @@ static bool ReadHeightmapBMP(const char *filename, uint *x, uint *y, byte **map)
 		return false;
 	}
 
-	/* Check if image dimensions don't overflow a size_t to avoid memory corruption. */
-	if ((uint64)info.width * info.height >= (size_t)-1 / (info.bpp == 24 ? 3 : 1)) {
+	if (!IsValidHeightmapDimension(info.width, info.height)) {
 		ShowErrorMessage(STR_ERROR_BMPMAP, STR_ERROR_HEIGHTMAP_TOO_LARGE, WL_ERROR);
 		fclose(f);
 		BmpDestroyData(&data);
 		return false;
 	}
 
-	if (map != NULL) {
+	if (map != nullptr) {
 		if (!BmpReadBitmap(&buffer, &info, &data)) {
 			ShowErrorMessage(STR_ERROR_BMPMAP, STR_ERROR_BMPMAP_IMAGE_TYPE, WL_ERROR);
 			fclose(f);
@@ -297,6 +327,8 @@ static void GrayscaleToMapHeights(uint img_width, uint img_height, byte *map)
 {
 	/* Defines the detail of the aspect ratio (to avoid doubles) */
 	const uint num_div = 16384;
+	/* Ensure multiplication with num_div does not cause overflows. */
+	static_assert(num_div <= std::numeric_limits<uint>::max() / MAX_HEIGHTMAP_SIDE_LENGTH_IN_PIXELS);
 
 	uint width, height;
 	uint row, col;
@@ -370,7 +402,7 @@ static void GrayscaleToMapHeights(uint img_width, uint img_height, byte *map)
 					/* 0 is sea level.
 					 * Other grey scales are scaled evenly to the available height levels > 0.
 					 * (The coastline is independent from the number of height levels) */
-					heightmap_height = 1 + (heightmap_height - 1) * _settings_game.construction.max_heightlevel / 255;
+					heightmap_height = 1 + (heightmap_height - 1) * _settings_game.game_creation.heightmap_height / 255;
 				}
 
 				SetTileHeight(tile, heightmap_height);
@@ -449,7 +481,7 @@ void FixSlopes()
  * @param filename Name of the file to load.
  * @param[out] x Length of the image.
  * @param[out] y Height of the image.
- * @param[in,out] map If not \c NULL, destination to store the loaded block of image data.
+ * @param[in,out] map If not \c nullptr, destination to store the loaded block of image data.
  * @return Whether loading was successful.
  */
 static bool ReadHeightMap(DetailedFileType dft, const char *filename, uint *x, uint *y, byte **map)
@@ -478,11 +510,11 @@ static bool ReadHeightMap(DetailedFileType dft, const char *filename, uint *x, u
  */
 bool GetHeightmapDimensions(DetailedFileType dft, const char *filename, uint *x, uint *y)
 {
-	return ReadHeightMap(dft, filename, x, y, NULL);
+	return ReadHeightMap(dft, filename, x, y, nullptr);
 }
 
 /**
- * Load a heightmap from file and change the map in his current dimensions
+ * Load a heightmap from file and change the map in its current dimensions
  *  to a landscape representing the heightmap.
  * It converts pixels to height. The brighter, the higher.
  * @param dft Type of image file.
@@ -491,7 +523,7 @@ bool GetHeightmapDimensions(DetailedFileType dft, const char *filename, uint *x,
 void LoadHeightmap(DetailedFileType dft, const char *filename)
 {
 	uint x, y;
-	byte *map = NULL;
+	byte *map = nullptr;
 
 	if (!ReadHeightMap(dft, filename, &x, &y, &map)) {
 		free(map);

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,7 +12,9 @@
 #include "../../rev.h"
 #include "macos.h"
 #include "../../string_func.h"
+#include "../../fileio_func.h"
 #include <pthread.h>
+#include <array>
 
 #define Rect  OTTDRect
 #define Point OTTDPoint
@@ -40,6 +40,10 @@ typedef struct {
 } OTTDOperatingSystemVersion;
 
 #define NSOperatingSystemVersion OTTDOperatingSystemVersion
+#endif
+
+#ifdef WITH_COCOA
+static NSAutoreleasePool *_ottd_autorelease_pool;
 #endif
 
 /**
@@ -68,6 +72,10 @@ void GetMacOSVersion(int *return_major, int *return_minor, int *return_bugfix)
 	}
 
 #if (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_10)
+#ifdef __clang__
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
 	SInt32 systemVersion, version_major, version_minor, version_bugfix;
 	if (Gestalt(gestaltSystemVersion, &systemVersion) == noErr) {
 		if (systemVersion >= 0x1040) {
@@ -80,6 +88,9 @@ void GetMacOSVersion(int *return_major, int *return_minor, int *return_bugfix)
 			*return_bugfix = (int)GB(systemVersion, 0, 4);
 		}
 	}
+#ifdef __clang__
+#	pragma clang diagnostic pop
+#endif
 #endif
 }
 
@@ -163,19 +174,8 @@ const char *GetCurrentLocale(const char *)
 	NSString *preferredLang = [ languages objectAtIndex:0 ];
 	/* preferredLang is either 2 or 5 characters long ("xx" or "xx_YY"). */
 
-	/* Since Apple introduced encoding to CString in OSX 10.4 we have to make a few conditions
-	 * to get the right code for the used version of OSX. */
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_4)
-	if (MacOSVersionIsAtLeast(10, 4, 0)) {
-		[ preferredLang getCString:retbuf maxLength:32 encoding:NSASCIIStringEncoding ];
-	} else
-#endif
-	{
-#if (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_4)
-		/* maxLength does not include the \0 char in contrast to the call above. */
-		[ preferredLang getCString:retbuf maxLength:31 ];
-#endif
-	}
+	[ preferredLang getCString:retbuf maxLength:32 encoding:NSASCIIStringEncoding ];
+
 	return retbuf;
 }
 
@@ -191,37 +191,59 @@ const char *GetCurrentLocale(const char *)
 bool GetClipboardContents(char *buffer, const char *last)
 {
 	NSPasteboard *pb = [ NSPasteboard generalPasteboard ];
-	NSArray *types = [ NSArray arrayWithObject:NSStringPboardType ];
+	NSArray *types = [ NSArray arrayWithObject:NSPasteboardTypeString ];
 	NSString *bestType = [ pb availableTypeFromArray:types ];
 
 	/* Clipboard has no text data available. */
 	if (bestType == nil) return false;
 
-	NSString *string = [ pb stringForType:NSStringPboardType ];
+	NSString *string = [ pb stringForType:NSPasteboardTypeString ];
 	if (string == nil || [ string length ] == 0) return false;
 
 	strecpy(buffer, [ string UTF8String ], last);
 
 	return true;
 }
-#endif
 
-uint GetCPUCoreCount()
+/** Set the application's bundle directory.
+ *
+ * This is needed since OS X application bundles do not have a
+ * current directory and the data files are 'somewhere' in the bundle.
+ */
+void CocoaSetApplicationBundleDir()
 {
-	uint count = 1;
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_5)
-	if (MacOSVersionIsAtLeast(10, 5, 0)) {
-		count = (uint)[ [ NSProcessInfo processInfo ] activeProcessorCount ];
-	} else
-#endif
-	{
-#if (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5)
-		count = MPProcessorsScheduled();
-#endif
-	}
+	extern std::array<std::string, NUM_SEARCHPATHS> _searchpaths;
 
-	return count;
+	char tmp[MAXPATHLEN];
+	CFAutoRelease<CFURLRef> url(CFBundleCopyResourcesDirectoryURL(CFBundleGetMainBundle()));
+	if (CFURLGetFileSystemRepresentation(url.get(), true, (unsigned char *)tmp, MAXPATHLEN)) {
+		_searchpaths[SP_APPLICATION_BUNDLE_DIR] = tmp;
+		AppendPathSeparator(_searchpaths[SP_APPLICATION_BUNDLE_DIR]);
+	} else {
+		_searchpaths[SP_APPLICATION_BUNDLE_DIR].clear();
+	}
 }
+
+/**
+ * Setup autorelease for the application pool.
+ *
+ * These are called from main() to prevent a _NSAutoreleaseNoPool error when
+ * exiting before the cocoa video driver has been loaded
+ */
+void CocoaSetupAutoreleasePool()
+{
+	_ottd_autorelease_pool = [ [ NSAutoreleasePool alloc ] init ];
+}
+
+/**
+ * Autorelease the application pool.
+ */
+void CocoaReleaseAutoreleasePool()
+{
+	[ _ottd_autorelease_pool release ];
+}
+
+#endif
 
 /**
  * Check if a font is a monospace font.
@@ -232,7 +254,7 @@ bool IsMonospaceFont(CFStringRef name)
 {
 	NSFont *font = [ NSFont fontWithName:(__bridge NSString *)name size:0.0f ];
 
-	return font != NULL ? [ font isFixedPitch ] : false;
+	return font != nil ? [ font isFixedPitch ] : false;
 }
 
 /**
@@ -241,14 +263,12 @@ bool IsMonospaceFont(CFStringRef name)
  */
 void MacOSSetThreadName(const char *name)
 {
-#if (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6)
 	if (MacOSVersionIsAtLeast(10, 6, 0)) {
 		pthread_setname_np(name);
 	}
-#endif
 
 	NSThread *cur = [ NSThread currentThread ];
-	if (cur != NULL && [ cur respondsToSelector:@selector(setName:) ]) {
+	if (cur != nil && [ cur respondsToSelector:@selector(setName:) ]) {
 		[ cur performSelector:@selector(setName:) withObject:[ NSString stringWithUTF8String:name ] ];
 	}
 }

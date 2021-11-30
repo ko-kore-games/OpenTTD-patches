@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -30,15 +28,15 @@ static Slope GetTileSlopeGivenHeight(int hnorth, int hwest, int heast, int hsout
 	 *
 	 * Also, there is at most 1 corner with height difference of 2.
 	 */
-	int hminnw = min(hnorth, hwest);
-	int hmines = min(heast, hsouth);
-	int hmin = min(hminnw, hmines);
+	int hminnw = std::min(hnorth, hwest);
+	int hmines = std::min(heast, hsouth);
+	int hmin = std::min(hminnw, hmines);
 
-	if (h != NULL) *h = hmin;
+	if (h != nullptr) *h = hmin;
 
-	int hmaxnw = max(hnorth, hwest);
-	int hmaxes = max(heast, hsouth);
-	int hmax = max(hmaxnw, hmaxes);
+	int hmaxnw = std::max(hnorth, hwest);
+	int hmaxes = std::max(heast, hsouth);
+	int hmax = std::max(hmaxnw, hmaxes);
 
 	Slope r = SLOPE_FLAT;
 
@@ -55,15 +53,15 @@ static Slope GetTileSlopeGivenHeight(int hnorth, int hwest, int heast, int hsout
 /**
  * Return the slope of a given tile inside the map.
  * @param tile Tile to compute slope of
- * @param h    If not \c NULL, pointer to storage of z height
+ * @param h    If not \c nullptr, pointer to storage of z height
  * @return Slope of the tile, except for the HALFTILE part
  */
 Slope GetTileSlope(TileIndex tile, int *h)
 {
 	uint x1 = TileX(tile);
 	uint y1 = TileY(tile);
-	uint x2 = min(x1 + 1, MapMaxX());
-	uint y2 = min(y1 + 1, MapMaxY());
+	uint x2 = std::min(x1 + 1, MapMaxX());
+	uint y2 = std::min(y1 + 1, MapMaxY());
 
 	int hnorth = TileHeight(tile);           // Height of the North corner.
 	int hwest  = TileHeight(TileXY(x2, y1)); // Height of the West corner.
@@ -76,9 +74,9 @@ Slope GetTileSlope(TileIndex tile, int *h)
 /**
  * Return the slope of a given tile, also for tiles outside the map (virtual "black" tiles).
  *
- * @param x X coordinate of the tile to compute slope of, may be ouside the map.
- * @param y Y coordinate of the tile to compute slope of, may be ouside the map.
- * @param h If not \c NULL, pointer to storage of z height.
+ * @param x X coordinate of the tile to compute slope of, may be outside the map.
+ * @param y Y coordinate of the tile to compute slope of, may be outside the map.
+ * @param h If not \c nullptr, pointer to storage of z height.
  * @return Slope of the tile, except for the HALFTILE part.
  */
 Slope GetTilePixelSlopeOutsideMap(int x, int y, int *h)
@@ -89,29 +87,29 @@ Slope GetTilePixelSlopeOutsideMap(int x, int y, int *h)
 	int hsouth = TileHeightOutsideMap(x + 1, y + 1); // S corner.
 
 	Slope s = GetTileSlopeGivenHeight(hnorth, hwest, heast, hsouth, h);
-	if (h != NULL) *h *= TILE_HEIGHT;
+	if (h != nullptr) *h *= TILE_HEIGHT;
 	return s;
 }
 
 /**
  * Check if a given tile is flat
  * @param tile Tile to check
- * @param h If not \c NULL, pointer to storage of z height (only if tile is flat)
+ * @param h If not \c nullptr, pointer to storage of z height (only if tile is flat)
  * @return Whether the tile is flat
  */
 bool IsTileFlat(TileIndex tile, int *h)
 {
 	uint x1 = TileX(tile);
 	uint y1 = TileY(tile);
-	uint x2 = min(x1 + 1, MapMaxX());
-	uint y2 = min(y1 + 1, MapMaxY());
+	uint x2 = std::min(x1 + 1, MapMaxX());
+	uint y2 = std::min(y1 + 1, MapMaxY());
 
 	uint z = TileHeight(tile);
 	if (TileHeight(TileXY(x2, y1)) != z) return false;
 	if (TileHeight(TileXY(x1, y2)) != z) return false;
 	if (TileHeight(TileXY(x2, y2)) != z) return false;
 
-	if (h != NULL) *h = z;
+	if (h != nullptr) *h = z;
 	return true;
 }
 
@@ -124,15 +122,15 @@ int GetTileZ(TileIndex tile)
 {
 	uint x1 = TileX(tile);
 	uint y1 = TileY(tile);
-	uint x2 = min(x1 + 1, MapMaxX());
-	uint y2 = min(y1 + 1, MapMaxY());
+	uint x2 = std::min(x1 + 1, MapMaxX());
+	uint y2 = std::min(y1 + 1, MapMaxY());
 
-	int h =    TileHeight(tile);            // N corner
-	h = min(h, TileHeight(TileXY(x2, y1))); // W corner
-	h = min(h, TileHeight(TileXY(x1, y2))); // E corner
-	h = min(h, TileHeight(TileXY(x2, y2))); // S corner
-
-	return h;
+	return std::min({
+		TileHeight(tile),           // N corner
+		TileHeight(TileXY(x2, y1)), // W corner
+		TileHeight(TileXY(x1, y2)), // E corner
+		TileHeight(TileXY(x2, y2)), // S corner
+	});
 }
 
 /**
@@ -144,13 +142,13 @@ int GetTileMaxZ(TileIndex t)
 {
 	uint x1 = TileX(t);
 	uint y1 = TileY(t);
-	uint x2 = min(x1 + 1, MapMaxX());
-	uint y2 = min(y1 + 1, MapMaxY());
+	uint x2 = std::min(x1 + 1, MapMaxX());
+	uint y2 = std::min(y1 + 1, MapMaxY());
 
-	int h =         TileHeight(t);               // N corner
-	h = max<int>(h, TileHeight(TileXY(x2, y1))); // W corner
-	h = max<int>(h, TileHeight(TileXY(x1, y2))); // E corner
-	h = max<int>(h, TileHeight(TileXY(x2, y2))); // S corner
-
-	return h;
+	return std::max({
+		TileHeight(t),              // N corner
+		TileHeight(TileXY(x2, y1)), // W corner
+		TileHeight(TileXY(x1, y2)), // E corner
+		TileHeight(TileXY(x2, y2)), // S corner
+	});
 }

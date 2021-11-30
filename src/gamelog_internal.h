@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -15,7 +13,7 @@
 #include "gamelog.h"
 
 /** Type of logged change */
-enum GamelogChangeType {
+enum GamelogChangeType : uint8 {
 	GLCT_MODE,        ///< Scenario editor x Game, different landscape
 	GLCT_REVISION,    ///< Changed game revision string
 	GLCT_OLDVER,      ///< Loaded from savegame without logged data

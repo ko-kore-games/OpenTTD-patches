@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -27,7 +25,7 @@ SQInteger SquirrelStd::min(HSQUIRRELVM vm)
 
 	sq_getinteger(vm, 2, &tmp1);
 	sq_getinteger(vm, 3, &tmp2);
-	sq_pushinteger(vm, ::min(tmp1, tmp2));
+	sq_pushinteger(vm, std::min(tmp1, tmp2));
 	return 1;
 }
 
@@ -37,7 +35,7 @@ SQInteger SquirrelStd::max(HSQUIRRELVM vm)
 
 	sq_getinteger(vm, 2, &tmp1);
 	sq_getinteger(vm, 3, &tmp2);
-	sq_pushinteger(vm, ::max(tmp1, tmp2));
+	sq_pushinteger(vm, std::max(tmp1, tmp2));
 	return 1;
 }
 
@@ -51,8 +49,8 @@ SQInteger SquirrelStd::require(HSQUIRRELVM vm)
 	/* Get the script-name of the current file, so we can work relative from it */
 	SQStackInfos si;
 	sq_stackinfos(vm, 1, &si);
-	if (si.source == NULL) {
-		DEBUG(misc, 0, "[squirrel] Couldn't detect the script-name of the 'require'-caller; this should never happen!");
+	if (si.source == nullptr) {
+		Debug(misc, 0, "[squirrel] Couldn't detect the script-name of the 'require'-caller; this should never happen!");
 		return SQ_ERROR;
 	}
 
@@ -60,7 +58,7 @@ SQInteger SquirrelStd::require(HSQUIRRELVM vm)
 	strecpy(path, si.source, lastof(path));
 	/* Keep the dir, remove the rest */
 	SQChar *s = strrchr(path, PATHSEPCHAR);
-	if (s != NULL) {
+	if (s != nullptr) {
 		/* Keep the PATHSEPCHAR there, remove the rest */
 		s++;
 		*s = '\0';

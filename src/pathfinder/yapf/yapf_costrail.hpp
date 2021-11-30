@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,6 +9,8 @@
 
 #ifndef YAPF_COSTRAIL_HPP
 #define YAPF_COSTRAIL_HPP
+
+#include <vector>
 
 #include "../../pbs.h"
 
@@ -47,14 +47,6 @@ protected:
 			this->tile_type = GetTileType(tile);
 			this->rail_type = GetTileRailType(tile);
 		}
-
-		TILE(const TILE &src)
-		{
-			tile = src.tile;
-			td = src.td;
-			tile_type = src.tile_type;
-			rail_type = src.rail_type;
-		}
 	};
 
 protected:
@@ -62,9 +54,9 @@ protected:
 	 * @note maximum cost doesn't work with caching enabled
 	 * @todo fix maximum cost failing with caching (e.g. FS#2900)
 	 */
-	int           m_max_cost;
-	CBlobT<int>   m_sig_look_ahead_costs;
-	bool          m_disable_cache;
+	int m_max_cost;
+	bool m_disable_cache;
+	std::vector<int> m_sig_look_ahead_costs;
 
 public:
 	bool          m_stopped_on_first_two_way_signal;
@@ -78,9 +70,10 @@ protected:
 		int p0 = Yapf().PfGetSettings().rail_look_ahead_signal_p0;
 		int p1 = Yapf().PfGetSettings().rail_look_ahead_signal_p1;
 		int p2 = Yapf().PfGetSettings().rail_look_ahead_signal_p2;
-		int *pen = m_sig_look_ahead_costs.GrowSizeNC(Yapf().PfGetSettings().rail_look_ahead_max_signals);
+		m_sig_look_ahead_costs.clear();
+		m_sig_look_ahead_costs.reserve(Yapf().PfGetSettings().rail_look_ahead_max_signals);
 		for (uint i = 0; i < Yapf().PfGetSettings().rail_look_ahead_max_signals; i++) {
-			pen[i] = p0 + i * (p1 + i * p2);
+			m_sig_look_ahead_costs.push_back(p0 + i * (p1 + i * p2));
 		}
 	}
 
@@ -93,7 +86,6 @@ protected:
 public:
 	inline int SlopeCost(TileIndex tile, Trackdir td)
 	{
-		CPerfStart perf_cost(Yapf().m_perf_slope_cost);
 		if (!stSlopeCost(tile, td)) return 0;
 		return Yapf().PfGetSettings().rail_slope_penalty;
 	}
@@ -162,7 +154,7 @@ public:
 	/** The cost for reserved tiles, including skipped ones. */
 	inline int ReservationCost(Node &n, TileIndex tile, Trackdir trackdir, int skipped)
 	{
-		if (n.m_num_signals_passed >= m_sig_look_ahead_costs.Size() / 2) return 0;
+		if (n.m_num_signals_passed >= m_sig_look_ahead_costs.size() / 2) return 0;
 		if (!IsPbsSignal(n.m_last_signal_type)) return 0;
 
 		if (IsRailStationTile(tile) && IsAnyStationTileReserved(tile, trackdir, skipped)) {
@@ -179,7 +171,6 @@ public:
 	{
 		int cost = 0;
 		/* if there is one-way signal in the opposite direction, then it is not our way */
-		CPerfStart perf_cost(Yapf().m_perf_other_cost);
 		if (IsTileType(tile, MP_RAILWAY)) {
 			bool has_signal_against = HasSignalOnTrackdir(tile, ReverseTrackdir(trackdir));
 			bool has_signal_along = HasSignalOnTrackdir(tile, trackdir);
@@ -194,7 +185,7 @@ public:
 					n.m_last_signal_type = sig_type;
 
 					/* cache the look-ahead polynomial constant only if we didn't pass more signals than the look-ahead limit is */
-					int look_ahead_cost = (n.m_num_signals_passed < m_sig_look_ahead_costs.Size()) ? m_sig_look_ahead_costs.Data()[n.m_num_signals_passed] : 0;
+					int look_ahead_cost = (n.m_num_signals_passed < m_sig_look_ahead_costs.size()) ? m_sig_look_ahead_costs[n.m_num_signals_passed] : 0;
 					if (sig_state != SIGNAL_STATE_RED) {
 						/* green signal */
 						n.flags_u.flags_s.m_last_signal_was_red = false;
@@ -208,7 +199,7 @@ public:
 						 * was it first signal which is two-way? */
 						if (!IsPbsSignal(sig_type) && Yapf().TreatFirstRedTwoWaySignalAsEOL() && n.flags_u.flags_s.m_choice_seen && has_signal_against && n.m_num_signals_passed == 0) {
 							/* yes, the first signal is two-way red signal => DEAD END. Prune this branch... */
-							Yapf().PruneIntermediateNodeBranch();
+							Yapf().PruneIntermediateNodeBranch(&n);
 							n.m_segment->m_end_segment_reason |= ESRB_DEAD_END;
 							Yapf().m_stopped_on_first_two_way_signal = true;
 							return -1;
@@ -251,7 +242,7 @@ public:
 	{
 		int cost = 0;
 		const Train *v = Yapf().GetVehicle();
-		assert(v != NULL);
+		assert(v != nullptr);
 		assert(v->type == VEH_TRAIN);
 		assert(v->gcache.cached_total_length != 0);
 		int missing_platform_length = CeilDiv(v->gcache.cached_total_length, TILE_SIZE) - platform_length;
@@ -282,10 +273,8 @@ public:
 		assert(tf->m_new_tile == n.m_key.m_tile);
 		assert((HasTrackdir(tf->m_new_td_bits, n.m_key.m_td)));
 
-		CPerfStart perf_cost(Yapf().m_perf_cost);
-
 		/* Does the node have some parent node? */
-		bool has_parent = (n.m_parent != NULL);
+		bool has_parent = (n.m_parent != nullptr);
 
 		/* Do we already have a cached segment? */
 		CachedData &segment = *n.m_segment;
@@ -333,7 +322,7 @@ public:
 
 		EndSegmentReasonBits end_segment_reason = ESRB_NONE;
 
-		TrackFollower tf_local(v, Yapf().GetCompatibleRailTypes(), &Yapf().m_perf_ts_cost);
+		TrackFollower tf_local(v, Yapf().GetCompatibleRailTypes());
 
 		if (!has_parent) {
 			/* We will jump to the middle of the cost calculator assuming that segment cache is not used. */
@@ -470,11 +459,11 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 
 			/* Apply min/max speed penalties only when inside the look-ahead radius. Otherwise
 			 * it would cause desync in MP. */
-			if (n.m_num_signals_passed < m_sig_look_ahead_costs.Size())
+			if (n.m_num_signals_passed < m_sig_look_ahead_costs.size())
 			{
 				int min_speed = 0;
 				int max_speed = tf->GetSpeedLimit(&min_speed);
-				int max_veh_speed = v->GetDisplayMaxSpeed();
+				int max_veh_speed = std::min<int>(v->GetDisplayMaxSpeed(), v->current_order.GetMaxSpeed());
 				if (max_speed < max_veh_speed) {
 					extra_cost += YAPF_TILE_LENGTH * (max_veh_speed - max_speed) * (4 + tf->m_tiles_skipped) / max_veh_speed;
 				}
@@ -491,12 +480,12 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 
 			/* Move to the next tile/trackdir. */
 			tf = &tf_local;
-			tf_local.Init(v, Yapf().GetCompatibleRailTypes(), &Yapf().m_perf_ts_cost);
+			tf_local.Init(v, Yapf().GetCompatibleRailTypes());
 
 			if (!tf_local.Follow(cur.tile, cur.td)) {
 				assert(tf_local.m_err != TrackFollower::EC_NONE);
 				/* Can't move to the next tile (EOL?). */
-				if (tf_local.m_err == TrackFollower::EC_RAIL_TYPE) {
+				if (tf_local.m_err == TrackFollower::EC_RAIL_ROAD_TYPE) {
 					end_segment_reason |= ESRB_RAIL_TYPE;
 				} else {
 					end_segment_reason |= ESRB_DEAD_END;
@@ -606,7 +595,7 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 			/* Station platform-length penalty. */
 			if ((end_segment_reason & ESRB_STATION) != ESRB_NONE) {
 				const BaseStation *st = BaseStation::GetByTile(n.GetLastTile());
-				assert(st != NULL);
+				assert(st != nullptr);
 				uint platform_length = st->GetPlatformLength(n.GetLastTile(), ReverseDiagDir(TrackdirToExitdir(n.GetLastTrackdir())));
 				/* Reduce the extra cost caused by passing-station penalty (each station receives it in the segment cost). */
 				extra_cost -= Yapf().PfGetSettings().rail_station_penalty * platform_length;
@@ -624,8 +613,8 @@ no_entry_cost: // jump here at the beginning if the node has no parent (it is th
 	inline bool CanUseGlobalCache(Node &n) const
 	{
 		return !m_disable_cache
-			&& (n.m_parent != NULL)
-			&& (n.m_parent->m_num_signals_passed >= m_sig_look_ahead_costs.Size());
+			&& (n.m_parent != nullptr)
+			&& (n.m_parent->m_num_signals_passed >= m_sig_look_ahead_costs.size());
 	}
 
 	inline void ConnectNodeToCachedData(Node &n, CachedData &ci)

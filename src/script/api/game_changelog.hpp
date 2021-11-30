@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,6 +12,57 @@
  * bug fixes can be found in the normal changelog. Note that removed API
  * functions may still be available if you return an older API version
  * in GetAPIVersion() in info.nut.
+ *
+ * \b 12.0
+ *
+ * API additions:
+ * \li GSNewGRF
+ * \li GSNewGRFList
+ * \li GSMarine::BT_LOCK
+ * \li GSMarine::BT_CANAL
+ * \li GSTile::IsSeaTile
+ * \li GSTile::IsRiverTile
+ * \li GSTile::BT_CLEAR_WATER
+ * \li GSObjectTypeList
+ * \li GSObjectType
+ *
+ * \b 1.11.0
+ *
+ * API additions:
+ * \li GSCargo::GetName
+ * \li GSEventStoryPageButtonClick
+ * \li GSEventStoryPageTileSelect
+ * \li GSEventStoryPageVehicleSelect
+ * \li GSIndustry::GetCargoLastAcceptedDate
+ * \li GSIndustry::GetControlFlags
+ * \li GSIndustry::GetExclusiveConsumer
+ * \li GSIndustry::GetExclusiveSupplier
+ * \li GSIndustry::GetLastProductionYear
+ * \li GSIndustry::SetControlFlags
+ * \li GSIndustry::SetExclusiveConsumer
+ * \li GSIndustry::SetExclusiveSupplier
+ * \li GSIndustry::SetText
+ * \li GSStoryPage::MakePushButtonReference
+ * \li GSStoryPage::MakeTileButtonReference
+ * \li GSStoryPage::MakeVehicleButtonReference
+ * \li GSPriorityQueue
+ *
+ * Other changes:
+ * \li GSCompany::ChangeBankBalance takes one extra parameter to refer to a location to show text effect on
+ * \li GSGoal::Question and GSGoal::QuestionClient no longer require to have any buttons except for the window type GSGoal.QT_QUESTION
+ *
+ * \b 1.10.0
+ *
+ * API additions:
+ * \li GSVehicle::BuildVehicleWithRefit
+ * \li GSVehicle::GetBuildWithRefitCapacity
+ * \li GSRoad::GetName
+ * \li GSRoad::RoadVehCanRunOnRoad
+ * \li GSRoad::RoadVehHasPowerOnRoad
+ * \li GSRoad::ConvertRoadType
+ * \li GSRoad::GetMaxSpeed
+ * \li GSEngine::EnableForCompany
+ * \li GSEngine::DisableForCompany
  *
  * \b 1.9.0
  *
@@ -33,6 +82,9 @@
  * \b 1.8.0
  *
  * No changes
+ *
+ * API additions:
+ * \li GSRoad::ERR_ROADTYPE_DISALLOWS_CROSSING
  *
  * \b 1.7.0 - 1.7.2
  *

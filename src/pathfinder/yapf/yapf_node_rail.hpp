@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -16,8 +14,6 @@
 struct CYapfRailSegmentKey
 {
 	uint32    m_value;
-
-	inline CYapfRailSegmentKey(const CYapfRailSegmentKey &src) : m_value(src.m_value) {}
 
 	inline CYapfRailSegmentKey(const CYapfNodeKeyTrackDir &node_key)
 	{
@@ -83,7 +79,7 @@ struct CYapfRailSegment
 		, m_last_signal_tile(INVALID_TILE)
 		, m_last_signal_td(INVALID_TRACKDIR)
 		, m_end_segment_reason(ESRB_NONE)
-		, m_hash_next(NULL)
+		, m_hash_next(nullptr)
 	{}
 
 	inline const Key& GetKey() const
@@ -111,7 +107,7 @@ struct CYapfRailSegment
 		dmp.WriteStructT("m_key", &m_key);
 		dmp.WriteTile("m_last_tile", m_last_tile);
 		dmp.WriteEnumT("m_last_td", m_last_td);
-		dmp.WriteLine("m_cost = %d", m_cost);
+		dmp.WriteValue("m_cost", m_cost);
 		dmp.WriteTile("m_last_signal_tile", m_last_signal_tile);
 		dmp.WriteEnumT("m_last_signal_td", m_last_signal_td);
 		dmp.WriteEnumT("m_end_segment_reason", m_end_segment_reason);
@@ -142,8 +138,8 @@ struct CYapfRailNodeT
 	inline void Set(CYapfRailNodeT *parent, TileIndex tile, Trackdir td, bool is_choice)
 	{
 		base::Set(parent, tile, td, is_choice);
-		m_segment = NULL;
-		if (parent == NULL) {
+		m_segment = nullptr;
+		if (parent == nullptr) {
 			m_num_signals_passed      = 0;
 			flags_u.m_inherited_flags = 0;
 			m_last_red_signal_type    = SIGTYPE_NORMAL;
@@ -169,19 +165,19 @@ struct CYapfRailNodeT
 
 	inline TileIndex GetLastTile() const
 	{
-		assert(m_segment != NULL);
+		assert(m_segment != nullptr);
 		return m_segment->m_last_tile;
 	}
 
 	inline Trackdir GetLastTrackdir() const
 	{
-		assert(m_segment != NULL);
+		assert(m_segment != nullptr);
 		return m_segment->m_last_td;
 	}
 
 	inline void SetLastTileTrackdir(TileIndex tile, Trackdir td)
 	{
-		assert(m_segment != NULL);
+		assert(m_segment != nullptr);
 		m_segment->m_last_tile = tile;
 		m_segment->m_last_td = td;
 	}
@@ -209,10 +205,10 @@ struct CYapfRailNodeT
 	{
 		base::Dump(dmp);
 		dmp.WriteStructT("m_segment", m_segment);
-		dmp.WriteLine("m_num_signals_passed = %d", m_num_signals_passed);
-		dmp.WriteLine("m_targed_seen = %s", flags_u.flags_s.m_targed_seen ? "Yes" : "No");
-		dmp.WriteLine("m_choice_seen = %s", flags_u.flags_s.m_choice_seen ? "Yes" : "No");
-		dmp.WriteLine("m_last_signal_was_red = %s", flags_u.flags_s.m_last_signal_was_red ? "Yes" : "No");
+		dmp.WriteValue("m_num_signals_passed", m_num_signals_passed);
+		dmp.WriteValue("m_targed_seen", flags_u.flags_s.m_targed_seen ? "Yes" : "No");
+		dmp.WriteValue("m_choice_seen", flags_u.flags_s.m_choice_seen ? "Yes" : "No");
+		dmp.WriteValue("m_last_signal_was_red", flags_u.flags_s.m_last_signal_was_red ? "Yes" : "No");
 		dmp.WriteEnumT("m_last_red_signal_type", m_last_red_signal_type);
 	}
 };

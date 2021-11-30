@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -10,6 +8,7 @@
 /** @file terraform_gui.cpp GUI related to terraforming the map. */
 
 #include "stdafx.h"
+#include "core/backup_type.hpp"
 #include "clear_map.h"
 #include "company_func.h"
 #include "company_base.h"
@@ -40,10 +39,10 @@
 
 #include "safeguards.h"
 
-void CcTerraform(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2)
+void CcTerraform(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd)
 {
 	if (result.Succeeded()) {
-		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_SPLAT_OTHER, tile);
+		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, tile);
 	} else {
 		extern TileIndex _terraform_err_tile;
 		SetRedErrorSquare(_terraform_err_tile);
@@ -56,15 +55,15 @@ static void GenerateDesertArea(TileIndex end, TileIndex start)
 {
 	if (_game_mode != GM_EDITOR) return;
 
-	_generating_world = true;
+	Backup<bool> old_generating_world(_generating_world, true, FILE_LINE);
 
 	TileArea ta(start, end);
-	TILE_AREA_LOOP(tile, ta) {
+	for (TileIndex tile : ta) {
 		SetTropicZone(tile, (_ctrl_pressed) ? TROPICZONE_NORMAL : TROPICZONE_DESERT);
 		DoCommandP(tile, 0, 0, CMD_LANDSCAPE_CLEAR);
 		MarkTileDirtyByTile(tile);
 	}
-	_generating_world = false;
+	old_generating_world.Restore();
 	InvalidateWindowClassesData(WC_TOWN_VIEW, 0);
 }
 
@@ -76,7 +75,7 @@ static void GenerateRockyArea(TileIndex end, TileIndex start)
 	bool success = false;
 	TileArea ta(start, end);
 
-	TILE_AREA_LOOP(tile, ta) {
+	for (TileIndex tile : ta) {
 		switch (GetTileType(tile)) {
 			case MP_TREES:
 				if (GetTreeGround(tile) == TREE_GROUND_SHORE) continue;
@@ -93,7 +92,7 @@ static void GenerateRockyArea(TileIndex end, TileIndex start)
 		success = true;
 	}
 
-	if (success && _settings_client.sound.confirm) SndPlayTileFx(SND_1F_SPLAT_OTHER, end);
+	if (success && _settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, end);
 }
 
 /**
@@ -165,14 +164,14 @@ struct TerraformToolbarWindow : Window {
 	{
 	}
 
-	virtual void OnInit()
+	void OnInit() override
 	{
 		/* Don't show the place object button when there are no objects to place. */
 		NWidgetStacked *show_object = this->GetWidget<NWidgetStacked>(WID_TT_SHOW_PLACE_OBJECT);
 		show_object->SetDisplayedPlane(ObjectClass::GetUIClassCount() != 0 ? 0 : SZSP_NONE);
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		if (widget < WID_TT_BUTTONS_START) return;
 
@@ -219,7 +218,7 @@ struct TerraformToolbarWindow : Window {
 		}
 	}
 
-	virtual void OnPlaceObject(Point pt, TileIndex tile)
+	void OnPlaceObject(Point pt, TileIndex tile) override
 	{
 		switch (this->last_user_action) {
 			case WID_TT_LOWER_LAND: // Lower land button
@@ -239,7 +238,7 @@ struct TerraformToolbarWindow : Window {
 				break;
 
 			case WID_TT_BUY_LAND: // Buy land button
-				DoCommandP(tile, OBJECT_OWNED_LAND, 0, CMD_BUILD_OBJECT | CMD_MSG(STR_ERROR_CAN_T_PURCHASE_THIS_LAND), CcPlaySound_SPLAT_RAIL);
+				DoCommandP(tile, OBJECT_OWNED_LAND, 0, CMD_BUILD_OBJECT | CMD_MSG(STR_ERROR_CAN_T_PURCHASE_THIS_LAND), CcPlaySound_CONSTRUCTION_RAIL);
 				break;
 
 			case WID_TT_PLACE_SIGN: // Place sign button
@@ -250,19 +249,19 @@ struct TerraformToolbarWindow : Window {
 		}
 	}
 
-	virtual void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt)
+	void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt) override
 	{
 		VpSelectTilesWithMethod(pt.x, pt.y, select_method);
 	}
 
-	virtual Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number)
+	Point OnInitialPosition(int16 sm_width, int16 sm_height, int window_number) override
 	{
 		Point pt = GetToolbarAlignedWindowPosition(sm_width);
 		pt.y += sm_height;
 		return pt;
 	}
 
-	virtual void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile)
+	void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile) override
 	{
 		if (pt.x != -1) {
 			switch (select_proc) {
@@ -277,7 +276,7 @@ struct TerraformToolbarWindow : Window {
 		}
 	}
 
-	virtual void OnPlaceObjectAbort()
+	void OnPlaceObjectAbort() override
 	{
 		this->RaiseButtons();
 	}
@@ -293,8 +292,8 @@ struct TerraformToolbarWindow : Window {
 static EventState TerraformToolbarGlobalHotkeys(int hotkey)
 {
 	if (_game_mode != GM_NORMAL) return ES_NOT_HANDLED;
-	Window *w = ShowTerraformToolbar(NULL);
-	if (w == NULL) return ES_NOT_HANDLED;
+	Window *w = ShowTerraformToolbar(nullptr);
+	if (w == nullptr) return ES_NOT_HANDLED;
 	return w->OnHotkey(hotkey);
 }
 
@@ -353,20 +352,20 @@ static WindowDesc _terraform_desc(
 /**
  * Show the toolbar for terraforming in the game.
  * @param link The toolbar we might want to link to.
- * @return The allocated toolbar if the window was newly opened, else \c NULL.
+ * @return The allocated toolbar if the window was newly opened, else \c nullptr.
  */
 Window *ShowTerraformToolbar(Window *link)
 {
-	if (!Company::IsValidID(_local_company)) return NULL;
+	if (!Company::IsValidID(_local_company)) return nullptr;
 
 	Window *w;
-	if (link == NULL) {
+	if (link == nullptr) {
 		w = AllocateWindowDescFront<TerraformToolbarWindow>(&_terraform_desc, 0);
 		return w;
 	}
 
 	/* Delete the terraform toolbar to place it again. */
-	DeleteWindowById(WC_SCEN_LAND_GEN, 0, true);
+	CloseWindowById(WC_SCEN_LAND_GEN, 0, true);
 	w = AllocateWindowDescFront<TerraformToolbarWindow>(&_terraform_desc, 0);
 	/* Align the terraform toolbar under the main toolbar. */
 	w->top -= w->height;
@@ -404,24 +403,24 @@ static void CommonRaiseLowerBigLand(TileIndex tile, int mode)
 
 		if (ta.w == 0 || ta.h == 0) return;
 
-		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_SPLAT_OTHER, tile);
+		if (_settings_client.sound.confirm) SndPlayTileFx(SND_1F_CONSTRUCTION_OTHER, tile);
 
 		uint h;
 		if (mode != 0) {
 			/* Raise land */
 			h = MAX_TILE_HEIGHT;
-			TILE_AREA_LOOP(tile2, ta) {
-				h = min(h, TileHeight(tile2));
+			for (TileIndex tile2 : ta) {
+				h = std::min(h, TileHeight(tile2));
 			}
 		} else {
 			/* Lower land */
 			h = 0;
-			TILE_AREA_LOOP(tile2, ta) {
-				h = max(h, TileHeight(tile2));
+			for (TileIndex tile2 : ta) {
+				h = std::max(h, TileHeight(tile2));
 			}
 		}
 
-		TILE_AREA_LOOP(tile2, ta) {
+		for (TileIndex tile2 : ta) {
 			if (TileHeight(tile2) == h) {
 				DoCommandP(tile2, SLOPE_N, (uint32)mode, CMD_TERRAFORM_LAND);
 			}
@@ -499,20 +498,18 @@ static void ResetLandscapeConfirmationCallback(Window *w, bool confirmed)
 	if (confirmed) {
 		/* Set generating_world to true to get instant-green grass after removing
 		 * company property. */
-		_generating_world = true;
+		Backup<bool> old_generating_world(_generating_world, true, FILE_LINE);
 
 		/* Delete all companies */
-		Company *c;
-		FOR_ALL_COMPANIES(c) {
+		for (Company *c : Company::Iterate()) {
 			ChangeOwnershipOfCompanyItems(c->index, INVALID_OWNER);
 			delete c;
 		}
 
-		_generating_world = false;
+		old_generating_world.Restore();
 
 		/* Delete all station signs */
-		BaseStation *st;
-		FOR_ALL_BASE_STATIONS(st) {
+		for (BaseStation *st : BaseStation::Iterate()) {
 			/* There can be buoys, remove them */
 			if (IsBuoyTile(st->xy)) DoCommand(st->xy, 0, 0, DC_EXEC | DC_BANKRUPT, CMD_LANDSCAPE_CLEAR);
 			if (!st->IsInUse()) delete st;
@@ -538,7 +535,7 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 		this->last_user_action = WIDGET_LIST_END;
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		this->DrawWidgets();
 
@@ -547,15 +544,15 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 		}
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget != WID_ETT_DOTS) return;
 
-		size->width  = max<uint>(size->width,  ScaleGUITrad(59));
-		size->height = max<uint>(size->height, ScaleGUITrad(31));
+		size->width  = std::max<uint>(size->width,  ScaleGUITrad(59));
+		size->height = std::max<uint>(size->height, ScaleGUITrad(31));
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_ETT_DOTS) return;
 
@@ -572,7 +569,7 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 		} while (--n);
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		if (widget < WID_ETT_BUTTONS_START) return;
 
@@ -631,14 +628,14 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 				break;
 
 			case WID_ETT_RESET_LANDSCAPE: // Reset landscape
-				ShowQuery(STR_QUERY_RESET_LANDSCAPE_CAPTION, STR_RESET_LANDSCAPE_CONFIRMATION_TEXT, NULL, ResetLandscapeConfirmationCallback);
+				ShowQuery(STR_QUERY_RESET_LANDSCAPE_CAPTION, STR_RESET_LANDSCAPE_CONFIRMATION_TEXT, nullptr, ResetLandscapeConfirmationCallback);
 				break;
 
 			default: NOT_REACHED();
 		}
 	}
 
-	virtual void OnTimeout()
+	void OnTimeout() override
 	{
 		for (uint i = WID_ETT_START; i < this->nested_array_size; i++) {
 			if (i == WID_ETT_BUTTONS_START) i = WID_ETT_BUTTONS_END; // skip the buttons
@@ -649,7 +646,7 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 		}
 	}
 
-	virtual void OnPlaceObject(Point pt, TileIndex tile)
+	void OnPlaceObject(Point pt, TileIndex tile) override
 	{
 		switch (this->last_user_action) {
 			case WID_ETT_DEMOLISH: // Demolish aka dynamite button
@@ -680,12 +677,12 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 		}
 	}
 
-	virtual void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt)
+	void OnPlaceDrag(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt) override
 	{
 		VpSelectTilesWithMethod(pt.x, pt.y, select_method);
 	}
 
-	virtual void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile)
+	void OnPlaceMouseUp(ViewportPlaceMethod select_method, ViewportDragDropSelectionProcess select_proc, Point pt, TileIndex start_tile, TileIndex end_tile) override
 	{
 		if (pt.x != -1) {
 			switch (select_proc) {
@@ -702,7 +699,7 @@ struct ScenarioEditorLandscapeGenerationWindow : Window {
 		}
 	}
 
-	virtual void OnPlaceObjectAbort()
+	void OnPlaceObjectAbort() override
 	{
 		this->RaiseButtons();
 		this->SetDirty();
@@ -720,7 +717,7 @@ static EventState TerraformToolbarEditorGlobalHotkeys(int hotkey)
 {
 	if (_game_mode != GM_EDITOR) return ES_NOT_HANDLED;
 	Window *w = ShowEditorTerraformToolbar();
-	if (w == NULL) return ES_NOT_HANDLED;
+	if (w == nullptr) return ES_NOT_HANDLED;
 	return w->OnHotkey(hotkey);
 }
 
@@ -747,7 +744,7 @@ static WindowDesc _scen_edit_land_gen_desc(
 
 /**
  * Show the toolbar for terraforming in the scenario editor.
- * @return The allocated toolbar if the window was newly opened, else \c NULL.
+ * @return The allocated toolbar if the window was newly opened, else \c nullptr.
  */
 Window *ShowEditorTerraformToolbar()
 {

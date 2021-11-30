@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -61,10 +59,10 @@ protected:
 
 public:
 	ScriptConfig() :
-		name(NULL),
+		name(nullptr),
 		version(-1),
-		info(NULL),
-		config_list(NULL),
+		info(nullptr),
+		config_list(nullptr),
 		is_random(false)
 	{}
 
@@ -118,7 +116,7 @@ public:
 	void AnchorUnchangeableSettings();
 
 	/**
-	 * Get the value of a setting for this config. It might fallback to his
+	 * Get the value of a setting for this config. It might fallback to its
 	 *  'info' to find the default value (if not set or if not-custom difficulty
 	 *  level).
 	 * @return The (default) value of the setting, or -1 if the setting was not
@@ -135,6 +133,11 @@ public:
 	 * Reset all settings to their default value.
 	 */
 	void ResetSettings();
+
+	/**
+	 * Reset only editable and visible settings to their default value.
+	 */
+	void ResetEditableSettings(bool yet_to_start);
 
 	/**
 	 * Randomize all settings the Script requested to be randomized.
@@ -166,19 +169,19 @@ public:
 	 * Convert a string which is stored in the config file or savegames to
 	 *  custom settings of this Script.
 	 */
-	void StringToSettings(const char *value);
+	void StringToSettings(const std::string &value);
 
 	/**
 	 * Convert the custom settings to a string that can be stored in the config
 	 *  file or savegames.
 	 */
-	void SettingsToString(char *string, const char *last) const;
+	std::string SettingsToString() const;
 
 	/**
 	 * Search a textfile file next to this script.
 	 * @param type The type of the textfile to search for.
 	 * @param slot #CompanyID to check status of.
-	 * @return The filename for the textfile, \c NULL otherwise.
+	 * @return The filename for the textfile, \c nullptr otherwise.
 	 */
 	const char *GetTextfile(TextfileType type, CompanyID slot) const;
 

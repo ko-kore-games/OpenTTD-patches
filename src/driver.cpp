@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,25 +9,28 @@
 
 #include "stdafx.h"
 #include "debug.h"
+#include "error.h"
 #include "sound/sound_driver.hpp"
 #include "music/music_driver.hpp"
 #include "video/video_driver.hpp"
 #include "string_func.h"
+#include "table/strings.h"
+#include <string>
+#include <sstream>
 
 #include "safeguards.h"
 
-char *_ini_videodriver;     ///< The video driver a stored in the configuration file.
-int _num_resolutions;       ///< The number of resolutions.
-Dimension _resolutions[32]; ///< List of resolutions.
-Dimension _cur_resolution;  ///< The current resolution.
-bool _rightclick_emulate;   ///< Whether right clicking is emulated.
+std::string _ini_videodriver;        ///< The video driver a stored in the configuration file.
+std::vector<Dimension> _resolutions; ///< List of resolutions.
+Dimension _cur_resolution;           ///< The current resolution.
+bool _rightclick_emulate;            ///< Whether right clicking is emulated.
 
-char *_ini_sounddriver;     ///< The sound driver a stored in the configuration file.
+std::string _ini_sounddriver;        ///< The sound driver a stored in the configuration file.
 
-char *_ini_musicdriver;     ///< The music driver a stored in the configuration file.
+std::string _ini_musicdriver;        ///< The music driver a stored in the configuration file.
 
-char *_ini_blitter;         ///< The blitter as stored in the configuration file.
-bool _blitter_autodetected; ///< Was the blitter autodetected or specified by the user?
+std::string _ini_blitter;            ///< The blitter as stored in the configuration file.
+bool _blitter_autodetected;          ///< Was the blitter autodetected or specified by the user?
 
 /**
  * Get a string parameter the list of parameters.
@@ -37,22 +38,18 @@ bool _blitter_autodetected; ///< Was the blitter autodetected or specified by th
  * @param name The parameter name we're looking for.
  * @return The parameter value.
  */
-const char *GetDriverParam(const char * const *parm, const char *name)
+const char *GetDriverParam(const StringList &parm, const char *name)
 {
-	size_t len;
+	if (parm.empty()) return nullptr;
 
-	if (parm == NULL) return NULL;
-
-	len = strlen(name);
-	for (; *parm != NULL; parm++) {
-		const char *p = *parm;
-
-		if (strncmp(p, name, len) == 0) {
-			if (p[len] == '=')  return p + len + 1;
-			if (p[len] == '\0') return p + len;
+	size_t len = strlen(name);
+	for (auto &p : parm) {
+		if (p.compare(0, len, name) == 0) {
+			if (p.length() == len) return "";
+			if (p[len] == '=') return p.c_str() + len + 1;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 /**
@@ -61,9 +58,9 @@ const char *GetDriverParam(const char * const *parm, const char *name)
  * @param name The parameter name we're looking for.
  * @return The parameter value.
  */
-bool GetDriverParamBool(const char * const *parm, const char *name)
+bool GetDriverParamBool(const StringList &parm, const char *name)
 {
-	return GetDriverParam(parm, name) != NULL;
+	return GetDriverParam(parm, name) != nullptr;
 }
 
 /**
@@ -73,10 +70,10 @@ bool GetDriverParamBool(const char * const *parm, const char *name)
  * @param def  The default value if the parameter doesn't exist.
  * @return The parameter value.
  */
-int GetDriverParamInt(const char * const *parm, const char *name, int def)
+int GetDriverParamInt(const StringList &parm, const char *name, int def)
 {
 	const char *p = GetDriverParam(parm, name);
-	return p != NULL ? atoi(p) : def;
+	return p != nullptr ? atoi(p) : def;
 }
 
 /**
@@ -85,12 +82,12 @@ int GetDriverParamInt(const char * const *parm, const char *name, int def)
  * @param type the type of driver to select
  * @post Sets the driver so GetCurrentDriver() returns it too.
  */
-void DriverFactoryBase::SelectDriver(const char *name, Driver::Type type)
+void DriverFactoryBase::SelectDriver(const std::string &name, Driver::Type type)
 {
 	if (!DriverFactoryBase::SelectDriverImpl(name, type)) {
-		StrEmpty(name) ?
+		name.empty() ?
 			usererror("Failed to autoprobe %s driver", GetDriverTypeName(type)) :
-			usererror("Failed to select requested %s driver '%s'", GetDriverTypeName(type), name);
+			usererror("Failed to select requested %s driver '%s'", GetDriverTypeName(type), name.c_str());
 	}
 }
 
@@ -101,11 +98,11 @@ void DriverFactoryBase::SelectDriver(const char *name, Driver::Type type)
  * @post Sets the driver so GetCurrentDriver() returns it too.
  * @return True upon success, otherwise false.
  */
-bool DriverFactoryBase::SelectDriverImpl(const char *name, Driver::Type type)
+bool DriverFactoryBase::SelectDriverImpl(const std::string &name, Driver::Type type)
 {
 	if (GetDrivers().size() == 0) return false;
 
-	if (StrEmpty(name)) {
+	if (name.empty()) {
 		/* Probe for this driver, but do not fall back to dedicated/null! */
 		for (int priority = 10; priority > 0; priority--) {
 			Drivers::iterator it = GetDrivers().begin();
@@ -116,41 +113,41 @@ bool DriverFactoryBase::SelectDriverImpl(const char *name, Driver::Type type)
 				if (d->type != type) continue;
 				if (d->priority != priority) continue;
 
+				if (type == Driver::DT_VIDEO && !_video_hw_accel && d->UsesHardwareAcceleration()) continue;
+
 				Driver *oldd = *GetActiveDriver(type);
 				Driver *newd = d->CreateInstance();
 				*GetActiveDriver(type) = newd;
 
-				const char *err = newd->Start(NULL);
-				if (err == NULL) {
-					DEBUG(driver, 1, "Successfully probed %s driver '%s'", GetDriverTypeName(type), d->name);
+				const char *err = newd->Start({});
+				if (err == nullptr) {
+					Debug(driver, 1, "Successfully probed {} driver '{}'", GetDriverTypeName(type), d->name);
 					delete oldd;
 					return true;
 				}
 
 				*GetActiveDriver(type) = oldd;
-				DEBUG(driver, 1, "Probing %s driver '%s' failed with error: %s", GetDriverTypeName(type), d->name, err);
+				Debug(driver, 1, "Probing {} driver '{}' failed with error: {}", GetDriverTypeName(type), d->name, err);
 				delete newd;
+
+				if (type == Driver::DT_VIDEO && _video_hw_accel && d->UsesHardwareAcceleration()) {
+					_video_hw_accel = false;
+					ErrorMessageData msg(STR_VIDEO_DRIVER_ERROR, STR_VIDEO_DRIVER_ERROR_NO_HARDWARE_ACCELERATION);
+					ScheduleErrorMessage(msg);
+				}
 			}
 		}
 		usererror("Couldn't find any suitable %s driver", GetDriverTypeName(type));
 	} else {
-		char *parm;
-		char buffer[256];
-		const char *parms[32];
-
 		/* Extract the driver name and put parameter list in parm */
-		strecpy(buffer, name, lastof(buffer));
-		parm = strchr(buffer, ':');
-		parms[0] = NULL;
-		if (parm != NULL) {
-			uint np = 0;
-			/* Tokenize the parm. */
-			do {
-				*parm++ = '\0';
-				if (np < lengthof(parms) - 1) parms[np++] = parm;
-				while (*parm != '\0' && *parm != ',') parm++;
-			} while (*parm == ',');
-			parms[np] = NULL;
+		std::istringstream buffer(name);
+		std::string dname;
+		std::getline(buffer, dname, ':');
+
+		std::string param;
+		std::vector<std::string> parms;
+		while (std::getline(buffer, param, ',')) {
+			parms.push_back(param);
 		}
 
 		/* Find this driver */
@@ -162,23 +159,23 @@ bool DriverFactoryBase::SelectDriverImpl(const char *name, Driver::Type type)
 			if (d->type != type) continue;
 
 			/* Check driver name */
-			if (strcasecmp(buffer, d->name) != 0) continue;
+			if (strcasecmp(dname.c_str(), d->name) != 0) continue;
 
 			/* Found our driver, let's try it */
 			Driver *newd = d->CreateInstance();
 
 			const char *err = newd->Start(parms);
-			if (err != NULL) {
+			if (err != nullptr) {
 				delete newd;
 				usererror("Unable to load driver '%s'. The error was: %s", d->name, err);
 			}
 
-			DEBUG(driver, 1, "Successfully loaded %s driver '%s'", GetDriverTypeName(type), d->name);
+			Debug(driver, 1, "Successfully loaded {} driver '{}'", GetDriverTypeName(type), d->name);
 			delete *GetActiveDriver(type);
 			*GetActiveDriver(type) = newd;
 			return true;
 		}
-		usererror("No such %s driver: %s\n", GetDriverTypeName(type), buffer);
+		usererror("No such %s driver: %s\n", GetDriverTypeName(type), dname.c_str());
 	}
 }
 
@@ -224,10 +221,9 @@ DriverFactoryBase::DriverFactoryBase(Driver::Type type, int priority, const char
 	strecpy(buf, GetDriverTypeName(type), lastof(buf));
 	strecpy(buf + 5, name, lastof(buf));
 
-	const char *longname = stredup(buf);
-
-	std::pair<Drivers::iterator, bool> P = GetDrivers().insert(Drivers::value_type(longname, this));
-	assert(P.second);
+	Drivers &drivers = GetDrivers();
+	assert(drivers.find(buf) == drivers.end());
+	drivers.insert(Drivers::value_type(buf, this));
 }
 
 /**
@@ -243,10 +239,6 @@ DriverFactoryBase::~DriverFactoryBase()
 	Drivers::iterator it = GetDrivers().find(buf);
 	assert(it != GetDrivers().end());
 
-	const char *longname = (*it).first;
-
 	GetDrivers().erase(it);
-	free(longname);
-
 	if (GetDrivers().empty()) delete &GetDrivers();
 }

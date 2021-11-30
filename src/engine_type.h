@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -14,6 +12,7 @@
 
 #include "economy_type.h"
 #include "rail_type.h"
+#include "road_type.h"
 #include "cargo_type.h"
 #include "date_type.h"
 #include "sound_type.h"
@@ -44,7 +43,7 @@ struct RailVehicleInfo {
 	byte image_index;
 	RailVehicleTypes railveh_type;
 	byte cost_factor;               ///< Purchase cost factor;      For multiheaded engines the sum of both engine prices.
-	RailTypeByte railtype;
+	RailType railtype;
 	uint16 max_speed;               ///< Maximum speed (1 unit = 1/1.6 mph = 1 km-ish/h)
 	uint16 power;                   ///< Power of engine (hp);      For multiheaded engines the sum of both engine powers.
 	uint16 weight;                  ///< Weight of vehicle (tons);  For multiheaded engines the weight of each single engine.
@@ -60,6 +59,7 @@ struct RailVehicleInfo {
 	byte tractive_effort;           ///< Tractive effort coefficient
 	byte air_drag;                  ///< Coefficient of air drag
 	byte user_def_data;             ///< Property 0x25: "User-defined bit mask" Used only for (very few) NewGRF vehicles
+	int16 curve_speed_mod;          ///< Modifier to maximum speed in curves (fixed-point binary with 8 fractional bits)
 };
 
 /** Information about a ship vehicle. */
@@ -123,6 +123,7 @@ struct RoadVehicleInfo {
 	uint8 air_drag;          ///< Coefficient of air drag
 	byte visual_effect;      ///< Bitstuffed NewGRF visual effect data
 	byte shorten_factor;     ///< length on main map for this type is 8 - shorten_factor
+	RoadType roadtype;       ///< Road type
 };
 
 /**

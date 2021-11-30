@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -59,10 +57,10 @@ void OrthogonalTileArea::Add(TileIndex to_add)
 	uint ax = TileX(to_add);
 	uint ay = TileY(to_add);
 
-	sx = min(ax, sx);
-	sy = min(ay, sy);
-	ex = max(ax, ex);
-	ey = max(ay, ey);
+	sx = std::min(ax, sx);
+	sy = std::min(ay, sy);
+	ex = std::max(ax, ex);
+	ey = std::max(ay, ey);
 
 	this->tile = TileXY(sx, sy);
 	this->w    = ex - sx + 1;
@@ -118,13 +116,52 @@ bool OrthogonalTileArea::Contains(TileIndex tile) const
 }
 
 /**
+ * Expand a tile area by rad tiles in each direction, keeping within map bounds.
+ * @param rad Number of tiles to expand
+ * @return The OrthogonalTileArea.
+ */
+OrthogonalTileArea &OrthogonalTileArea::Expand(int rad)
+{
+	int x = TileX(this->tile);
+	int y = TileY(this->tile);
+
+	int sx = std::max<int>(x - rad, 0);
+	int sy = std::max<int>(y - rad, 0);
+	int ex = std::min<int>(x + this->w + rad, MapSizeX());
+	int ey = std::min<int>(y + this->h + rad, MapSizeY());
+
+	this->tile = TileXY(sx, sy);
+	this->w    = ex - sx;
+	this->h    = ey - sy;
+	return *this;
+}
+
+/**
  * Clamp the tile area to map borders.
  */
 void OrthogonalTileArea::ClampToMap()
 {
 	assert(this->tile < MapSize());
-	this->w = min(this->w, MapSizeX() - TileX(this->tile));
-	this->h = min(this->h, MapSizeY() - TileY(this->tile));
+	this->w = std::min<int>(this->w, MapSizeX() - TileX(this->tile));
+	this->h = std::min<int>(this->h, MapSizeY() - TileY(this->tile));
+}
+
+/**
+ * Returns an iterator to the beginning of the tile area.
+ * @return The OrthogonalTileIterator.
+ */
+OrthogonalTileIterator OrthogonalTileArea::begin() const
+{
+	return OrthogonalTileIterator(*this);
+}
+
+/**
+ * Returns an iterator to the end of the tile area.
+ * @return The OrthogonalTileIterator.
+ */
+OrthogonalTileIterator OrthogonalTileArea::end() const
+{
+	return OrthogonalTileIterator(OrthogonalTileArea());
 }
 
 /**
@@ -206,9 +243,9 @@ TileIterator &DiagonalTileIterator::operator++()
 			/* Special case: Every second column has zero length, skip them completely */
 			this->a_cur = 0;
 			if (this->b_max > 0) {
-				this->b_cur = min(this->b_cur + 2, this->b_max);
+				this->b_cur = std::min(this->b_cur + 2, this->b_max);
 			} else {
-				this->b_cur = max(this->b_cur - 2, this->b_max);
+				this->b_cur = std::max(this->b_cur - 2, this->b_max);
 			}
 		} else {
 			/* Every column has at least one tile to process */

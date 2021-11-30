@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -60,7 +58,7 @@ byte GetBestFittingSubType(Vehicle *v_from, Vehicle *v_for, CargoID dest_cargo_t
 void ViewportAddVehicles(DrawPixelInfo *dpi);
 
 void ShowNewGrfVehicleError(EngineID engine, StringID part1, StringID part2, GRFBugs bug_type, bool critical);
-CommandCost TunnelBridgeIsFree(TileIndex tile, TileIndex endtile, const Vehicle *ignore = NULL);
+CommandCost TunnelBridgeIsFree(TileIndex tile, TileIndex endtile, const Vehicle *ignore = nullptr);
 
 void DecreaseVehicleValue(Vehicle *v);
 void CheckVehicleBreakdown(Vehicle *v);
@@ -71,7 +69,7 @@ UnitID GetFreeUnitNumber(VehicleType type);
 
 void VehicleEnterDepot(Vehicle *v);
 
-bool CanBuildVehicleInfrastructure(VehicleType type);
+bool CanBuildVehicleInfrastructure(VehicleType type, byte subtype = 0);
 
 /** Position information of a vehicle after it moved */
 struct GetNewVehiclePosResult {
@@ -167,7 +165,7 @@ CommandCost EnsureNoVehicleOnGround(TileIndex tile);
 CommandCost EnsureNoTrainOnTrackBits(TileIndex tile, TrackBits track_bits);
 
 extern VehicleID _new_vehicle_id;
-extern uint16 _returned_refit_capacity;
+extern uint _returned_refit_capacity;
 extern uint16 _returned_mail_refit_capacity;
 
 bool CanVehicleUseStation(EngineID engine_type, const struct Station *st);
@@ -175,7 +173,7 @@ bool CanVehicleUseStation(const Vehicle *v, const struct Station *st);
 
 void ReleaseDisastersTargetingVehicle(VehicleID vehicle);
 
-typedef SmallVector<VehicleID, 2> VehicleSet;
+typedef std::vector<VehicleID> VehicleSet;
 void GetVehicleSet(VehicleSet &set, Vehicle *v, uint8 num_vehicles);
 
 void CheckCargoCapacity(Vehicle *v);

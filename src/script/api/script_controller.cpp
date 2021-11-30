@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -43,7 +41,7 @@
 		ticks = 1;
 	}
 
-	throw Script_Suspend(ticks, NULL);
+	throw Script_Suspend(ticks, nullptr);
 }
 
 /* static */ void ScriptController::Break(const char* message)
@@ -56,7 +54,7 @@
 	seprintf(log_message, lastof(log_message), "Break: %s", message);
 	ScriptLog::Log(ScriptLog::LOG_SQ_ERROR, log_message);
 
-	/* Inform script developer that his script has been paused and
+	/* Inform script developer that their script has been paused and
 	 * needs manual action to continue. */
 	ShowAIDebugWindow(ScriptObject::GetRootCompany());
 
@@ -79,9 +77,9 @@ ScriptController::ScriptController(CompanyID company) :
 
 ScriptController::~ScriptController()
 {
-	for (LoadedLibraryList::iterator iter = this->loaded_library.begin(); iter != this->loaded_library.end(); iter++) {
-		free((*iter).second);
-		free((*iter).first);
+	for (const auto &item : this->loaded_library) {
+		free(item.second);
+		free(item.first);
 	}
 
 	this->loaded_library.clear();
@@ -113,17 +111,17 @@ ScriptController::~ScriptController()
 	Squirrel *engine = ScriptObject::GetActiveInstance()->engine;
 	HSQUIRRELVM vm = engine->GetVM();
 
-	/* Internally we store libraries as 'library.version' */
-	char library_name[1024];
-	seprintf(library_name, lastof(library_name), "%s.%d", library, version);
-	strtolower(library_name);
-
 	ScriptInfo *lib = ScriptObject::GetActiveInstance()->FindLibrary(library, version);
-	if (lib == NULL) {
+	if (lib == nullptr) {
 		char error[1024];
 		seprintf(error, lastof(error), "couldn't find library '%s' with version %d", library, version);
 		throw sq_throwerror(vm, error);
 	}
+
+	/* Internally we store libraries as 'library.version' */
+	char library_name[1024];
+	seprintf(library_name, lastof(library_name), "%s.%d", library, version);
+	strtolower(library_name);
 
 	/* Get the current table/class we belong to */
 	HSQOBJECT parent;
@@ -131,9 +129,9 @@ ScriptController::~ScriptController()
 
 	char fake_class[1024];
 
-	LoadedLibraryList::iterator iter = controller->loaded_library.find(library_name);
-	if (iter != controller->loaded_library.end()) {
-		strecpy(fake_class, (*iter).second, lastof(fake_class));
+	LoadedLibraryList::iterator it = controller->loaded_library.find(library_name);
+	if (it != controller->loaded_library.end()) {
+		strecpy(fake_class, (*it).second, lastof(fake_class));
 	} else {
 		int next_number = ++controller->loaded_library_count;
 

@@ -79,7 +79,7 @@ SQInstructionDesc g_InstrDesc[]={
 	{"_OP_NEWSLOTA"},
 	{"_OP_SCOPE_END"}
 };
-#endif
+
 void DumpLiteral(SQObjectPtr &o)
 {
 	switch(type(o)){
@@ -90,6 +90,7 @@ void DumpLiteral(SQObjectPtr &o)
 		default: printf("(%s %p)",GetTypeName(o),(void*)_rawval(o));break; break; //shut up compiler
 	}
 }
+#endif
 
 SQFuncState::SQFuncState(SQSharedState *ss,SQFuncState *parent,CompilerErrorFunc efunc,void *ed)
 {
@@ -502,14 +503,14 @@ SQObject SQFuncState::CreateString(const SQChar *s,SQInteger len)
 {
 	SQObjectPtr ns(SQString::Create(_sharedstate,s,len));
 	_table(_strings)->NewSlot(ns,(SQInteger)1);
-	return ns;
+	return std::move(ns);
 }
 
 SQObject SQFuncState::CreateTable()
 {
 	SQObjectPtr nt(SQTable::Create(_sharedstate,0));
 	_table(_strings)->NewSlot(nt,(SQInteger)1);
-	return nt;
+	return std::move(nt);
 }
 
 SQFunctionProto *SQFuncState::BuildProto()

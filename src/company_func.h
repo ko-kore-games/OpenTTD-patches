@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -27,13 +25,13 @@ void CompanyAdminBankrupt(CompanyID company_id);
 void UpdateLandscapingLimits();
 
 bool CheckCompanyHasMoney(CommandCost &cost);
-void SubtractMoneyFromCompany(CommandCost cost);
-void SubtractMoneyFromCompanyFract(CompanyID company, CommandCost cost);
+void SubtractMoneyFromCompany(const CommandCost& cost);
+void SubtractMoneyFromCompanyFract(CompanyID company, const CommandCost& cost);
 CommandCost CheckOwnership(Owner owner, TileIndex tile = 0);
 CommandCost CheckTileOwnership(TileIndex tile);
 
-extern CompanyByte _local_company;
-extern CompanyByte _current_company;
+extern CompanyID _local_company;
+extern CompanyID _current_company;
 
 extern Colours _company_colours[MAX_COMPANIES];
 extern CompanyManagerFace _company_manager_face;

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -24,11 +22,13 @@
 #include "tilehighlight_func.h"
 #include "network/network.h"
 #include "station_base.h"
+#include "industry.h"
 #include "waypoint_base.h"
 #include "core/geometry_func.hpp"
 #include "hotkeys.h"
 #include "aircraft.h"
 #include "engine_func.h"
+#include "vehicle_func.h"
 
 #include "widgets/order_widget.h"
 
@@ -239,7 +239,7 @@ void DrawOrderString(const Vehicle *v, const Order *order, int order_index, int 
 
 	/* Check range for aircraft. */
 	if (v->type == VEH_AIRCRAFT && Aircraft::From(v)->GetRange() > 0 && order->IsGotoOrder()) {
-		const Order *next = order->next != NULL ? order->next : v->GetFirstOrder();
+		const Order *next = order->next != nullptr ? order->next : v->GetFirstOrder();
 		if (GetOrderDistance(order, next, v) > Aircraft::From(v)->acache.cached_max_range_sqr) SetDParam(8, STR_ORDER_OUT_OF_RANGE);
 	}
 
@@ -259,8 +259,9 @@ void DrawOrderString(const Vehicle *v, const Order *order, int order_index, int 
 		case OT_GOTO_STATION: {
 			OrderLoadFlags load = order->GetLoadType();
 			OrderUnloadFlags unload = order->GetUnloadType();
+			bool valid_station = CanVehicleUseStation(v, Station::Get(order->GetDestination()));
 
-			SetDParam(0, STR_ORDER_GO_TO_STATION);
+			SetDParam(0, valid_station ? STR_ORDER_GO_TO_STATION : STR_ORDER_GO_TO_STATION_CAN_T_USE_STATION);
 			SetDParam(1, STR_ORDER_GO_TO + (v->IsGroundVehicle() ? order->GetNonStopType() : 0));
 			SetDParam(2, order->GetDestination());
 
@@ -392,7 +393,7 @@ static Order GetOrderCmdFromTile(const Vehicle *v, TileIndex tile)
 //  for Existing objects tunnels and bridges as stations // 20190724: // 2nd stage: Allow users to convert objects via UI. 
 // Begin for Existing objects tunnels and bridges as stations 
 	// if (IsTileType(tile, MP_STATION)) {
-	if (IsTileType(tile, MP_STATION) || IsTileType(tile, MP_TUNNELBRIDGE)) {
+	if (IsTileType(tile, MP_STATION) || IsTileType(tile, MP_TUNNELBRIDGE) || IsTileType(tile, MP_INDUSTRY)) {
 		StationID st_index = GetStationIndex(tile);
 		if ((st_index == INVALID_STATION) || IsTileType(tile, MP_TUNNELBRIDGE) && (st_index == 0)) {
 			/* not found */
@@ -400,17 +401,25 @@ static Order GetOrderCmdFromTile(const Vehicle *v, TileIndex tile)
 			return order;
 		}
 // End   for Existing objects tunnels and bridges as stations 
-		const Station *st = Station::Get(st_index);
+		const Station *st = nullptr;
 
-		if (st->owner == _local_company || st->owner == OWNER_NONE) {
+		if (IsTileType(tile, MP_STATION)) {
+			st = Station::GetByTile(tile);
+		} else {
+			const Industry *in = Industry::GetByTile(tile);
+			st = in->neutral_station;
+		}
+		if (st != nullptr && (st->owner == _local_company || st->owner == OWNER_NONE)) {
 			byte facil;
-			(facil = FACIL_DOCK, v->type == VEH_SHIP) ||
-			(facil = FACIL_TRAIN, v->type == VEH_TRAIN) ||
-			(facil = FACIL_AIRPORT, v->type == VEH_AIRCRAFT) ||
-			(facil = FACIL_BUS_STOP, v->type == VEH_ROAD && RoadVehicle::From(v)->IsBus()) ||
-			(facil = FACIL_TRUCK_STOP, 1);
+			switch (v->type) {
+				case VEH_SHIP:     facil = FACIL_DOCK;    break;
+				case VEH_TRAIN:    facil = FACIL_TRAIN;   break;
+				case VEH_AIRCRAFT: facil = FACIL_AIRPORT; break;
+				case VEH_ROAD:     facil = FACIL_BUS_STOP | FACIL_TRUCK_STOP; break;
+				default: NOT_REACHED();
+			}
 			if (st->facilities & facil) {
-				order.MakeGoToStation(st_index);
+				order.MakeGoToStation(st->index);
 				if (_ctrl_pressed) order.SetLoadType(OLF_FULL_LOAD_ANY);
 				if (_settings_client.gui.new_nonstop && v->IsGroundVehicle()) order.SetNonStopType(ONSF_NO_STOP_AT_INTERMEDIATE_STATIONS);
 				order.SetStopLocation(v->type == VEH_TRAIN ? (OrderStopLocation)(_settings_client.gui.stop_location) : OSL_PLATFORM_FAR_END);
@@ -548,13 +557,13 @@ private:
 	VehicleOrderID GetOrderFromPt(int y)
 	{
 		NWidgetBase *nwid = this->GetWidget<NWidgetBase>(WID_O_ORDER_LIST);
-		int sel = (y - nwid->pos_y - WD_FRAMERECT_TOP) / nwid->resize_y; // Selected line in the WID_O_ORDER_LIST panel.
+		uint sel = (y - nwid->pos_y - WD_FRAMERECT_TOP) / nwid->resize_y; // Selected line in the WID_O_ORDER_LIST panel.
 
-		if ((uint)sel >= this->vscroll->GetCapacity()) return INVALID_VEH_ORDER_ID;
+		if (sel >= this->vscroll->GetCapacity()) return INVALID_VEH_ORDER_ID;
 
 		sel += this->vscroll->GetPosition();
 
-		return (sel <= vehicle->GetNumOrders() && sel >= 0) ? sel : INVALID_VEH_ORDER_ID;
+		return (sel <= vehicle->GetNumOrders()) ? sel : INVALID_VEH_ORDER_ID;
 	}
 
 	/**
@@ -576,27 +585,22 @@ private:
 
 	/**
 	 * Handle the click on the full load button.
-	 * @param load_type the way to load.
+	 * @param load_type Load flag to apply. If matches existing load type, toggles to default of 'load if possible'.
+	 * @param toggle If we toggle or not (used for hotkey behavior)
 	 */
-	void OrderClick_FullLoad(int load_type)
+	void OrderClick_FullLoad(OrderLoadFlags load_type, bool toggle = false)
 	{
 		VehicleOrderID sel_ord = this->OrderGetSel();
 		const Order *order = this->vehicle->GetOrder(sel_ord);
 
-		if (order == NULL || order->GetLoadType() == load_type) return;
+		if (order == nullptr) return;
 
-		if (load_type < 0) {
-			load_type = order->GetLoadType() == OLF_LOAD_IF_POSSIBLE ? OLF_FULL_LOAD_ANY : OLF_LOAD_IF_POSSIBLE;
+		if (toggle && order->GetLoadType() == load_type) {
+			load_type = OLF_LOAD_IF_POSSIBLE; // reset to 'default'
 		}
-		DoCommandP(this->vehicle->tile, this->vehicle->index + (sel_ord << 20), MOF_LOAD | (load_type << 4), CMD_MODIFY_ORDER | CMD_MSG(STR_ERROR_CAN_T_MODIFY_THIS_ORDER));
-	}
+		if (order->GetLoadType() == load_type) return; // If we still match, do nothing
 
-	/**
-	 * Handle the 'no loading' hotkey
-	 */
-	void OrderHotkey_NoLoad()
-	{
-		this->OrderClick_FullLoad(OLFB_NO_LOAD);
+		DoCommandP(this->vehicle->tile, this->vehicle->index + (sel_ord << 20), MOF_LOAD | (load_type << 4), CMD_MODIFY_ORDER | CMD_MSG(STR_ERROR_CAN_T_MODIFY_THIS_ORDER));
 	}
 
 	/**
@@ -608,7 +612,7 @@ private:
 
 		if (i < 0) {
 			const Order *order = this->vehicle->GetOrder(sel_ord);
-			if (order == NULL) return;
+			if (order == nullptr) return;
 			i = (order->GetDepotOrderType() & ODTFB_SERVICE) ? DA_ALWAYS_GO : DA_SERVICE;
 		}
 		DoCommandP(this->vehicle->tile, this->vehicle->index + (sel_ord << 20), MOF_DEPOT_ACTION | (i << 4), CMD_MODIFY_ORDER | CMD_MSG(STR_ERROR_CAN_T_MODIFY_THIS_ORDER));
@@ -620,7 +624,7 @@ private:
 	void OrderClick_NearestDepot()
 	{
 		Order order;
-		order.next = NULL;
+		order.next = nullptr;
 		order.index = 0;
 		order.MakeGoToDepot(0, ODTFB_PART_OF_ORDERS,
 				_settings_client.gui.new_nonstop && this->vehicle->IsGroundVehicle() ? ONSF_NO_STOP_AT_INTERMEDIATE_STATIONS : ONSF_STOP_EVERYWHERE);
@@ -631,41 +635,28 @@ private:
 
 	/**
 	 * Handle the click on the unload button.
+	 * @param unload_type Unload flag to apply. If matches existing unload type, toggles to default of 'unload if possible'.
+	 * @param toggle If we toggle or not (used for hotkey behavior)
 	 */
-	void OrderClick_Unload(int unload_type)
+	void OrderClick_Unload(OrderUnloadFlags unload_type, bool toggle = false)
 	{
 		VehicleOrderID sel_ord = this->OrderGetSel();
 		const Order *order = this->vehicle->GetOrder(sel_ord);
 
-		if (order == NULL || order->GetUnloadType() == unload_type) return;
+		if (order == nullptr) return;
 
-		if (unload_type < 0) {
-			unload_type = order->GetUnloadType() == OUF_UNLOAD_IF_POSSIBLE ? OUFB_UNLOAD : OUF_UNLOAD_IF_POSSIBLE;
+		if (toggle && order->GetUnloadType() == unload_type) {
+			unload_type = OUF_UNLOAD_IF_POSSIBLE;
 		}
+		if (order->GetUnloadType() == unload_type) return; // If we still match, do nothing
 
 		DoCommandP(this->vehicle->tile, this->vehicle->index + (sel_ord << 20), MOF_UNLOAD | (unload_type << 4), CMD_MODIFY_ORDER | CMD_MSG(STR_ERROR_CAN_T_MODIFY_THIS_ORDER));
 
-		/* Transfer orders with leave empty as default */
-		if (unload_type == OUFB_TRANSFER) {
+		/* Transfer and unload orders with leave empty as default */
+		if (unload_type == OUFB_TRANSFER || unload_type == OUFB_UNLOAD) {
 			DoCommandP(this->vehicle->tile, this->vehicle->index + (sel_ord << 20), MOF_LOAD | (OLFB_NO_LOAD << 4), CMD_MODIFY_ORDER);
 			this->SetWidgetDirty(WID_O_FULL_LOAD);
 		}
-	}
-
-	/**
-	 * Handle the transfer hotkey
-	 */
-	void OrderHotkey_Transfer()
-	{
-		this->OrderClick_Unload(OUFB_TRANSFER);
-	}
-
-	/**
-	 * Handle the 'no unload' hotkey
-	 */
-	void OrderHotkey_NoUnload()
-	{
-		this->OrderClick_Unload(OUFB_NO_UNLOAD);
 	}
 
 	/**
@@ -679,7 +670,7 @@ private:
 		VehicleOrderID sel_ord = this->OrderGetSel();
 		const Order *order = this->vehicle->GetOrder(sel_ord);
 
-		if (order == NULL || order->GetNonStopType() == non_stop) return;
+		if (order == nullptr || order->GetNonStopType() == non_stop) return;
 
 		/* Keypress if negative, so 'toggle' to the next */
 		if (non_stop < 0) {
@@ -767,7 +758,7 @@ private:
 	{
 		this->can_do_refit = false;
 		this->can_do_autorefit = false;
-		for (const Vehicle *w = this->vehicle; w != NULL; w = w->IsGroundVehicle() ? w->Next() : NULL) {
+		for (const Vehicle *w = this->vehicle; w != nullptr; w = w->IsGroundVehicle() ? w->Next() : nullptr) {
 			if (IsEngineRefittable(w->engine_type)) this->can_do_refit = true;
 			if (HasBit(Engine::Get(w->engine_type)->info.misc_flags, EF_AUTO_REFIT)) this->can_do_autorefit = true;
 		}
@@ -795,8 +786,7 @@ public:
 		if (_settings_client.gui.quick_goto && v->owner == _local_company) {
 			/* If there are less than 2 station, make Go To active. */
 			int station_orders = 0;
-			const Order *order;
-			FOR_VEHICLE_ORDERS(v, order) {
+			for(const Order *order : v->Orders()) {
 				if (order->IsType(OT_GOTO_STATION)) station_orders++;
 			}
 
@@ -805,7 +795,7 @@ public:
 		this->OnInvalidateData(VIWD_MODIFY_ORDERS);
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		switch (widget) {
 			case WID_O_ORDER_LIST:
@@ -842,7 +832,7 @@ public:
 	 * @param data Information about the changed data.
 	 * @param gui_scope Whether the call is done from GUI scope. You may not do everything when not in GUI scope. See #InvalidateWindowData() for details.
 	 */
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		VehicleOrderID from = INVALID_VEH_ORDER_ID;
 		VehicleOrderID to   = INVALID_VEH_ORDER_ID;
@@ -862,7 +852,7 @@ public:
 				/* Removed / replaced all orders (after deleting / sharing) */
 				if (this->selected_order == -1) break;
 
-				this->DeleteChildWindows();
+				this->CloseChildWindows();
 				HideDropDownMenu(this);
 				this->selected_order = -1;
 				break;
@@ -894,7 +884,7 @@ public:
 				/* Now we are modifying the selected order */
 				if (to == INVALID_VEH_ORDER_ID) {
 					/* Deleting selected order */
-					this->DeleteChildWindows();
+					this->CloseChildWindows();
 					HideDropDownMenu(this);
 					this->selected_order = -1;
 					break;
@@ -960,11 +950,11 @@ public:
 		NWidgetStacked *right_sel     = this->GetWidget<NWidgetStacked>(WID_O_SEL_TOP_RIGHT);
 		/* Ship or airplane. */
 		NWidgetStacked *row_sel = this->GetWidget<NWidgetStacked>(WID_O_SEL_TOP_ROW);
-		assert(row_sel != NULL || (train_row_sel != NULL && left_sel != NULL && middle_sel != NULL && right_sel != NULL));
+		assert(row_sel != nullptr || (train_row_sel != nullptr && left_sel != nullptr && middle_sel != nullptr && right_sel != nullptr));
 
 
-		if (order == NULL) {
-			if (row_sel != NULL) {
+		if (order == nullptr) {
+			if (row_sel != nullptr) {
 				row_sel->SetDisplayedPlane(DP_ROW_LOAD);
 			} else {
 				train_row_sel->SetDisplayedPlane(DP_GROUNDVEHICLE_ROW_NORMAL);
@@ -983,7 +973,7 @@ public:
 
 			switch (order->GetType()) {
 				case OT_GOTO_STATION:
-					if (row_sel != NULL) {
+					if (row_sel != nullptr) {
 						row_sel->SetDisplayedPlane(DP_ROW_LOAD);
 					} else {
 						train_row_sel->SetDisplayedPlane(DP_GROUNDVEHICLE_ROW_NORMAL);
@@ -1005,7 +995,7 @@ public:
 					break;
 
 				case OT_GOTO_WAYPOINT:
-					if (row_sel != NULL) {
+					if (row_sel != nullptr) {
 						row_sel->SetDisplayedPlane(DP_ROW_LOAD);
 					} else {
 						train_row_sel->SetDisplayedPlane(DP_GROUNDVEHICLE_ROW_NORMAL);
@@ -1021,7 +1011,7 @@ public:
 					break;
 
 				case OT_GOTO_DEPOT:
-					if (row_sel != NULL) {
+					if (row_sel != nullptr) {
 						row_sel->SetDisplayedPlane(DP_ROW_DEPOT);
 					} else {
 						train_row_sel->SetDisplayedPlane(DP_GROUNDVEHICLE_ROW_NORMAL);
@@ -1040,7 +1030,7 @@ public:
 					break;
 
 				case OT_CONDITIONAL: {
-					if (row_sel != NULL) {
+					if (row_sel != nullptr) {
 						row_sel->SetDisplayedPlane(DP_ROW_CONDITIONAL);
 					} else {
 						train_row_sel->SetDisplayedPlane(DP_GROUNDVEHICLE_ROW_CONDITIONAL);
@@ -1055,7 +1045,7 @@ public:
 				}
 
 				default: // every other order
-					if (row_sel != NULL) {
+					if (row_sel != nullptr) {
 						row_sel->SetDisplayedPlane(DP_ROW_LOAD);
 					} else {
 						train_row_sel->SetDisplayedPlane(DP_GROUNDVEHICLE_ROW_NORMAL);
@@ -1077,7 +1067,7 @@ public:
 		this->SetDirty();
 	}
 
-	virtual void OnPaint()
+	void OnPaint() override
 	{
 		if (this->vehicle->owner != _local_company) {
 			this->selected_order = -1; // Disable selection any selected row at a competitor order window.
@@ -1087,7 +1077,7 @@ public:
 		this->DrawWidgets();
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_O_ORDER_LIST) return;
 
@@ -1103,15 +1093,15 @@ public:
 		const Order *order = this->vehicle->GetOrder(i);
 		/* First draw the highlighting underground if it exists. */
 		if (this->order_over != INVALID_VEH_ORDER_ID) {
-			while (order != NULL) {
+			while (order != nullptr) {
 				/* Don't draw anything if it extends past the end of the window. */
 				if (!this->vscroll->IsVisible(i)) break;
 
 				if (i != this->selected_order && i == this->order_over) {
 					/* Highlight dragged order destination. */
 					int top = (this->order_over < this->selected_order ? y : y + line_height) - WD_FRAMERECT_TOP;
-					int bottom = min(top + 2, r.bottom - WD_FRAMERECT_BOTTOM);
-					top = max(top - 3, r.top + WD_FRAMERECT_TOP);
+					int bottom = std::min(top + 2, r.bottom - WD_FRAMERECT_BOTTOM);
+					top = std::max(top - 3, r.top + WD_FRAMERECT_TOP);
 					GfxFillRect(r.left + WD_FRAMETEXT_LEFT, top, r.right - WD_FRAMETEXT_RIGHT, bottom, _colour_gradient[COLOUR_GREY][7]);
 					break;
 				}
@@ -1128,7 +1118,7 @@ public:
 		}
 
 		/* Draw the orders. */
-		while (order != NULL) {
+		while (order != nullptr) {
 			/* Don't draw anything if it extends past the end of the window. */
 			if (!this->vscroll->IsVisible(i)) break;
 
@@ -1145,14 +1135,14 @@ public:
 		}
 	}
 
-	virtual void SetStringParameters(int widget) const
+	void SetStringParameters(int widget) const override
 	{
 		switch (widget) {
 			case WID_O_COND_VALUE: {
 				VehicleOrderID sel = this->OrderGetSel();
 				const Order *order = this->vehicle->GetOrder(sel);
 
-				if (order != NULL && order->IsType(OT_CONDITIONAL)) {
+				if (order != nullptr && order->IsType(OT_CONDITIONAL)) {
 					uint value = order->GetConditionValue();
 					if (order->GetConditionVariable() == OCV_MAX_SPEED) value = ConvertSpeedToDisplaySpeed(value);
 					SetDParam(0, value);
@@ -1166,7 +1156,7 @@ public:
 		}
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_O_ORDER_LIST: {
@@ -1174,7 +1164,7 @@ public:
 					VehicleOrderID order_id = this->GetOrderFromPt(_cursor.pos.y - this->top);
 					if (order_id != INVALID_VEH_ORDER_ID) {
 						Order order;
-						order.next = NULL;
+						order.next = nullptr;
 						order.index = 0;
 						order.MakeConditional(order_id);
 
@@ -1193,7 +1183,7 @@ public:
 				}
 
 				/* This order won't be selected any more, close all child windows and dropdowns */
-				this->DeleteChildWindows();
+				this->CloseChildWindows();
 				HideDropDownMenu(this);
 
 				if (sel == INVALID_VEH_ORDER_ID || this->vehicle->owner != _local_company) {
@@ -1263,7 +1253,7 @@ public:
 
 			case WID_O_FULL_LOAD:
 				if (this->GetWidget<NWidgetLeaf>(widget)->ButtonHit(pt)) {
-					this->OrderClick_FullLoad(-1);
+					this->OrderClick_FullLoad(OLF_FULL_LOAD_ANY, true);
 				} else {
 					ShowDropDownMenu(this, _order_full_load_drowdown, this->vehicle->GetOrder(this->OrderGetSel())->GetLoadType(), WID_O_FULL_LOAD, 0, 2);
 				}
@@ -1271,7 +1261,7 @@ public:
 
 			case WID_O_UNLOAD:
 				if (this->GetWidget<NWidgetLeaf>(widget)->ButtonHit(pt)) {
-					this->OrderClick_Unload(-1);
+					this->OrderClick_Unload(OUFB_UNLOAD, true);
 				} else {
 					ShowDropDownMenu(this, _order_unload_drowdown, this->vehicle->GetOrder(this->OrderGetSel())->GetUnloadType(), WID_O_UNLOAD, 0, 8);
 				}
@@ -1302,11 +1292,11 @@ public:
 				break;
 
 			case WID_O_COND_VARIABLE: {
-				DropDownList *list = new DropDownList();
+				DropDownList list;
 				for (uint i = 0; i < lengthof(_order_conditional_variable); i++) {
-					*list->Append() = new DropDownListStringItem(STR_ORDER_CONDITIONAL_LOAD_PERCENTAGE + _order_conditional_variable[i], _order_conditional_variable[i], false);
+					list.emplace_back(new DropDownListStringItem(STR_ORDER_CONDITIONAL_LOAD_PERCENTAGE + _order_conditional_variable[i], _order_conditional_variable[i], false));
 				}
-				ShowDropDownList(this, list, this->vehicle->GetOrder(this->OrderGetSel())->GetConditionVariable(), WID_O_COND_VARIABLE);
+				ShowDropDownList(this, std::move(list), this->vehicle->GetOrder(this->OrderGetSel())->GetConditionVariable(), WID_O_COND_VARIABLE);
 				break;
 			}
 
@@ -1331,7 +1321,7 @@ public:
 		}
 	}
 
-	virtual void OnQueryTextFinished(char *str)
+	void OnQueryTextFinished(char *str) override
 	{
 		if (!StrEmpty(str)) {
 			VehicleOrderID sel = this->OrderGetSel();
@@ -1354,7 +1344,7 @@ public:
 		}
 	}
 
-	virtual void OnDropdownSelect(int widget, int index)
+	void OnDropdownSelect(int widget, int index) override
 	{
 		switch (widget) {
 			case WID_O_NON_STOP:
@@ -1362,11 +1352,11 @@ public:
 				break;
 
 			case WID_O_FULL_LOAD:
-				this->OrderClick_FullLoad(index);
+				this->OrderClick_FullLoad((OrderLoadFlags)index);
 				break;
 
 			case WID_O_UNLOAD:
-				this->OrderClick_Unload(index);
+				this->OrderClick_Unload((OrderUnloadFlags)index);
 				break;
 
 			case WID_O_GOTO:
@@ -1397,7 +1387,7 @@ public:
 		}
 	}
 
-	virtual void OnDragDrop(Point pt, int widget)
+	void OnDragDrop(Point pt, int widget) override
 	{
 		switch (widget) {
 			case WID_O_ORDER_LIST: {
@@ -1430,28 +1420,28 @@ public:
 		}
 	}
 
-	virtual EventState OnHotkey(int hotkey)
+	EventState OnHotkey(int hotkey) override
 	{
 		if (this->vehicle->owner != _local_company) return ES_NOT_HANDLED;
 
 		switch (hotkey) {
-			case OHK_SKIP:           this->OrderClick_Skip();          break;
-			case OHK_DELETE:         this->OrderClick_Delete();        break;
+			case OHK_SKIP:           this->OrderClick_Skip(); break;
+			case OHK_DELETE:         this->OrderClick_Delete(); break;
 			case OHK_GOTO:           this->OrderClick_Goto(OPOS_GOTO); break;
-			case OHK_NONSTOP:        this->OrderClick_Nonstop(-1);     break;
-			case OHK_FULLLOAD:       this->OrderClick_FullLoad(-1);    break;
-			case OHK_UNLOAD:         this->OrderClick_Unload(-1);      break;
-			case OHK_NEAREST_DEPOT:  this->OrderClick_NearestDepot();  break;
-			case OHK_ALWAYS_SERVICE: this->OrderClick_Service(-1);     break;
-			case OHK_TRANSFER:       this->OrderHotkey_Transfer();     break;
-			case OHK_NO_UNLOAD:      this->OrderHotkey_NoUnload();     break;
-			case OHK_NO_LOAD:        this->OrderHotkey_NoLoad();       break;
+			case OHK_NONSTOP:        this->OrderClick_Nonstop(-1); break;
+			case OHK_FULLLOAD:       this->OrderClick_FullLoad(OLF_FULL_LOAD_ANY, true); break;
+			case OHK_UNLOAD:         this->OrderClick_Unload(OUFB_UNLOAD, true); break;
+			case OHK_NEAREST_DEPOT:  this->OrderClick_NearestDepot(); break;
+			case OHK_ALWAYS_SERVICE: this->OrderClick_Service(-1); break;
+			case OHK_TRANSFER:       this->OrderClick_Unload(OUFB_TRANSFER, true); break;
+			case OHK_NO_UNLOAD:      this->OrderClick_Unload(OUFB_NO_UNLOAD, true); break;
+			case OHK_NO_LOAD:        this->OrderClick_FullLoad(OLFB_NO_LOAD, true); break;
 			default: return ES_NOT_HANDLED;
 		}
 		return ES_HANDLED;
 	}
 
-	virtual void OnPlaceObject(Point pt, TileIndex tile)
+	void OnPlaceObject(Point pt, TileIndex tile) override
 	{
 		if (this->goto_type == OPOS_GOTO) {
 			const Order cmd = GetOrderCmdFromTile(this->vehicle, tile);
@@ -1464,7 +1454,7 @@ public:
 		}
 	}
 
-	virtual bool OnVehicleSelect(const Vehicle *v)
+	bool OnVehicleSelect(const Vehicle *v) override
 	{
 		/* v is vehicle getting orders. Only copy/clone orders if vehicle doesn't have any orders yet.
 		 * We disallow copying orders of other vehicles if we already have at least one order entry
@@ -1482,7 +1472,7 @@ public:
 		return true;
 	}
 
-	virtual void OnPlaceObjectAbort()
+	void OnPlaceObjectAbort() override
 	{
 		this->goto_type = OPOS_NONE;
 		this->SetWidgetDirty(WID_O_GOTO);
@@ -1494,7 +1484,7 @@ public:
 		}
 	}
 
-	virtual void OnMouseDrag(Point pt, int widget)
+	void OnMouseDrag(Point pt, int widget) override
 	{
 		if (this->selected_order != -1 && widget == WID_O_ORDER_LIST) {
 			/* An order is dragged.. */
@@ -1514,7 +1504,7 @@ public:
 		}
 	}
 
-	virtual void OnResize()
+	void OnResize() override
 	{
 		/* Update the scroll bar */
 		this->vscroll->SetCapacityFromWidget(this, WID_O_ORDER_LIST);
@@ -1719,12 +1709,12 @@ static WindowDesc _other_orders_desc(
 
 void ShowOrdersWindow(const Vehicle *v)
 {
-	DeleteWindowById(WC_VEHICLE_DETAILS, v->index, false);
-	DeleteWindowById(WC_VEHICLE_TIMETABLE, v->index, false);
-	if (BringWindowToFrontById(WC_VEHICLE_ORDERS, v->index) != NULL) return;
+	CloseWindowById(WC_VEHICLE_DETAILS, v->index, false);
+	CloseWindowById(WC_VEHICLE_TIMETABLE, v->index, false);
+	if (BringWindowToFrontById(WC_VEHICLE_ORDERS, v->index) != nullptr) return;
 
 	/* Using a different WindowDescs for _local_company causes problems.
-	 * Due to this we have to close order windows in ChangeWindowOwner/DeleteCompanyWindows,
+	 * Due to this we have to close order windows in ChangeWindowOwner/CloseCompanyWindows,
 	 * because we cannot change switch the WindowDescs and keeping the old WindowDesc results
 	 * in crashed due to missing widges.
 	 * TODO Rewrite the order GUI to not use different WindowDescs.

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -11,6 +9,8 @@
 
 #ifndef WINDOW_GUI_H
 #define WINDOW_GUI_H
+
+#include <list>
 
 #include "vehicle_type.h"
 #include "viewport_type.h"
@@ -142,11 +142,11 @@ enum WidgetDrawDistances {
 
 /* widget.cpp */
 void DrawFrameRect(int left, int top, int right, int bottom, Colours colour, FrameFlags flags);
-void DrawCaption(const Rect &r, Colours colour, Owner owner, StringID str);
+void DrawCaption(const Rect &r, Colours colour, Owner owner, TextColour text_colour, StringID str, StringAlignment align);
 
 /* window.cpp */
-extern Window *_z_front_window;
-extern Window *_z_back_window;
+using WindowList = std::list<Window *>;
+extern WindowList _z_windows;
 extern Window *_focused_window;
 
 
@@ -169,14 +169,14 @@ struct WindowDesc : ZeroedMemoryAllocator {
 
 	WindowDesc(WindowPosition default_pos, const char *ini_key, int16 def_width_trad, int16 def_height_trad,
 			WindowClass window_class, WindowClass parent_class, uint32 flags,
-			const NWidgetPart *nwid_parts, int16 nwid_length, HotkeyList *hotkeys = NULL);
+			const NWidgetPart *nwid_parts, int16 nwid_length, HotkeyList *hotkeys = nullptr);
 
 	~WindowDesc();
 
 	WindowPosition default_pos;    ///< Preferred position of the window. @see WindowPosition()
 	WindowClass cls;               ///< Class of the window, @see WindowClass.
 	WindowClass parent_cls;        ///< Class of the parent window. @see WindowClass
-	const char *ini_key;           ///< Key to store window defaults in openttd.cfg. \c NULL if nothing shall be stored.
+	const char *ini_key;           ///< Key to store window defaults in openttd.cfg. \c nullptr if nothing shall be stored.
 	uint32 flags;                  ///< Flags. @see WindowDefaultFlag
 	const NWidgetPart *nwid_parts; ///< Nested widget parts describing the window.
 	int16 nwid_length;             ///< Length of the #nwid_parts array.
@@ -255,7 +255,7 @@ static const int WHITE_BORDER_DURATION = 3; ///< The initial timeout value for W
  * The actual location being shown is #scrollpos_x, #scrollpos_y.
  * @see InitializeViewport(), UpdateViewportPosition(), UpdateViewportCoordinates().
  */
-struct ViewportData : ViewPort {
+struct ViewportData : Viewport {
 	VehicleID follow_vehicle; ///< VehicleID to follow if following a vehicle, #INVALID_VEHICLE otherwise.
 	int32 scrollpos_x;        ///< Currently shown x coordinate (virtual screen coordinate of topleft corner of the viewport).
 	int32 scrollpos_y;        ///< Currently shown y coordinate (virtual screen coordinate of topleft corner of the viewport).
@@ -270,23 +270,28 @@ enum TooltipCloseCondition {
 	TCC_RIGHT_CLICK,
 	TCC_HOVER,
 	TCC_NONE,
+	TCC_EXIT_VIEWPORT,
 };
 
 /**
  * Data structure for an opened window
  */
 struct Window : ZeroedMemoryAllocator {
+private:
+	static std::vector<Window *> closed_windows;
+
 protected:
 	void InitializeData(WindowNumber window_number);
 	void InitializePositionSize(int x, int y, int min_width, int min_height);
 	virtual void FindWindowPlacementAndResize(int def_width, int def_height);
 
-	SmallVector<int, 4> scheduled_invalidation_data;  ///< Data of scheduled OnInvalidateData() calls.
+	std::vector<int> scheduled_invalidation_data;  ///< Data of scheduled OnInvalidateData() calls.
+
+	/* Protected to prevent deletion anywhere outside Window::DeleteClosedWindows(). */
+	virtual ~Window();
 
 public:
 	Window(WindowDesc *desc);
-
-	virtual ~Window();
 
 	/**
 	 * Helper allocation function to disallow something.
@@ -294,19 +299,7 @@ public:
 	 * to destruct them all at the same time too, which is kinda hard.
 	 * @param size the amount of space not to allocate
 	 */
-	inline void *operator new[](size_t size)
-	{
-		NOT_REACHED();
-	}
-
-	/**
-	 * Helper allocation function to disallow something.
-	 * Don't free the window directly; it corrupts the linked list when iterating
-	 * @param ptr the pointer not to free
-	 */
-	inline void operator delete(void *ptr)
-	{
-	}
+	inline void *operator new[](size_t size) = delete;
 
 	WindowDesc *window_desc;    ///< Window description
 	WindowFlags flags;          ///< Window flags
@@ -326,19 +319,18 @@ public:
 	Owner owner;        ///< The owner of the content shown in this window. Company colour is acquired from this variable.
 
 	ViewportData *viewport;          ///< Pointer to viewport data, if present.
-	const NWidgetCore *nested_focus; ///< Currently focused nested widget, or \c NULL if no nested widget has focus.
+	const NWidgetCore *nested_focus; ///< Currently focused nested widget, or \c nullptr if no nested widget has focus.
 	SmallMap<int, QueryString*> querystrings; ///< QueryString associated to WWT_EDITBOX widgets.
 	NWidgetBase *nested_root;        ///< Root of the nested tree.
 	NWidgetBase **nested_array;      ///< Array of pointers into the tree. Do not access directly, use #Window::GetWidget() instead.
 	uint nested_array_size;          ///< Size of the nested array.
-	NWidgetStacked *shade_select;    ///< Selection widget (#NWID_SELECTION) to use for shading the window. If \c NULL, window cannot shade.
+	NWidgetStacked *shade_select;    ///< Selection widget (#NWID_SELECTION) to use for shading the window. If \c nullptr, window cannot shade.
 	Dimension unshaded_size;         ///< Last known unshaded size (only valid while shaded).
 
 	int mouse_capture_widget;        ///< Widgetindex of current mouse capture widget (e.g. dragged scrollbar). -1 if no widget has mouse capture.
 
 	Window *parent;                  ///< Parent window.
-	Window *z_front;                 ///< The window in front of us in z-order.
-	Window *z_back;                  ///< The window behind us in z-order.
+	WindowList::iterator z_position;
 
 	template <class NWID>
 	inline const NWID *GetWidget(uint widnum) const;
@@ -394,7 +386,7 @@ public:
 	inline void SetWidgetDisabledState(byte widget_index, bool disab_stat)
 	{
 		assert(widget_index < this->nested_array_size);
-		if (this->nested_array[widget_index] != NULL) this->GetWidget<NWidgetCore>(widget_index)->SetDisabled(disab_stat);
+		if (this->nested_array[widget_index] != nullptr) this->GetWidget<NWidgetCore>(widget_index)->SetDisabled(disab_stat);
 	}
 
 	/**
@@ -433,7 +425,7 @@ public:
 	 */
 	inline bool IsWidgetFocused(byte widget_index) const
 	{
-		return this->nested_focus != NULL && this->nested_focus->index == widget_index;
+		return this->nested_focus != nullptr && this->nested_focus->index == widget_index;
 	}
 
 	/**
@@ -517,7 +509,9 @@ public:
 	void DrawSortButtonState(int widget, SortButtonState state) const;
 	static int SortButtonWidth();
 
-	void DeleteChildWindows(WindowClass wc = WC_INVALID) const;
+	void CloseChildWindows(WindowClass wc = WC_INVALID) const;
+	virtual void Close();
+	static void DeleteClosedWindows();
 
 	void SetDirty() const;
 	void ReInit(int rx = 0, int ry = 0);
@@ -525,7 +519,7 @@ public:
 	/** Is window shaded currently? */
 	inline bool IsShaded() const
 	{
-		return this->shade_select != NULL && this->shade_select->shown_plane == SZSP_HORIZONTAL;
+		return this->shade_select != nullptr && this->shade_select->shown_plane == SZSP_HORIZONTAL;
 	}
 
 	void SetShaded(bool make_shaded);
@@ -592,10 +586,7 @@ public:
 	 */
 	virtual void SetStringParameters(int widget) const {}
 
-	/**
-	 * Called when window gains focus
-	 */
-	virtual void OnFocus() {}
+	virtual void OnFocus();
 
 	virtual void OnFocusLost();
 
@@ -696,7 +687,9 @@ public:
 	virtual void OnGameTick() {}
 
 	/**
-	 * Called once every 100 (game) ticks.
+	 * Called once every 100 (game) ticks, or once every 3s, whichever comes last.
+	 * In normal game speed the frequency is 1 call every 100 ticks (can be more than 3s).
+	 * In fast-forward the frequency is 1 call every ~3s (can be more than 100 ticks).
 	 */
 	virtual void OnHundredthTick() {}
 
@@ -734,7 +727,7 @@ public:
 
 	/**
 	 * The query window opened from this window has closed.
-	 * @param str the new value of the string, NULL if the window
+	 * @param str the new value of the string, nullptr if the window
 	 *            was cancelled or an empty string when the default
 	 *            button was pressed, i.e. StrEmpty(str).
 	 */
@@ -812,20 +805,88 @@ public:
 	 * @pre this->IsNewGRFInspectable()
 	 */
 	virtual void ShowNewGRFInspectWindow() const { NOT_REACHED(); }
+
+	/**
+	 * Iterator to iterate all valid Windows
+	 * @tparam TtoBack whether we iterate towards the back.
+	 */
+	template <bool TtoBack>
+	struct WindowIterator {
+		typedef Window *value_type;
+		typedef value_type *pointer;
+		typedef value_type &reference;
+		typedef size_t difference_type;
+		typedef std::forward_iterator_tag iterator_category;
+
+		explicit WindowIterator(WindowList::iterator start) : it(start)
+		{
+			this->Validate();
+		}
+		explicit WindowIterator(const Window *w) : it(w->z_position) {}
+
+		bool operator==(const WindowIterator &other) const { return this->it == other.it; }
+		bool operator!=(const WindowIterator &other) const { return !(*this == other); }
+		Window * operator*() const { return *this->it; }
+		WindowIterator & operator++() { this->Next(); this->Validate(); return *this; }
+
+		bool IsEnd() const { return this->it == _z_windows.end(); }
+
+	private:
+		WindowList::iterator it;
+		void Validate()
+		{
+			while (!this->IsEnd() && *this->it == nullptr) this->Next();
+		}
+		void Next()
+		{
+			if constexpr (!TtoBack) {
+				++this->it;
+			} else if (this->it == _z_windows.begin()) {
+				this->it = _z_windows.end();
+			} else {
+				--this->it;
+			}
+		}
+	};
+	using IteratorToFront = WindowIterator<false>; //!< Iterate in Z order towards front.
+	using IteratorToBack = WindowIterator<true>; //!< Iterate in Z order towards back.
+
+	/**
+	 * Iterable ensemble of all valid Windows
+	 * @tparam Tfront Wether we iterate from front
+	 */
+	template <bool Tfront>
+	struct AllWindows {
+		AllWindows() {}
+		WindowIterator<Tfront> begin()
+		{
+			if constexpr (Tfront) {
+				auto back = _z_windows.end();
+				if (back != _z_windows.begin()) --back;
+				return WindowIterator<Tfront>(back);
+			} else {
+				return WindowIterator<Tfront>(_z_windows.begin());
+			}
+		}
+		WindowIterator<Tfront> end() { return WindowIterator<Tfront>(_z_windows.end()); }
+	};
+	using Iterate = AllWindows<false>; //!< Iterate all windows in whatever order is easiest.
+	using IterateFromBack = AllWindows<false>; //!< Iterate all windows in Z order from back to front.
+	using IterateFromFront = AllWindows<true>; //!< Iterate all windows in Z order from front to back.
 };
 
 /**
  * Get the nested widget with number \a widnum from the nested widget tree.
  * @tparam NWID Type of the nested widget.
  * @param widnum Widget number of the widget to retrieve.
- * @return The requested widget if it is instantiated, \c NULL otherwise.
+ * @return The requested widget if it is instantiated, \c nullptr otherwise.
  */
 template <class NWID>
 inline NWID *Window::GetWidget(uint widnum)
 {
-	if (widnum >= this->nested_array_size || this->nested_array[widnum] == NULL) return NULL;
+	if (widnum >= this->nested_array_size || this->nested_array[widnum] == nullptr) return nullptr;
 	NWID *nwid = dynamic_cast<NWID *>(this->nested_array[widnum]);
-	assert(nwid != NULL);
+	assert(nwid != nullptr);
 	return nwid;
 }
 
@@ -833,7 +894,7 @@ inline NWID *Window::GetWidget(uint widnum)
 template <>
 inline const NWidgetBase *Window::GetWidget<NWidgetBase>(uint widnum) const
 {
-	if (widnum >= this->nested_array_size) return NULL;
+	if (widnum >= this->nested_array_size) return nullptr;
 	return this->nested_array[widnum];
 }
 
@@ -841,7 +902,7 @@ inline const NWidgetBase *Window::GetWidget<NWidgetBase>(uint widnum) const
  * Get the nested widget with number \a widnum from the nested widget tree.
  * @tparam NWID Type of the nested widget.
  * @param widnum Widget number of the widget to retrieve.
- * @return The requested widget if it is instantiated, \c NULL otherwise.
+ * @return The requested widget if it is instantiated, \c nullptr otherwise.
  */
 template <class NWID>
 inline const NWID *Window::GetWidget(uint widnum) const
@@ -861,7 +922,7 @@ public:
 		this->parent = parent;
 	}
 
-	virtual ~PickerWindowBase();
+	void Close() override;
 };
 
 Window *BringWindowToFrontById(WindowClass cls, WindowNumber number);
@@ -873,28 +934,22 @@ Window *FindWindowFromPt(int x, int y);
  * @param desc The pointer to the WindowDesc to be created
  * @param window_number the window number of the new window
  * @param return_existing If set, also return the window if it already existed.
- * @return %Window pointer of the newly created window, or the existing one if \a return_existing is set, or \c NULL.
+ * @return %Window pointer of the newly created window, or the existing one if \a return_existing is set, or \c nullptr.
  */
 template <typename Wcls>
 Wcls *AllocateWindowDescFront(WindowDesc *desc, int window_number, bool return_existing = false)
 {
 	Wcls *w = static_cast<Wcls *>(BringWindowToFrontById(desc->cls, window_number));
-	if (w != NULL) return return_existing ? w : NULL;
+	if (w != nullptr) return return_existing ? w : nullptr;
 	return new Wcls(desc, window_number);
 }
 
 void RelocateAllWindows(int neww, int newh);
 
-void GuiShowTooltips(Window *parent, StringID str, uint paramcount = 0, const uint64 params[] = NULL, TooltipCloseCondition close_tooltip = TCC_HOVER);
+void GuiShowTooltips(Window *parent, StringID str, uint paramcount = 0, const uint64 params[] = nullptr, TooltipCloseCondition close_tooltip = TCC_HOVER);
 
 /* widget.cpp */
 int GetWidgetFromPos(const Window *w, int x, int y);
-
-/** Iterate over all windows */
-#define FOR_ALL_WINDOWS_FROM_BACK_FROM(w, start)  for (w = start; w != NULL; w = w->z_front) if (w->window_class != WC_INVALID)
-#define FOR_ALL_WINDOWS_FROM_FRONT_FROM(w, start) for (w = start; w != NULL; w = w->z_back) if (w->window_class != WC_INVALID)
-#define FOR_ALL_WINDOWS_FROM_BACK(w)  FOR_ALL_WINDOWS_FROM_BACK_FROM(w, _z_back_window)
-#define FOR_ALL_WINDOWS_FROM_FRONT(w) FOR_ALL_WINDOWS_FROM_FRONT_FROM(w, _z_front_window)
 
 extern Point _cursorpos_drag_start;
 
@@ -908,9 +963,10 @@ extern bool _mouse_hovering;
 /** Mouse modes. */
 enum SpecialMouseMode {
 	WSM_NONE,     ///< No special mouse mode.
-	WSM_DRAGDROP, ///< Dragging an object.
+	WSM_DRAGDROP, ///< Drag&drop an object.
 	WSM_SIZING,   ///< Sizing mode.
 	WSM_PRESIZE,  ///< Presizing mode (docks, tunnels).
+	WSM_DRAGGING, ///< Dragging mode (trees).
 };
 extern SpecialMouseMode _special_mouse_mode;
 

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -19,6 +17,7 @@
 #include "vehicle_func.h"
 #include "company_func.h"
 #include "rail.h"
+#include "road.h"
 #include "settings_type.h"
 #include "train.h"
 #include "roadveh.h"
@@ -41,7 +40,8 @@ StringID GetEngineCategoryName(EngineID engine)
 	const Engine *e = Engine::Get(engine);
 	switch (e->type) {
 		default: NOT_REACHED();
-		case VEH_ROAD:              return STR_ENGINE_PREVIEW_ROAD_VEHICLE;
+		case VEH_ROAD:
+			return GetRoadTypeInfo(e->u.road.roadtype)->strings.new_engine;
 		case VEH_AIRCRAFT:          return STR_ENGINE_PREVIEW_AIRCRAFT;
 		case VEH_SHIP:              return STR_ENGINE_PREVIEW_SHIP;
 		case VEH_TRAIN:
@@ -75,7 +75,7 @@ struct EnginePreviewWindow : Window {
 		this->flags |= WF_STICKY;
 	}
 
-	virtual void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize)
+	void UpdateWidgetSize(int widget, Dimension *size, const Dimension &padding, Dimension *fill, Dimension *resize) override
 	{
 		if (widget != WID_EP_QUESTION) return;
 
@@ -93,16 +93,16 @@ struct EnginePreviewWindow : Window {
 			case VEH_SHIP:     GetShipSpriteSize(    engine, x, y, x_offs, y_offs, image_type); break;
 			case VEH_AIRCRAFT: GetAircraftSpriteSize(engine, x, y, x_offs, y_offs, image_type); break;
 		}
-		this->vehicle_space = max<int>(40, y - y_offs);
+		this->vehicle_space = std::max<int>(40, y - y_offs);
 
-		size->width = max(size->width, x - x_offs);
+		size->width = std::max(size->width, x - x_offs);
 		SetDParam(0, GetEngineCategoryName(engine));
 		size->height = GetStringHeight(STR_ENGINE_PREVIEW_MESSAGE, size->width) + WD_PAR_VSEP_WIDE + FONT_HEIGHT_NORMAL + this->vehicle_space;
 		SetDParam(0, engine);
 		size->height += GetStringHeight(GetEngineInfoString(engine), size->width);
 	}
 
-	virtual void DrawWidget(const Rect &r, int widget) const
+	void DrawWidget(const Rect &r, int widget) const override
 	{
 		if (widget != WID_EP_QUESTION) return;
 
@@ -121,24 +121,24 @@ struct EnginePreviewWindow : Window {
 		DrawStringMultiLine(r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, y, r.bottom, GetEngineInfoString(engine), TC_FROMSTRING, SA_CENTER);
 	}
 
-	virtual void OnClick(Point pt, int widget, int click_count)
+	void OnClick(Point pt, int widget, int click_count) override
 	{
 		switch (widget) {
 			case WID_EP_YES:
 				DoCommandP(0, this->window_number, 0, CMD_WANT_ENGINE_PREVIEW);
 				FALLTHROUGH;
 			case WID_EP_NO:
-				if (!_shift_pressed) delete this;
+				if (!_shift_pressed) this->Close();
 				break;
 		}
 	}
 
-	virtual void OnInvalidateData(int data = 0, bool gui_scope = true)
+	void OnInvalidateData(int data = 0, bool gui_scope = true) override
 	{
 		if (!gui_scope) return;
 
 		EngineID engine = this->window_number;
-		if (Engine::Get(engine)->preview_company != _local_company) delete this;
+		if (Engine::Get(engine)->preview_company != _local_company) this->Close();
 	}
 };
 
@@ -325,11 +325,8 @@ void DrawVehicleEngine(int left, int right, int preferred_x, int y, EngineID eng
  */
 void EngList_Sort(GUIEngineList *el, EngList_SortTypeFunction compare)
 {
-	uint size = el->Length();
-	/* out-of-bounds access at the next line for size == 0 (even with operator[] at some systems)
-	 * generally, do not sort if there are less than 2 items */
-	if (size < 2) return;
-	QSortT(el->Begin(), size, compare);
+	if (el->size() < 2) return;
+	std::sort(el->begin(), el->end(), compare);
 }
 
 /**
@@ -342,8 +339,8 @@ void EngList_Sort(GUIEngineList *el, EngList_SortTypeFunction compare)
 void EngList_SortPartial(GUIEngineList *el, EngList_SortTypeFunction compare, uint begin, uint num_items)
 {
 	if (num_items < 2) return;
-	assert(begin < el->Length());
-	assert(begin + num_items <= el->Length());
-	QSortT(el->Get(begin), num_items, compare);
+	assert(begin < el->size());
+	assert(begin + num_items <= el->size());
+	std::sort(el->begin() + begin, el->begin() + begin + num_items, compare);
 }
 

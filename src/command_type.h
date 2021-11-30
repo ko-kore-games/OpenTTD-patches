@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -36,25 +34,25 @@ public:
 	/**
 	 * Creates a command cost return with no cost and no error
 	 */
-	CommandCost() : expense_type(INVALID_EXPENSES), cost(0), message(INVALID_STRING_ID), success(true), textref_stack_grffile(NULL), textref_stack_size(0) {}
+	CommandCost() : expense_type(INVALID_EXPENSES), cost(0), message(INVALID_STRING_ID), success(true), textref_stack_grffile(nullptr), textref_stack_size(0) {}
 
 	/**
 	 * Creates a command return value the is failed with the given message
 	 */
-	explicit CommandCost(StringID msg) : expense_type(INVALID_EXPENSES), cost(0), message(msg), success(false), textref_stack_grffile(NULL), textref_stack_size(0) {}
+	explicit CommandCost(StringID msg) : expense_type(INVALID_EXPENSES), cost(0), message(msg), success(false), textref_stack_grffile(nullptr), textref_stack_size(0) {}
 
 	/**
 	 * Creates a command cost with given expense type and start cost of 0
 	 * @param ex_t the expense type
 	 */
-	explicit CommandCost(ExpensesType ex_t) : expense_type(ex_t), cost(0), message(INVALID_STRING_ID), success(true), textref_stack_grffile(NULL), textref_stack_size(0) {}
+	explicit CommandCost(ExpensesType ex_t) : expense_type(ex_t), cost(0), message(INVALID_STRING_ID), success(true), textref_stack_grffile(nullptr), textref_stack_size(0) {}
 
 	/**
 	 * Creates a command return value with the given start cost and expense type
 	 * @param ex_t the expense type
 	 * @param cst the initial cost of this command
 	 */
-	CommandCost(ExpensesType ex_t, const Money &cst) : expense_type(ex_t), cost(cst), message(INVALID_STRING_ID), success(true), textref_stack_grffile(NULL), textref_stack_size(0) {}
+	CommandCost(ExpensesType ex_t, const Money &cst) : expense_type(ex_t), cost(cst), message(INVALID_STRING_ID), success(true), textref_stack_grffile(nullptr), textref_stack_size(0) {}
 
 
 	/**
@@ -202,6 +200,7 @@ enum Commands {
 	CMD_REMOVE_LONG_ROAD,             ///< remove a complete road (not a "half" one)
 	CMD_BUILD_ROAD,                   ///< build a "half" road
 	CMD_BUILD_ROAD_DEPOT,             ///< build a road depot
+	CMD_CONVERT_ROAD,                 ///< convert a road type
 
 	CMD_BUILD_AIRPORT,                ///< build an airport
 
@@ -231,6 +230,7 @@ enum Commands {
 	CMD_CHANGE_SERVICE_INT,           ///< change the server interval of a vehicle
 
 	CMD_BUILD_INDUSTRY,               ///< build a new industry
+	CMD_INDUSTRY_CTRL,                ///< change industry properties
 
 	CMD_SET_COMPANY_MANAGER_FACE,     ///< set the manager's face of the company
 	CMD_SET_COMPANY_COLOUR,           ///< set the colour of the company
@@ -239,6 +239,7 @@ enum Commands {
 	CMD_DECREASE_LOAN,                ///< decrease the loan from the bank
 
 	CMD_WANT_ENGINE_PREVIEW,          ///< confirm the preview of an engine
+	CMD_ENGINE_CTRL,                  ///< control availability of the engine for companies
 
 	CMD_RENAME_VEHICLE,               ///< rename a whole vehicle
 	CMD_RENAME_ENGINE,                ///< rename a engine (in the engine list)
@@ -263,6 +264,7 @@ enum Commands {
 	CMD_DO_TOWN_ACTION,               ///< do a action from the town detail window (like advertises or bribe)
 	CMD_TOWN_CARGO_GOAL,              ///< set the goal of a cargo for a town
 	CMD_TOWN_GROWTH_RATE,             ///< set the town growth rate
+	CMD_TOWN_RATING,                  ///< set rating of a company in a town
 	CMD_TOWN_SET_TEXT,                ///< set the custom text of a town
 	CMD_EXPAND_TOWN,                  ///< expand a town
 	CMD_DELETE_TOWN,                  ///< delete a town
@@ -294,6 +296,7 @@ enum Commands {
 	CMD_REMOVE_STORY_PAGE,            ///< remove a story page
 	CMD_REMOVE_STORY_PAGE_ELEMENT,    ///< remove a story page element
 	CMD_SCROLL_VIEWPORT,              ///< scroll main viewport of players
+	CMD_STORY_PAGE_BUTTON,            ///< selection via story page button
 
 	CMD_LEVEL_LAND,                   ///< level land
 
@@ -321,7 +324,7 @@ enum Commands {
 	CMD_ADD_VEHICLE_GROUP,            ///< add a vehicle to a group
 	CMD_ADD_SHARED_VEHICLE_GROUP,     ///< add all other shared vehicles to a group which are missing
 	CMD_REMOVE_ALL_VEHICLES_GROUP,    ///< remove all vehicles from a group
-	CMD_SET_GROUP_REPLACE_PROTECTION, ///< set the autoreplace-protection for a group
+	CMD_SET_GROUP_FLAG,               ///< set/clear a flag for a group
 	CMD_SET_GROUP_LIVERY,             ///< set the livery for a group
 
 	CMD_MOVE_ORDER,                   ///< move an order
@@ -346,7 +349,7 @@ enum DoCommandFlag {
 	DC_AUTO                  = 0x002, ///< don't allow building on structures
 	DC_QUERY_COST            = 0x004, ///< query cost only,  don't build.
 	DC_NO_WATER              = 0x008, ///< don't allow building on water
-	DC_NO_RAIL_OVERLAP       = 0x010, ///< don't allow overlap of rails (used in buildrail)
+	// 0x010 is unused
 	DC_NO_TEST_TOWN_RATING   = 0x020, ///< town rating does not disallow you from building
 	DC_BANKRUPT              = 0x040, ///< company bankrupts, skip money check, skip vehicle on tile check in some cases
 	DC_AUTOREPLACE           = 0x080, ///< autoreplace/autorenew is in progress, this shall disable vehicle limits when building, and ignore certain restrictions when undoing things (like vehicle attach callback)
@@ -439,7 +442,7 @@ enum CommandPauseLevel {
  * @param text Additional text
  * @return The CommandCost of the command, which can be succeeded or failed.
  */
-typedef CommandCost CommandProc(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const char *text);
+typedef CommandCost CommandProc(TileIndex tile, DoCommandFlag flags, uint32 p1, uint32 p2, const std::string &text);
 
 /**
  * Define a command with the flags which belongs to it.
@@ -467,7 +470,7 @@ struct Command {
  * @param p1 Additional data of the command
  * @see CommandProc
  */
-typedef void CommandCallback(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2);
+typedef void CommandCallback(const CommandCost &result, TileIndex tile, uint32 p1, uint32 p2, uint32 cmd);
 
 /**
  * Structure for buffering the build command when selecting a station to join.
@@ -478,7 +481,7 @@ struct CommandContainer {
 	uint32 p2;                       ///< parameter p2.
 	uint32 cmd;                      ///< command being executed.
 	CommandCallback *callback;       ///< any callback function executed upon successful completion of the command.
-	char text[32 * MAX_CHAR_LENGTH]; ///< possible text sent for name changes etc, in bytes including '\0'.
+	std::string text;                ///< possible text sent for name changes etc.
 };
 
 #endif /* COMMAND_TYPE_H */

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -17,6 +15,7 @@
 #include "gfx_type.h"
 #include "textfile_type.h"
 #include "textfile_gui.h"
+#include <unordered_map>
 
 /* Forward declare these; can't do 'struct X' in functions as older GCCs barf on that */
 struct IniFile;
@@ -48,7 +47,7 @@ struct MD5File {
  */
 template <class T, size_t Tnum_files, bool Tsearch_in_tars>
 struct BaseSet {
-	typedef SmallMap<const char *, const char *> TranslatedStrings;
+	typedef std::unordered_map<std::string, std::string> TranslatedStrings;
 
 	/** Number of files in this set */
 	static const size_t NUM_FILES = Tnum_files;
@@ -59,7 +58,7 @@ struct BaseSet {
 	/** Internal names of the files in this set. */
 	static const char * const *file_names;
 
-	const char *name;              ///< The name of the base set
+	std::string name;              ///< The name of the base set
 	TranslatedStrings description; ///< Description of the base set
 	uint32 shortname;              ///< Four letter short variant of the name
 	uint32 version;                ///< The version of this base set
@@ -74,13 +73,6 @@ struct BaseSet {
 	/** Free everything we allocated */
 	~BaseSet()
 	{
-		free(this->name);
-
-		for (TranslatedStrings::iterator iter = this->description.Begin(); iter != this->description.End(); iter++) {
-			free(iter->first);
-			free(iter->second);
-		}
-
 		for (uint i = 0; i < NUM_FILES; i++) {
 			free(this->files[i].filename);
 			free(this->files[i].missing_warning);
@@ -118,20 +110,19 @@ struct BaseSet {
 	 * @param isocode the isocode to search for
 	 * @return the description
 	 */
-	const char *GetDescription(const char *isocode = NULL) const
+	const char *GetDescription(const std::string &isocode) const
 	{
-		if (isocode != NULL) {
+		if (!isocode.empty()) {
 			/* First the full ISO code */
-			for (TranslatedStrings::const_iterator iter = this->description.Begin(); iter != this->description.End(); iter++) {
-				if (strcmp(iter->first, isocode) == 0) return iter->second;
-			}
+			auto desc = this->description.find(isocode);
+			if (desc != this->description.end()) return desc->second.c_str();
+
 			/* Then the first two characters */
-			for (TranslatedStrings::const_iterator iter = this->description.Begin(); iter != this->description.End(); iter++) {
-				if (strncmp(iter->first, isocode, 2) == 0) return iter->second;
-			}
+			desc = this->description.find(isocode.substr(0, 2));
+			if (desc != this->description.end()) return desc->second.c_str();
 		}
 		/* Then fall back */
-		return this->description.Begin()->second;
+		return this->description.at(std::string{}).c_str();
 	}
 
 	/**
@@ -151,17 +142,17 @@ struct BaseSet {
 	/**
 	 * Search a textfile file next to this base media.
 	 * @param type The type of the textfile to search for.
-	 * @return The filename for the textfile, \c NULL otherwise.
+	 * @return The filename for the textfile, \c nullptr otherwise.
 	 */
 	const char *GetTextfile(TextfileType type) const
 	{
 		for (uint i = 0; i < NUM_FILES; i++) {
 			const char *textfile = ::GetTextfile(type, BASESET_DIR, this->files[i].filename);
-			if (textfile != NULL) {
+			if (textfile != nullptr) {
 				return textfile;
 			}
 		}
-		return NULL;
+		return nullptr;
 	}
 };
 
@@ -176,7 +167,7 @@ protected:
 	static Tbase_set *duplicate_sets; ///< All sets that aren't available, but needed for not downloading base sets when a newer version than the one on BaNaNaS is loaded.
 	static const Tbase_set *used_set; ///< The currently used set
 
-	/* virtual */ bool AddFile(const char *filename, size_t basepath_length, const char *tar_filename);
+	bool AddFile(const std::string &filename, size_t basepath_length, const std::string &tar_filename) override;
 
 	/**
 	 * Get the extension that is used to identify this set.
@@ -185,7 +176,7 @@ protected:
 	static const char *GetExtension();
 public:
 	/** The set as saved in the config file. */
-	static const char *ini_set;
+	static std::string ini_set;
 
 	/**
 	 * Determine the graphics pack that has to be used.
@@ -205,7 +196,7 @@ public:
 
 	static Tbase_set *GetAvailableSets();
 
-	static bool SetSet(const char *name);
+	static bool SetSet(const std::string &name);
 	static char *GetSetsList(char *p, const char *last);
 	static int GetNumSets();
 	static int GetIndexOfUsedSet();
@@ -221,7 +212,7 @@ public:
 	static bool HasSet(const ContentInfo *ci, bool md5sum);
 };
 
-template <class Tbase_set> /* static */ const char *BaseMedia<Tbase_set>::ini_set;
+template <class Tbase_set> /* static */ std::string BaseMedia<Tbase_set>::ini_set;
 template <class Tbase_set> /* static */ const Tbase_set *BaseMedia<Tbase_set>::used_set;
 template <class Tbase_set> /* static */ Tbase_set *BaseMedia<Tbase_set>::available_sets;
 template <class Tbase_set> /* static */ Tbase_set *BaseMedia<Tbase_set>::duplicate_sets;
@@ -231,7 +222,7 @@ template <class Tbase_set> /* static */ Tbase_set *BaseMedia<Tbase_set>::duplica
  * @param ci The content info to compare it to.
  * @param md5sum Should the MD5 checksum be tested as well?
  * @param s The list with sets.
- * @return The filename of the first file of the base set, or \c NULL if there is no match.
+ * @return The filename of the first file of the base set, or \c nullptr if there is no match.
  */
 template <class Tbase_set>
 const char *TryGetBaseSetFile(const ContentInfo *ci, bool md5sum, const Tbase_set *s);

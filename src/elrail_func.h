@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -38,6 +36,6 @@ void DrawRailCatenary(const TileInfo *ti);
 void DrawRailCatenaryOnTunnel(const TileInfo *ti);
 void DrawRailCatenaryOnBridge(const TileInfo *ti);
 
-bool SettingsDisableElrail(int32 p1); ///< _settings_game.disable_elrail callback
+void SettingsDisableElrail(int32 new_value); ///< _settings_game.disable_elrail callback
 
 #endif /* ELRAIL_FUNC_H */

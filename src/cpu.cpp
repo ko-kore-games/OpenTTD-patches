@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -20,9 +18,16 @@
  * from external win64.asm because VS2005 does not support inline assembly */
 #if defined(_MSC_VER) && !defined(RDTSC_AVAILABLE)
 #include <intrin.h>
+#include <windows.h>
 uint64 ottd_rdtsc()
 {
+#if defined(_M_ARM)
+	return __rdpmccntr64();
+#elif defined(_M_ARM64)
+	return _ReadStatusReg(ARM64_PMCCNTR_EL0);
+#else
 	return __rdtsc();
+#endif
 }
 #define RDTSC_AVAILABLE
 #endif
@@ -35,7 +40,7 @@ unsigned __int64 ottd_rdtsc();
 #endif
 
 /* rdtsc for all other *nix-en (hopefully). Use GCC syntax */
-#if (defined(__i386__) || defined(__x86_64__)) && !defined(__DJGPP__) && !defined(RDTSC_AVAILABLE)
+#if (defined(__i386__) || defined(__x86_64__)) && !defined(RDTSC_AVAILABLE)
 uint64 ottd_rdtsc()
 {
 	uint32 high, low;
@@ -68,6 +73,24 @@ uint64 ottd_rdtsc()
 # define RDTSC_AVAILABLE
 #endif
 
+/* rdtsc for MCST Elbrus 2000 */
+#if defined(__e2k__) && !defined(RDTSC_AVAILABLE)
+uint64 ottd_rdtsc()
+{
+	uint64_t dst;
+# pragma asm_inline
+	asm("rrd %%clkr, %0" : "=r" (dst));
+	return dst;
+}
+# define RDTSC_AVAILABLE
+#endif
+
+#if defined(__EMSCRIPTEN__) && !defined(RDTSC_AVAILABLE)
+/* On emscripten doing TIC/TOC would be ill-advised */
+uint64 ottd_rdtsc() {return 0;}
+# define RDTSC_AVAILABLE
+#endif
+
 /* In all other cases we have no support for rdtsc. No major issue,
  * you just won't be able to profile your code with TIC()/TOC() */
 #if !defined(RDTSC_AVAILABLE)
@@ -87,7 +110,7 @@ uint64 ottd_rdtsc() {return 0;}
  * Other platforms/architectures don't have CPUID, so zero the info and then
  * most (if not all) of the features are set as if they do not exist.
  */
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
 void ottd_cpuid(int info[4], int type)
 {
 	__cpuid(info, type);
@@ -119,6 +142,24 @@ void ottd_cpuid(int info[4], int type)
 			: "a" (type)
 	);
 #endif /* i386 PIC */
+}
+#elif defined(__e2k__) /* MCST Elbrus 2000*/
+void ottd_cpuid(int info[4], int type)
+{
+	info[0] = info[1] = info[2] = info[3] = 0;
+	if (type == 0) {
+		info[0] = 1;
+	} else if (type == 1) {
+#if defined(__SSE4_1__)
+		info[2] |= (1<<19); /* HasCPUIDFlag(1, 2, 19) */
+#endif
+#if defined(__SSSE3__)
+		info[2] |= (1<<9); /* HasCPUIDFlag(1, 2, 9) */
+#endif
+#if defined(__SSE2__)
+		info[3] |= (1<<26); /* HasCPUIDFlag(1, 3, 26) */
+#endif
+	}
 }
 #else
 void ottd_cpuid(int info[4], int type)

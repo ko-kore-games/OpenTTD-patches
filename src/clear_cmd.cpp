@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -193,7 +191,7 @@ static void TileLoopClearAlps(TileIndex tile)
 	}
 	/* Update snow density. */
 	uint current_density = GetClearDensity(tile);
-	uint req_density = (k < 0) ? 0u : min((uint)k, 3);
+	uint req_density = (k < 0) ? 0u : std::min<uint>(k, 3u);
 
 	if (current_density < req_density) {
 		AddClearDensity(tile, 1);
@@ -342,6 +340,7 @@ void GenerateClearTile()
 				TileIndex tile_new;
 
 				SetClearGroundDensity(tile, CLEAR_ROCKS, 3);
+				MarkTileDirtyByTile(tile);
 				do {
 					if (--j == 0) goto get_out;
 					tile_new = tile + TileOffsByDiagDir((DiagDirection)GB(Random(), 0, 2));
@@ -391,15 +390,15 @@ extern const TileTypeProcs _tile_type_clear_procs = {
 	DrawTile_Clear,           ///< draw_tile_proc
 	GetSlopePixelZ_Clear,     ///< get_slope_z_proc
 	ClearTile_Clear,          ///< clear_tile_proc
-	NULL,                     ///< add_accepted_cargo_proc
+	nullptr,                     ///< add_accepted_cargo_proc
 	GetTileDesc_Clear,        ///< get_tile_desc_proc
 	GetTileTrackStatus_Clear, ///< get_tile_track_status_proc
-	NULL,                     ///< click_tile_proc
-	NULL,                     ///< animate_tile_proc
+	nullptr,                     ///< click_tile_proc
+	nullptr,                     ///< animate_tile_proc
 	TileLoop_Clear,           ///< tile_loop_proc
 	ChangeTileOwner_Clear,    ///< change_tile_owner_proc
-	NULL,                     ///< add_produced_cargo_proc
-	NULL,                     ///< vehicle_enter_tile_proc
+	nullptr,                     ///< add_produced_cargo_proc
+	nullptr,                     ///< vehicle_enter_tile_proc
 	GetFoundation_Clear,      ///< get_foundation_proc
 	TerraformTile_Clear,      ///< terraform_tile_proc
 };

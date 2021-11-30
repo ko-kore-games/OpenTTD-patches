@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -55,8 +53,8 @@ struct Textbuf {
 	void DeleteAll();
 	bool InsertClipboard();
 
-	bool InsertChar(uint32 key);
-	bool InsertString(const char *str, bool marked, const char *caret = NULL, const char *insert_location = NULL, const char *replacement_end = NULL);
+	bool InsertChar(WChar key);
+	bool InsertString(const char *str, bool marked, const char *caret = nullptr, const char *insert_location = nullptr, const char *replacement_end = nullptr);
 
 	bool DeleteChar(uint16 keycode);
 	bool MovePos(uint16 keycode);

@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -19,6 +17,7 @@
 #include "cargo_type.h"
 #include "vehicle_type.h"
 #include "core/multimap.hpp"
+#include "saveload/saveload.h"
 #include <list>
 
 /** Unique identifier for a single cargo packet. */
@@ -34,7 +33,7 @@ struct GoodsEntry; // forward-declare for Stage() and RerouteStalePackets()
 
 template <class Tinst, class Tcont> class CargoList;
 class StationCargoList; // forward-declare, so we can use it in VehicleCargoList.
-extern const struct SaveLoad *GetCargoPacketDesc();
+extern SaveLoadTable GetCargoPacketDesc();
 
 typedef uint32 TileOrStationID;
 
@@ -43,13 +42,13 @@ typedef uint32 TileOrStationID;
  */
 struct CargoPacket : CargoPacketPool::PoolItem<&_cargopacket_pool> {
 private:
-	Money feeder_share;         ///< Value of feeder pickup to be paid for on delivery of cargo.
-	uint16 count;               ///< The amount of cargo in this packet.
-	byte days_in_transit;       ///< Amount of days this packet has been in transit.
-	SourceTypeByte source_type; ///< Type of \c source_id.
-	SourceID source_id;         ///< Index of source, INVALID_SOURCE if unknown/invalid.
-	StationID source;           ///< The station where the cargo came from first.
-	TileIndex source_xy;        ///< The origin of the cargo (first station in feeder chain).
+	Money feeder_share;     ///< Value of feeder pickup to be paid for on delivery of cargo.
+	uint16 count;           ///< The amount of cargo in this packet.
+	byte days_in_transit;   ///< Amount of days this packet has been in transit.
+	SourceType source_type; ///< Type of \c source_id.
+	SourceID source_id;     ///< Index of source, INVALID_SOURCE if unknown/invalid.
+	StationID source;       ///< The station where the cargo came from first.
+	TileIndex source_xy;    ///< The origin of the cargo (first station in feeder chain).
 	union {
 		TileOrStationID loaded_at_xy; ///< Location where this cargo has been loaded into the vehicle.
 		TileOrStationID next_station; ///< Station where the cargo wants to go next.
@@ -60,7 +59,7 @@ private:
 	friend class VehicleCargoList;
 	friend class StationCargoList;
 	/** We want this to be saved, right? */
-	friend const struct SaveLoad *GetCargoPacketDesc();
+	friend SaveLoadTable GetCargoPacketDesc();
 public:
 	/** Maximum number of items in a single cargo packet. */
 	static const uint16 MAX_COUNT = UINT16_MAX;
@@ -195,19 +194,6 @@ public:
 };
 
 /**
- * Iterate over all _valid_ cargo packets from the given start.
- * @param var   Variable used as "iterator".
- * @param start Cargo packet ID of the first packet to iterate over.
- */
-#define FOR_ALL_CARGOPACKETS_FROM(var, start) FOR_ALL_ITEMS_FROM(CargoPacket, cargopacket_index, var, start)
-
-/**
- * Iterate over all _valid_ cargo packets from the begin of the pool.
- * @param var   Variable used as "iterator".
- */
-#define FOR_ALL_CARGOPACKETS(var) FOR_ALL_CARGOPACKETS_FROM(var, 0)
-
-/**
  * Simple collection class for a list of cargo packets.
  * @tparam Tinst Actual instantiation of this cargo list.
  */
@@ -286,7 +272,7 @@ protected:
 	typedef CargoList<VehicleCargoList, CargoPacketList> Parent;
 
 	Money feeder_share;                     ///< Cache for the feeder share.
-	uint action_counts[NUM_MOVE_TO_ACTION]; ///< Counts of cargo to be transfered, delivered, kept and loaded.
+	uint action_counts[NUM_MOVE_TO_ACTION]; ///< Counts of cargo to be transferred, delivered, kept and loaded.
 
 	template<class Taction>
 	void ShiftCargo(Taction action);
@@ -319,8 +305,8 @@ public:
 	friend class StationCargoList;
 	/** The super class ought to know what it's doing. */
 	friend class CargoList<VehicleCargoList, CargoPacketList>;
-	/** The vehicles have a cargo list (and we want that saved). */
-	friend const struct SaveLoad *GetVehicleDescription(VehicleType vt);
+	/* So we can use private/protected variables in the saveload code */
+	friend class SlVehicleCommon;
 
 	friend class CargoShift;
 	friend class CargoTransfer;
@@ -438,7 +424,7 @@ public:
 	uint Reroute(uint max_move, VehicleCargoList *dest, StationID avoid, StationID avoid2, const GoodsEntry *ge);
 
 	/**
-	 * Are two the two CargoPackets mergeable in the context of
+	 * Are the two CargoPackets mergeable in the context of
 	 * a list of CargoPackets for a Vehicle?
 	 * @param cp1 First CargoPacket.
 	 * @param cp2 Second CargoPacket.
@@ -470,8 +456,8 @@ protected:
 public:
 	/** The super class ought to know what it's doing. */
 	friend class CargoList<StationCargoList, StationCargoPacketMap>;
-	/** The stations, via GoodsEntry, have a CargoList. */
-	friend const struct SaveLoad *GetGoodsDesc();
+	/* So we can use private/protected variables in the saveload code */
+	friend class SlStationGoods;
 
 	friend class CargoLoad;
 	friend class CargoTransfer;
@@ -501,7 +487,7 @@ public:
 		while (!next.IsEmpty()) {
 			if (this->packets.find(next.Pop()) != this->packets.end()) return true;
 		}
-		/* Packets for INVALID_STTION can go anywhere. */
+		/* Packets for INVALID_STATION can go anywhere. */
 		return this->packets.find(INVALID_STATION) != this->packets.end();
 	}
 
@@ -549,12 +535,12 @@ public:
 
 	uint Reserve(uint max_move, VehicleCargoList *dest, TileIndex load_place, StationIDStack next);
 	uint Load(uint max_move, VehicleCargoList *dest, TileIndex load_place, StationIDStack next);
-	uint Truncate(uint max_move = UINT_MAX, StationCargoAmountMap *cargo_per_source = NULL);
+	uint Truncate(uint max_move = UINT_MAX, StationCargoAmountMap *cargo_per_source = nullptr);
 	uint Reroute(uint max_move, StationCargoList *dest, StationID avoid, StationID avoid2, const GoodsEntry *ge);
 
 	/**
-	 * Are two the two CargoPackets mergeable in the context of
-	 * a list of CargoPackets for a Vehicle?
+	 * Are the two CargoPackets mergeable in the context of
+	 * a list of CargoPackets for a Station?
 	 * @param cp1 First CargoPacket.
 	 * @param cp2 Second CargoPacket.
 	 * @return True if they are mergeable.

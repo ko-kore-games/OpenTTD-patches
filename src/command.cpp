@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -68,6 +66,8 @@ CommandProc CmdBuildRoad;
 
 CommandProc CmdBuildRoadDepot;
 
+CommandProc CmdConvertRoad;
+
 CommandProc CmdBuildAirport;
 
 CommandProc CmdBuildDock;
@@ -97,6 +97,7 @@ CommandProc CmdInsertOrder;
 CommandProc CmdChangeServiceInt;
 
 CommandProc CmdBuildIndustry;
+CommandProc CmdIndustryCtrl;
 
 CommandProc CmdSetCompanyManagerFace;
 CommandProc CmdSetCompanyColour;
@@ -105,6 +106,7 @@ CommandProc CmdIncreaseLoan;
 CommandProc CmdDecreaseLoan;
 
 CommandProc CmdWantEnginePreview;
+CommandProc CmdEngineCtrl;
 
 CommandProc CmdRenameVehicle;
 CommandProc CmdRenameEngine;
@@ -130,6 +132,7 @@ CommandProc CmdFoundTown;
 CommandProc CmdRenameTown;
 CommandProc CmdDoTownAction;
 CommandProc CmdTownGrowthRate;
+CommandProc CmdTownRating;
 CommandProc CmdTownCargoGoal;
 CommandProc CmdTownSetText;
 CommandProc CmdExpandTown;
@@ -168,6 +171,7 @@ CommandProc CmdShowStoryPage;
 CommandProc CmdRemoveStoryPage;
 CommandProc CmdRemoveStoryPageElement;
 CommandProc CmdScrollViewport;
+CommandProc CmdStoryPageButton;
 
 CommandProc CmdLevelLand;
 
@@ -189,7 +193,7 @@ CommandProc CmdDeleteGroup;
 CommandProc CmdAddVehicleGroup;
 CommandProc CmdAddSharedVehicleGroup;
 CommandProc CmdRemoveAllVehiclesGroup;
-CommandProc CmdSetGroupReplaceProtection;
+CommandProc CmdSetGroupFlag;
 CommandProc CmdSetGroupLivery;
 
 CommandProc CmdMoveOrder;
@@ -214,14 +218,14 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdRemoveRailroadTrack,                     CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_RAILROAD_TRACK
 	DEF_CMD(CmdBuildSingleRail,          CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_SINGLE_RAIL
 	DEF_CMD(CmdRemoveSingleRail,                        CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_SINGLE_RAIL
-	DEF_CMD(CmdLandscapeClear,                                 0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_LANDSCAPE_CLEAR
+	DEF_CMD(CmdLandscapeClear,                         CMD_DEITY, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_LANDSCAPE_CLEAR
 	DEF_CMD(CmdBuildBridge,  CMD_DEITY | CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_BRIDGE
 	DEF_CMD(CmdBuildRailStation,         CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_RAIL_STATION
 	DEF_CMD(CmdBuildTrainDepot,          CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_TRAIN_DEPOT
 	DEF_CMD(CmdBuildSingleSignal,                       CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_SIGNALS
 	DEF_CMD(CmdRemoveSingleSignal,                      CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_SIGNALS
 	DEF_CMD(CmdTerraformLand,           CMD_ALL_TILES | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_TERRAFORM_LAND
-	DEF_CMD(CmdBuildObject,              CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_OBJECT
+	DEF_CMD(CmdBuildObject,  CMD_DEITY | CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_OBJECT
 	DEF_CMD(CmdBuildTunnel,                 CMD_DEITY | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_TUNNEL
 	DEF_CMD(CmdRemoveFromRailStation,                          0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_FROM_RAIL_STATION
 	DEF_CMD(CmdConvertRail,                                    0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_CONVERT_RAILD
@@ -235,6 +239,7 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdRemoveLongRoad,            CMD_NO_TEST | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_REMOVE_LONG_ROAD; towns may disallow removing road bits (as they are connected) in test, but in exec they're removed and thus removing is allowed.
 	DEF_CMD(CmdBuildRoad,    CMD_DEITY | CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_ROAD
 	DEF_CMD(CmdBuildRoadDepot,           CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_ROAD_DEPOT
+	DEF_CMD(CmdConvertRoad,                                    0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_CONVERT_ROAD
 
 	DEF_CMD(CmdBuildAirport,             CMD_NO_WATER | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_AIRPORT
 	DEF_CMD(CmdBuildDock,                               CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_DOCK
@@ -261,6 +266,8 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdChangeServiceInt,                               0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_CHANGE_SERVICE_INT
 
 	DEF_CMD(CmdBuildIndustry,                          CMD_DEITY, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_BUILD_INDUSTRY
+	DEF_CMD(CmdIndustryCtrl,            CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_INDUSTRY_CTRL
+
 	DEF_CMD(CmdSetCompanyManagerFace,                          0, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_COMPANY_MANAGER_FACE
 	DEF_CMD(CmdSetCompanyColour,                               0, CMDT_OTHER_MANAGEMENT      ), // CMD_SET_COMPANY_COLOUR
 
@@ -268,6 +275,7 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdDecreaseLoan,                                   0, CMDT_MONEY_MANAGEMENT      ), // CMD_DECREASE_LOAN
 
 	DEF_CMD(CmdWantEnginePreview,                              0, CMDT_VEHICLE_MANAGEMENT    ), // CMD_WANT_ENGINE_PREVIEW
+	DEF_CMD(CmdEngineCtrl,                             CMD_DEITY, CMDT_VEHICLE_MANAGEMENT    ), // CMD_ENGINE_CTRL
 
 	DEF_CMD(CmdRenameVehicle,                                  0, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_VEHICLE
 	DEF_CMD(CmdRenameEngine,                          CMD_SERVER, CMDT_OTHER_MANAGEMENT      ), // CMD_RENAME_ENGINE
@@ -294,6 +302,7 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdDoTownAction,                                   0, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_DO_TOWN_ACTION
 	DEF_CMD(CmdTownCargoGoal,                          CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_CARGO_GOAL
 	DEF_CMD(CmdTownGrowthRate,                         CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_GROWTH_RATE
+	DEF_CMD(CmdTownRating,                             CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_RATING
 	DEF_CMD(CmdTownSetText,             CMD_STR_CTRL | CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_TOWN_SET_TEXT
 	DEF_CMD(CmdExpandTown,                             CMD_DEITY, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_EXPAND_TOWN
 	DEF_CMD(CmdDeleteTown,                           CMD_OFFLINE, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_DELETE_TOWN
@@ -325,6 +334,7 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdRemoveStoryPage,                        CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_STORY_PAGE
 	DEF_CMD(CmdRemoveStoryPageElement,                 CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_REMOVE_STORY_ELEMENT_PAGE
 	DEF_CMD(CmdScrollViewport,                         CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_SCROLL_VIEWPORT
+	DEF_CMD(CmdStoryPageButton,                        CMD_DEITY, CMDT_OTHER_MANAGEMENT      ), // CMD_STORY_PAGE_BUTTON
 
 	DEF_CMD(CmdLevelLand, CMD_ALL_TILES | CMD_NO_TEST | CMD_AUTO, CMDT_LANDSCAPE_CONSTRUCTION), // CMD_LEVEL_LAND; test run might clear tiles multiple times, in execution that only happens once
 
@@ -349,7 +359,7 @@ static const Command _command_proc_table[] = {
 	DEF_CMD(CmdAddVehicleGroup,                                0, CMDT_ROUTE_MANAGEMENT      ), // CMD_ADD_VEHICLE_GROUP
 	DEF_CMD(CmdAddSharedVehicleGroup,                          0, CMDT_ROUTE_MANAGEMENT      ), // CMD_ADD_SHARE_VEHICLE_GROUP
 	DEF_CMD(CmdRemoveAllVehiclesGroup,                         0, CMDT_ROUTE_MANAGEMENT      ), // CMD_REMOVE_ALL_VEHICLES_GROUP
-	DEF_CMD(CmdSetGroupReplaceProtection,                      0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_GROUP_REPLACE_PROTECTION
+	DEF_CMD(CmdSetGroupFlag,                                   0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_GROUP_FLAG
 	DEF_CMD(CmdSetGroupLivery,                                 0, CMDT_ROUTE_MANAGEMENT      ), // CMD_SET_GROUP_LIVERY
 	DEF_CMD(CmdMoveOrder,                                      0, CMDT_ROUTE_MANAGEMENT      ), // CMD_MOVE_ORDER
 	DEF_CMD(CmdChangeTimetable,                                0, CMDT_ROUTE_MANAGEMENT      ), // CMD_CHANGE_TIMETABLE
@@ -361,7 +371,7 @@ static const Command _command_proc_table[] = {
 };
 
 /*!
- * This function range-checks a cmd, and checks if the cmd is not NULL
+ * This function range-checks a cmd, and checks if the cmd is not nullptr
  *
  * @param cmd The integer value of a command
  * @return true if the command is valid (and got a CommandProc function)
@@ -370,7 +380,7 @@ bool IsValidCommand(uint32 cmd)
 {
 	cmd &= CMD_ID_MASK;
 
-	return cmd < lengthof(_command_proc_table) && _command_proc_table[cmd].proc != NULL;
+	return cmd < lengthof(_command_proc_table) && _command_proc_table[cmd].proc != nullptr;
 }
 
 /*!
@@ -420,7 +430,7 @@ bool IsCommandAllowedWhilePaused(uint32 cmd)
 		CMDPL_NO_ACTIONS,      ///< CMDT_SERVER_SETTING
 		CMDPL_NO_ACTIONS,      ///< CMDT_CHEAT
 	};
-	assert_compile(lengthof(command_type_lookup) == CMDT_END);
+	static_assert(lengthof(command_type_lookup) == CMDT_END);
 
 	assert(IsValidCommand(cmd));
 	return _game_mode == GM_EDITOR || command_type_lookup[_command_proc_table[cmd & CMD_ID_MASK].type] <= _settings_game.construction.command_pause_level;
@@ -455,7 +465,7 @@ CommandCost DoCommand(const CommandContainer *container, DoCommandFlag flags)
  * @see CommandProc
  * @return the cost
  */
-CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags, uint32 cmd, const char *text)
+CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags, uint32 cmd, const std::string &text)
 {
 	CommandCost res;
 
@@ -469,7 +479,7 @@ CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags,
 
 	/* only execute the test call if it's toplevel, or we're not execing. */
 	if (_docommand_recursive == 1 || !(flags & DC_EXEC) ) {
-		if (_docommand_recursive == 1) _cleared_object_areas.Clear();
+		if (_docommand_recursive == 1) _cleared_object_areas.clear();
 		SetTownRatingTestMode(true);
 		res = proc(tile, flags & ~DC_EXEC, p1, p2, text);
 		SetTownRatingTestMode(false);
@@ -492,7 +502,7 @@ CommandCost DoCommand(TileIndex tile, uint32 p1, uint32 p2, DoCommandFlag flags,
 
 	/* Execute the command here. All cost-relevant functions set the expenses type
 	 * themselves to the cost object at some point */
-	if (_docommand_recursive == 1) _cleared_object_areas.Clear();
+	if (_docommand_recursive == 1) _cleared_object_areas.clear();
 	res = proc(tile, flags, p1, p2, text);
 	if (res.Failed()) {
 error:
@@ -548,10 +558,10 @@ bool DoCommandP(const CommandContainer *container, bool my_cmd)
  * @param my_cmd indicator if the command is from a company or server (to display error messages for a user)
  * @return \c true if the command succeeded, else \c false.
  */
-bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd)
+bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const std::string &text, bool my_cmd)
 {
 	/* Cost estimation is generally only done when the
-	 * local user presses shift while doing somthing.
+	 * local user presses shift while doing something.
 	 * However, in case of incoming network commands,
 	 * map generation or the pause button we do want
 	 * to execute. */
@@ -568,15 +578,13 @@ bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallbac
 	int x = TileX(tile) * TILE_SIZE;
 	int y = TileY(tile) * TILE_SIZE;
 
-	if (_pause_mode != PM_UNPAUSED && !IsCommandAllowedWhilePaused(cmd)) {
+	if (_pause_mode != PM_UNPAUSED && !IsCommandAllowedWhilePaused(cmd) && !estimate_only) {
 		ShowErrorMessage(GB(cmd, 16, 16), STR_ERROR_NOT_ALLOWED_WHILE_PAUSED, WL_INFO, x, y);
 		return false;
 	}
 
-#ifdef ENABLE_NETWORK
 	/* Only set p2 when the command does not come from the network. */
 	if (!(cmd & CMD_NETWORK_COMMAND) && GetCommandFlags(cmd) & CMD_CLIENT_ID && p2 == 0) p2 = CLIENT_ID_SERVER;
-#endif
 
 	CommandCost res = DoCommandPInternal(tile, p1, p2, cmd, callback, text, my_cmd, estimate_only);
 	if (res.Failed()) {
@@ -596,8 +604,8 @@ bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallbac
 		ShowCostOrIncomeAnimation(x, y, GetSlopePixelZ(x, y), res.GetCost());
 	}
 
-	if (!estimate_only && !only_sending && callback != NULL) {
-		callback(res, tile, p1, p2);
+	if (!estimate_only && !only_sending && callback != nullptr) {
+		callback(res, tile, p1, p2, cmd);
 	}
 
 	return res.Succeeded();
@@ -623,7 +631,7 @@ bool DoCommandP(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallbac
  * @param estimate_only whether to give only the estimate or also execute the command
  * @return the command cost of this function.
  */
-CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const char *text, bool my_cmd, bool estimate_only)
+CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd, CommandCallback *callback, const std::string &text, bool my_cmd, bool estimate_only)
 {
 	/* Prevent recursion; it gives a mess over the network */
 	assert(_docommand_recursive == 0);
@@ -639,17 +647,15 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 	CommandProc *proc = _command_proc_table[cmd_id].proc;
 	/* Shouldn't happen, but you never know when someone adds
 	 * NULLs to the _command_proc_table. */
-	assert(proc != NULL);
+	assert(proc != nullptr);
 
 	/* Command flags are used internally */
 	CommandFlags cmd_flags = GetCommandFlags(cmd);
 	/* Flags get send to the DoCommand */
 	DoCommandFlag flags = CommandFlagsToDCFlags(cmd_flags);
 
-#ifdef ENABLE_NETWORK
 	/* Make sure p2 is properly set to a ClientID. */
 	assert(!(cmd_flags & CMD_CLIENT_ID) || p2 != 0);
-#endif
 
 	/* Do not even think about executing out-of-bounds tile-commands */
 	if (tile != 0 && (tile >= MapSize() || (!IsValidTile(tile) && (cmd_flags & CMD_ALL_TILES) == 0))) return_dcpi(CMD_ERROR);
@@ -664,13 +670,13 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 		return_dcpi(CMD_ERROR);
 	}
 
-	Backup<CompanyByte> cur_company(_current_company, FILE_LINE);
+	Backup<CompanyID> cur_company(_current_company, FILE_LINE);
 	if (exec_as_spectator) cur_company.Change(COMPANY_SPECTATOR);
 
 	bool test_and_exec_can_differ = (cmd_flags & CMD_NO_TEST) != 0;
 
 	/* Test the command. */
-	_cleared_object_areas.Clear();
+	_cleared_object_areas.clear();
 	SetTownRatingTestMode(true);
 	BasePersistentStorageArray::SwitchMode(PSM_ENTER_TESTMODE);
 	CommandCost res = proc(tile, flags, p1, p2, text);
@@ -690,13 +696,12 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 		if (!_networking || _generating_world || (cmd & CMD_NETWORK_COMMAND) != 0) {
 			/* Log the failed command as well. Just to be able to be find
 			 * causes of desyncs due to bad command test implementations. */
-			DEBUG(desync, 1, "cmdf: %08x; %02x; %02x; %06x; %08x; %08x; %08x; \"%s\" (%s)", _date, _date_fract, (int)_current_company, tile, p1, p2, cmd & ~CMD_NETWORK_COMMAND, text, GetCommandName(cmd));
+			Debug(desync, 1, "cmdf: {:08x}; {:02x}; {:02x}; {:06x}; {:08x}; {:08x}; {:08x}; \"{}\" ({})", _date, _date_fract, (int)_current_company, tile, p1, p2, cmd & ~CMD_NETWORK_COMMAND, text, GetCommandName(cmd));
 		}
 		cur_company.Restore();
 		return_dcpi(res);
 	}
 
-#ifdef ENABLE_NETWORK
 	/*
 	 * If we are in network, and the command is not from the network
 	 * send it to the command-queue and abort execution
@@ -711,12 +716,11 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 		 * reset the storages as we've not executed the command. */
 		return_dcpi(CommandCost());
 	}
-#endif /* ENABLE_NETWORK */
-	DEBUG(desync, 1, "cmd: %08x; %02x; %02x; %06x; %08x; %08x; %08x; \"%s\" (%s)", _date, _date_fract, (int)_current_company, tile, p1, p2, cmd & ~CMD_NETWORK_COMMAND, text, GetCommandName(cmd));
+	Debug(desync, 1, "cmd: {:08x}; {:02x}; {:02x}; {:06x}; {:08x}; {:08x}; {:08x}; \"{}\" ({})", _date, _date_fract, (int)_current_company, tile, p1, p2, cmd & ~CMD_NETWORK_COMMAND, text, GetCommandName(cmd));
 
 	/* Actually try and execute the command. If no cost-type is given
 	 * use the construction one */
-	_cleared_object_areas.Clear();
+	_cleared_object_areas.clear();
 	BasePersistentStorageArray::SwitchMode(PSM_ENTER_COMMAND);
 	CommandCost res2 = proc(tile, flags | DC_EXEC, p1, p2, text);
 	BasePersistentStorageArray::SwitchMode(PSM_LEAVE_COMMAND);
@@ -756,7 +760,7 @@ CommandCost DoCommandPInternal(TileIndex tile, uint32 p1, uint32 p2, uint32 cmd,
 	/* update last build coordinate of company. */
 	if (tile != 0) {
 		Company *c = Company::GetIfValid(_current_company);
-		if (c != NULL) c->last_build_coordinate = tile;
+		if (c != nullptr) c->last_build_coordinate = tile;
 	}
 
 	SubtractMoneyFromCompany(res2);

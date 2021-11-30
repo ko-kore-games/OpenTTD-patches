@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -36,13 +34,13 @@ public:
 		ERR_UNSUITABLE_TRACK,              // [STR_ERROR_NO_SUITABLE_RAILROAD_TRACK, STR_ERROR_THERE_IS_NO_RAILROAD_TRACK, STR_ERROR_THERE_ARE_NO_SIGNALS, STR_ERROR_THERE_IS_NO_STATION]
 
 		/** This railtype cannot have crossings */
-		ERR_RAILTYPE_DISALLOWS_CROSSING,   // [STR_ERROR_CROSSING_DISALLOWED]
+		ERR_RAILTYPE_DISALLOWS_CROSSING,   // [STR_ERROR_CROSSING_DISALLOWED_RAIL]
 	};
 
 	/**
 	 * Types of rail known to the game.
 	 */
-	enum RailType {
+	enum RailType : byte {
 		/* Note: these values represent part of the in-game static values */
 		RAILTYPE_INVALID  = ::INVALID_RAILTYPE, ///< Invalid RailType.
 	};

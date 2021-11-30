@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -82,7 +80,7 @@ static inline TLG GetTLG(TileIndex t)
 /**
  * Finds which Electrified Rail Bits are present on a given tile.
  * @param t tile to check
- * @param override pointer to PCP override, can be NULL
+ * @param override pointer to PCP override, can be nullptr
  * @return trackbits of tile if it is electrified
  */
 static TrackBits GetRailTrackBitsUniversal(TileIndex t, byte *override)
@@ -101,7 +99,7 @@ static TrackBits GetRailTrackBitsUniversal(TileIndex t, byte *override)
 		case MP_TUNNELBRIDGE:
 			if (GetTunnelBridgeTransportType(t) != TRANSPORT_RAIL) return TRACK_BIT_NONE;
 			if (!HasRailCatenary(GetRailType(t))) return TRACK_BIT_NONE;
-			if (override != NULL && (IsTunnel(t) || GetTunnelBridgeLength(t, GetOtherBridgeEnd(t)) > 0)) {
+			if (override != nullptr && (IsTunnel(t) || GetTunnelBridgeLength(t, GetOtherBridgeEnd(t)) > 0)) {
 				*override = 1 << GetTunnelBridgeDirection(t);
 			}
 			return DiagDirToDiagTrackBits(GetTunnelBridgeDirection(t));
@@ -126,6 +124,9 @@ static TrackBits GetRailTrackBitsUniversal(TileIndex t, byte *override)
  */
 static TrackBits MaskWireBits(TileIndex t, TrackBits tracks)
 {
+	/* Single track bits are never masked out. */
+	if (likely(HasAtMostOneBit(tracks))) return tracks;
+
 	if (!IsPlainRailTile(t)) return tracks;
 
 	TrackdirBits neighbour_tdb = TRACKDIR_BIT_NONE;
@@ -231,7 +232,8 @@ static int GetPCPElevation(TileIndex tile, DiagDirection PCPpos)
 	 * Also note that the result of GetSlopePixelZ() is very special on bridge-ramps.
 	 */
 
-	int z = GetSlopePixelZ(TileX(tile) * TILE_SIZE + min(x_pcp_offsets[PCPpos], TILE_SIZE - 1), TileY(tile) * TILE_SIZE + min(y_pcp_offsets[PCPpos], TILE_SIZE - 1));
+	int z = GetSlopePixelZ(TileX(tile) * TILE_SIZE + std::min<int8>(x_pcp_offsets[PCPpos], TILE_SIZE - 1),
+	                       TileY(tile) * TILE_SIZE + std::min<int8>(y_pcp_offsets[PCPpos], TILE_SIZE - 1));
 	return (z + 2) & ~3; // this means z = (z + TILE_HEIGHT / 4) / (TILE_HEIGHT / 2) * (TILE_HEIGHT / 2);
 }
 
@@ -326,7 +328,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti)
 		/* Here's one of the main headaches. GetTileSlope does not correct for possibly
 		 * existing foundataions, so we do have to do that manually later on.*/
 		tileh[TS_NEIGHBOUR] = GetTileSlope(neighbour);
-		trackconfig[TS_NEIGHBOUR] = GetRailTrackBitsUniversal(neighbour, NULL);
+		trackconfig[TS_NEIGHBOUR] = GetRailTrackBitsUniversal(neighbour, nullptr);
 		wireconfig[TS_NEIGHBOUR] = MaskWireBits(neighbour, trackconfig[TS_NEIGHBOUR]);
 		if (IsTunnelTile(neighbour) && i != GetTunnelBridgeDirection(neighbour)) wireconfig[TS_NEIGHBOUR] = trackconfig[TS_NEIGHBOUR] = TRACK_BIT_NONE;
 
@@ -468,8 +470,7 @@ static void DrawRailCatenaryRailway(const TileInfo *ti)
 	}
 
 	/* Drawing of pylons is finished, now draw the wires */
-	Track t;
-	FOR_EACH_SET_TRACK(t, wireconfig[TS_HOME]) {
+	for (Track t : SetTrackBitIterator(wireconfig[TS_HOME])) {
 		SpriteID wire_base = (t == halftile_track) ? wire_halftile : wire_normal;
 		byte PCPconfig = HasBit(PCPstatus, PCPpositions[t][0]) +
 			(HasBit(PCPstatus, PCPpositions[t][1]) << 1);
@@ -591,19 +592,16 @@ void DrawRailCatenary(const TileInfo *ti)
 	DrawRailCatenaryRailway(ti);
 }
 
-bool SettingsDisableElrail(int32 p1)
+void SettingsDisableElrail(int32 new_value)
 {
-	Company *c;
-	Train *t;
-	bool disable = (p1 != 0);
+	bool disable = (new_value != 0);
 
 	/* we will now walk through all electric train engines and change their railtypes if it is the wrong one*/
 	const RailType old_railtype = disable ? RAILTYPE_ELECTRIC : RAILTYPE_RAIL;
 	const RailType new_railtype = disable ? RAILTYPE_RAIL : RAILTYPE_ELECTRIC;
 
 	/* walk through all train engines */
-	Engine *e;
-	FOR_ALL_ENGINES_OF_TYPE(e, VEH_TRAIN) {
+	for (Engine *e : Engine::IterateType(VEH_TRAIN)) {
 		RailVehicleInfo *rv_info = &e->u.rail;
 		/* if it is an electric rail engine and its railtype is the wrong one */
 		if (rv_info->engclass == 2 && rv_info->railtype == old_railtype) {
@@ -615,7 +613,7 @@ bool SettingsDisableElrail(int32 p1)
 	/* when disabling elrails, make sure that all existing trains can run on
 	 *  normal rail too */
 	if (disable) {
-		FOR_ALL_TRAINS(t) {
+		for (Train *t : Train::Iterate()) {
 			if (t->railtype == RAILTYPE_ELECTRIC) {
 				/* this railroad vehicle is now compatible only with elrail,
 				 *  so add there also normal rail compatibility */
@@ -627,18 +625,17 @@ bool SettingsDisableElrail(int32 p1)
 	}
 
 	/* Fix the total power and acceleration for trains */
-	FOR_ALL_TRAINS(t) {
+	for (Train *t : Train::Iterate()) {
 		/* power and acceleration is cached only for front engines */
 		if (t->IsFrontEngine()) {
 			t->ConsistChanged(CCF_TRACK);
 		}
 	}
 
-	FOR_ALL_COMPANIES(c) c->avail_railtypes = GetCompanyRailtypes(c->index);
+	for (Company *c : Company::Iterate()) c->avail_railtypes = GetCompanyRailtypes(c->index);
 
 	/* This resets the _last_built_railtype, which will be invalid for electric
 	 * rails. It may have unintended consequences if that function is ever
 	 * extended, though. */
 	ReinitGuiAfterToggleElrail(disable);
-	return true;
 }

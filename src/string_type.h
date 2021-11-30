@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -13,12 +11,14 @@
 #define STRING_TYPE_H
 
 #include "core/enum_type.hpp"
+#include <vector>
+#include <string>
 
 /** A non-breaking space. */
-#define NBSP "\xC2\xA0"
+#define NBSP u8"\u00a0"
 
 /** A left-to-right marker, marks the next character as left-to-right. */
-#define LRM "\xE2\x80\x8E"
+#define LRM u8"\u200e"
 
 /**
  * Valid filter types for IsValidChar.
@@ -32,7 +32,7 @@ enum CharSetFilter {
 };
 
 /** Type for wide characters, i.e. non-UTF8 encoded unicode characters. */
-typedef uint32 WChar;
+typedef char32_t WChar;
 
 /* The following are directional formatting codes used to get the LTR and RTL strings right:
  * http://www.unicode.org/unicode/reports/tr9/#Directional_Formatting_Codes */
@@ -52,5 +52,9 @@ enum StringValidationSettings {
 	SVS_ALLOW_CONTROL_CODE         = 1 << 2, ///< Allow the special control codes.
 };
 DECLARE_ENUM_AS_BIT_SET(StringValidationSettings)
+
+
+/** Type for a list of strings. */
+typedef std::vector<std::string> StringList;
 
 #endif /* STRING_TYPE_H */

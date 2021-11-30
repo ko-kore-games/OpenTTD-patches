@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -23,7 +21,7 @@ enum PersistentStorageMode {
 	PSM_LEAVE_GAMELOOP,   ///< Leave the gameloop, changes will be temporary.
 	PSM_ENTER_COMMAND,    ///< Enter command scope, changes will be permanent.
 	PSM_LEAVE_COMMAND,    ///< Leave command scope, revert to previous mode.
-	PSM_ENTER_TESTMODE,   ///< Enter command test mode, changes will be tempoary.
+	PSM_ENTER_TESTMODE,   ///< Enter command test mode, changes will be temporary.
 	PSM_LEAVE_TESTMODE,   ///< Leave command test mode, revert to previous mode.
 };
 
@@ -70,7 +68,7 @@ struct PersistentStorageArray : BasePersistentStorageArray {
 	TYPE *prev_storage; ///< Memory to store "old" states so we can revert them on the performance of test cases for commands etc.
 
 	/** Simply construct the array */
-	PersistentStorageArray() : prev_storage(NULL)
+	PersistentStorageArray() : prev_storage(nullptr)
 	{
 		memset(this->storage, 0, sizeof(this->storage));
 	}
@@ -105,8 +103,8 @@ struct PersistentStorageArray : BasePersistentStorageArray {
 
 		/* We do not have made a backup; lets do so */
 		if (AreChangesPersistent()) {
-			assert(this->prev_storage == NULL);
-		} else if (this->prev_storage == NULL) {
+			assert(this->prev_storage == nullptr);
+		} else if (this->prev_storage == nullptr) {
 			this->prev_storage = MallocT<TYPE>(SIZE);
 			memcpy(this->prev_storage, this->storage, sizeof(this->storage));
 
@@ -133,10 +131,10 @@ struct PersistentStorageArray : BasePersistentStorageArray {
 
 	void ClearChanges()
 	{
-		if (this->prev_storage != NULL) {
+		if (this->prev_storage != nullptr) {
 			memcpy(this->storage, this->prev_storage, sizeof(this->storage));
 			free(this->prev_storage);
-			this->prev_storage = NULL;
+			this->prev_storage = nullptr;
 		}
 	}
 };
@@ -230,9 +228,6 @@ struct PersistentStorage : PersistentStorageArray<int32, 256>, PersistentStorage
 	}
 };
 
-assert_compile(cpp_lengthof(OldPersistentStorage, storage) <= cpp_lengthof(PersistentStorage, storage));
-
-#define FOR_ALL_STORAGES_FROM(var, start) FOR_ALL_ITEMS_FROM(PersistentStorage, storage_index, var, start)
-#define FOR_ALL_STORAGES(var) FOR_ALL_STORAGES_FROM(var, 0)
+static_assert(cpp_lengthof(OldPersistentStorage, storage) <= cpp_lengthof(PersistentStorage, storage));
 
 #endif /* NEWGRF_STORAGE_H */

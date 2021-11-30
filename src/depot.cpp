@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /*
  * This file is part of OpenTTD.
  * OpenTTD is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.
@@ -43,9 +41,9 @@ Depot::~Depot()
 	RemoveOrderFromAllVehicles(OT_GOTO_DEPOT, this->index);
 
 	/* Delete the depot-window */
-	DeleteWindowById(WC_VEHICLE_DEPOT, this->xy);
+	CloseWindowById(WC_VEHICLE_DEPOT, this->xy);
 
 	/* Delete the depot list */
 	VehicleType vt = GetDepotVehicleType(this->xy);
-	DeleteWindowById(GetWindowClassForVehicleType(vt), VehicleListIdentifier(VL_DEPOT_LIST, vt, GetTileOwner(this->xy), this->index).Pack());
+	CloseWindowById(GetWindowClassForVehicleType(vt), VehicleListIdentifier(VL_DEPOT_LIST, vt, GetTileOwner(this->xy), this->index).Pack());
 }
