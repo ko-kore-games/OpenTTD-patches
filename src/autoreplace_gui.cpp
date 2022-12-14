@@ -25,12 +25,15 @@
 #include "rail_gui.h"
 #include "road_gui.h"
 #include "widgets/dropdown_func.h"
+#include "autoreplace_cmd.h"
+#include "group_cmd.h"
+#include "settings_cmd.h"
 
 #include "widgets/autoreplace_widget.h"
 
 #include "safeguards.h"
 
-void DrawEngineList(VehicleType type, int x, int r, int y, const GUIEngineList *eng_list, uint16 min, uint16 max, EngineID selected_id, bool show_count, GroupID selected_group);
+void DrawEngineList(VehicleType type, const Rect &r, const GUIEngineList *eng_list, uint16 min, uint16 max, EngineID selected_id, bool show_count, GroupID selected_group);
 
 static bool EngineNumberSorter(const EngineID &a, const EngineID &b)
 {
@@ -217,7 +220,7 @@ class ReplaceVehicleWindow : public Window {
 	{
 		EngineID veh_from = this->sel_engine[0];
 		EngineID veh_to = this->sel_engine[1];
-		DoCommandP(0, (replace_when_old ? 1 : 0) | (this->sel_group << 16), veh_from + (veh_to << 16), CMD_SET_AUTOREPLACE);
+		Command<CMD_SET_AUTOREPLACE>::Post(this->sel_group, veh_from, veh_to, replace_when_old);
 	}
 
 public:
@@ -301,8 +304,8 @@ public:
 			case WID_RV_INFO_TAB: {
 				Dimension d = GetStringBoundingBox(STR_REPLACE_NOT_REPLACING);
 				d = maxdim(d, GetStringBoundingBox(STR_REPLACE_NOT_REPLACING_VEHICLE_SELECTED));
-				d.width += WD_FRAMETEXT_LEFT +  WD_FRAMETEXT_RIGHT;
-				d.height += WD_FRAMERECT_TOP + WD_FRAMERECT_BOTTOM;
+				d.width += padding.width;
+				d.height += padding.height;
 				*size = maxdim(*size, d);
 				break;
 			}
@@ -419,7 +422,7 @@ public:
 					str = STR_REPLACE_NOT_REPLACING_VEHICLE_SELECTED;
 				}
 
-				DrawString(r.left + WD_FRAMETEXT_LEFT, r.right - WD_FRAMETEXT_RIGHT, r.top + WD_FRAMERECT_TOP, str, TC_BLACK, SA_HOR_CENTER);
+				DrawString(r.Shrink(WidgetDimensions::scaled.frametext, WidgetDimensions::scaled.framerect), str, TC_BLACK, SA_HOR_CENTER);
 				break;
 			}
 
@@ -430,8 +433,7 @@ public:
 				EngineID end    = static_cast<EngineID>(std::min<size_t>(this->vscroll[side]->GetCapacity() + start, this->engines[side].size()));
 
 				/* Do the actual drawing */
-				DrawEngineList((VehicleType)this->window_number, r.left + WD_FRAMERECT_LEFT, r.right - WD_FRAMERECT_RIGHT, r.top + WD_FRAMERECT_TOP,
-						&this->engines[side], start, end, this->sel_engine[side], side == 0, this->sel_group);
+				DrawEngineList((VehicleType)this->window_number, r, &this->engines[side], start, end, this->sel_engine[side], side == 0, this->sel_group);
 				break;
 			}
 		}
@@ -482,10 +484,10 @@ public:
 					ted.cargo = e->GetDefaultCargoType();
 					ted.capacity = e->GetDisplayDefaultCapacity(&ted.mail_capacity);
 
-					NWidgetBase *nwi = this->GetWidget<NWidgetBase>(side == 0 ? WID_RV_LEFT_DETAILS : WID_RV_RIGHT_DETAILS);
-					int text_end = DrawVehiclePurchaseInfo(nwi->pos_x + WD_FRAMETEXT_LEFT, nwi->pos_x + nwi->current_x - WD_FRAMETEXT_RIGHT,
-							nwi->pos_y + WD_FRAMERECT_TOP, this->sel_engine[side], ted);
-					needed_height = std::max(needed_height, (text_end - (int)nwi->pos_y - WD_FRAMERECT_TOP) / FONT_HEIGHT_NORMAL);
+					const Rect r = this->GetWidget<NWidgetBase>(side == 0 ? WID_RV_LEFT_DETAILS : WID_RV_RIGHT_DETAILS)->GetCurrentRect()
+							.Shrink(WidgetDimensions::scaled.frametext, WidgetDimensions::scaled.framerect);
+					int text_end = DrawVehiclePurchaseInfo(r.left, r.right, r.top, this->sel_engine[side], ted);
+					needed_height = std::max(needed_height, (text_end - r.top) / FONT_HEIGHT_NORMAL);
 				}
 			}
 			if (needed_height != this->details_height) { // Details window are not high enough, enlarge them.
@@ -541,10 +543,10 @@ public:
 			case WID_RV_TRAIN_WAGONREMOVE_TOGGLE: {
 				const Group *g = Group::GetIfValid(this->sel_group);
 				if (g != nullptr) {
-					DoCommandP(0, this->sel_group | (GroupFlags::GF_REPLACE_WAGON_REMOVAL << 16), (HasBit(g->flags, GroupFlags::GF_REPLACE_WAGON_REMOVAL) ? 0 : 1) | (_ctrl_pressed << 1), CMD_SET_GROUP_FLAG);
+					Command<CMD_SET_GROUP_FLAG>::Post(this->sel_group, GroupFlags::GF_REPLACE_WAGON_REMOVAL, !HasBit(g->flags, GroupFlags::GF_REPLACE_WAGON_REMOVAL), _ctrl_pressed);
 				} else {
 					// toggle renew_keep_length
-					DoCommandP(0, 0, Company::Get(_local_company)->settings.renew_keep_length ? 0 : 1, CMD_CHANGE_COMPANY_SETTING, nullptr, "company.renew_keep_length");
+					Command<CMD_CHANGE_COMPANY_SETTING>::Post("company.renew_keep_length", Company::Get(_local_company)->settings.renew_keep_length ? 0 : 1);
 				}
 				break;
 			}
@@ -562,7 +564,7 @@ public:
 
 			case WID_RV_STOP_REPLACE: { // Stop replacing
 				EngineID veh_from = this->sel_engine[0];
-				DoCommandP(0, this->sel_group << 16, veh_from + (INVALID_ENGINE << 16), CMD_SET_AUTOREPLACE);
+				Command<CMD_SET_AUTOREPLACE>::Post(this->sel_group, veh_from, INVALID_ENGINE, false);
 				break;
 			}
 
@@ -584,7 +586,7 @@ public:
 				if (click_side == 0 && _ctrl_pressed && e != INVALID_ENGINE &&
 					(GetGroupNumEngines(_local_company, sel_group, e) == 0 || GetGroupNumEngines(_local_company, ALL_GROUP, e) == 0)) {
 						EngineID veh_from = e;
-						DoCommandP(0, this->sel_group << 16, veh_from + (INVALID_ENGINE << 16), CMD_SET_AUTOREPLACE);
+						Command<CMD_SET_AUTOREPLACE>::Post(this->sel_group, veh_from, INVALID_ENGINE, false);
 						break;
 				}
 

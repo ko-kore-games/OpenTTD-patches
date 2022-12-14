@@ -24,6 +24,7 @@
 #include "../string_func.h"
 #include "../date_func.h"
 #include "../roadveh.h"
+#include "../roadveh_cmd.h"
 #include "../train.h"
 #include "../station_base.h"
 #include "../waypoint_base.h"
@@ -56,7 +57,6 @@
 #include "../disaster_vehicle.h"
 #include "../ship.h"
 #include "../water.h"
-
 
 #include "saveload_internal.h"
 
@@ -823,10 +823,12 @@ bool AfterLoadGame()
 	 *  a company does not exist yet. So create one here.
 	 * 1 exception: network-games. Those can have 0 companies
 	 *   But this exception is not true for non-dedicated network servers! */
-	if (!Company::IsValidID(COMPANY_FIRST) && (!_networking || (_networking && _network_server && !_network_dedicated))) {
-		DoStartupNewCompany(false);
-		Company *c = Company::Get(COMPANY_FIRST);
-		c->settings = _settings_client.company;
+	if (!_networking || (_networking && _network_server && !_network_dedicated)) {
+		CompanyID first_human_company = GetFirstPlayableCompanyID();
+		if (!Company::IsValidID(first_human_company)) {
+			Company *c = DoStartupNewCompany(false, first_human_company);
+			c->settings = _settings_client.company;
+		}
 	}
 
 	/* Fix the cache for cargo payments. */
@@ -1006,10 +1008,10 @@ bool AfterLoadGame()
 		/* When loading a game, _local_company is not yet set to the correct value.
 		 * However, in a dedicated server we are a spectator, so nothing needs to
 		 * happen. In case we are not a dedicated server, the local company always
-		 * becomes company 0, unless we are in the scenario editor where all the
-		 * companies are 'invalid'.
+		 * becomes the first available company, unless we are in the scenario editor
+		 * where all the companies are 'invalid'.
 		 */
-		Company *c = Company::GetIfValid(COMPANY_FIRST);
+		Company *c = Company::GetIfValid(GetFirstPlayableCompanyID());
 		if (!_network_dedicated && c != nullptr) {
 			c->settings = _settings_client.company;
 		}
@@ -1720,9 +1722,9 @@ bool AfterLoadGame()
 		for (Order *order : Order::Iterate()) order->ConvertFromOldSavegame();
 
 		for (Vehicle *v : Vehicle::Iterate()) {
-			if (v->orders.list != nullptr && v->orders.list->GetFirstOrder() != nullptr && v->orders.list->GetFirstOrder()->IsType(OT_NOTHING)) {
-				v->orders.list->FreeChain();
-				v->orders.list = nullptr;
+			if (v->orders != nullptr && v->orders->GetFirstOrder() != nullptr && v->orders->GetFirstOrder()->IsType(OT_NOTHING)) {
+				v->orders->FreeChain();
+				v->orders = nullptr;
 			}
 
 			v->current_order.ConvertFromOldSavegame();
@@ -1755,10 +1757,9 @@ bool AfterLoadGame()
 		 * 2) shares that are owned by inactive companies or self
 		 *     (caused by cheating clients in earlier revisions) */
 		for (Company *c : Company::Iterate()) {
-			for (uint i = 0; i < 4; i++) {
-				CompanyID company = c->share_owners[i];
-				if (company == INVALID_COMPANY) continue;
-				if (!Company::IsValidID(company) || company == c->index) c->share_owners[i] = INVALID_COMPANY;
+			for (auto &share_owner : c->share_owners) {
+				if (share_owner == INVALID_COMPANY) continue;
+				if (!Company::IsValidID(share_owner) || share_owner == c->index) share_owner = INVALID_COMPANY;
 			}
 		}
 	}
@@ -3147,6 +3148,63 @@ bool AfterLoadGame()
 		}
 	}
 
+	/* Use current order time to approximate last loading time */
+	if (IsSavegameVersionBefore(SLV_LAST_LOADING_TICK)) {
+		for (Vehicle *v : Vehicle::Iterate()) {
+			v->last_loading_tick = std::max(_tick_counter, static_cast<uint64>(v->current_order_time)) - v->current_order_time;
+		}
+	}
+
+	/* Road stops is 'only' updating some caches, but they are needed for PF calls in SLV_MULTITRACK_LEVEL_CROSSINGS teleporting. */
+	AfterLoadRoadStops();
+
+	/* Road vehicles stopped on multitrack level crossings need teleporting to a depot
+	 * to avoid crashing into the side of the train they're waiting for. */
+	if (IsSavegameVersionBefore(SLV_MULTITRACK_LEVEL_CROSSINGS)) {
+		/* Teleport road vehicles to the nearest depot. */
+		for (RoadVehicle *rv : RoadVehicle::Iterate()) {
+			/* Ignore trailers of articulated vehicles. */
+			if (rv->IsArticulatedPart()) continue;
+
+			/* Ignore moving vehicles. */
+			if (rv->cur_speed > 0) continue;
+
+			/* Ignore crashed vehicles. */
+			if (rv->vehstatus & VS_CRASHED) continue;
+
+			/* Ignore vehicles not on level crossings. */
+			TileIndex cur_tile = rv->tile;
+			if (!IsLevelCrossingTile(cur_tile)) continue;
+
+			TileIndex location;
+			DestinationID destination;
+			bool reverse = true;
+
+			/* Try to find a depot with a distance limit of 512 tiles (Manhattan distance). */
+			if (rv->FindClosestDepot(&location, &destination, &reverse) && DistanceManhattan(rv->tile, location) < 512u) {
+				/* Teleport all parts of articulated vehicles. */
+				for (RoadVehicle *u = rv; u != nullptr; u = u->Next()) {
+					u->tile = location;
+					int x = TileX(location) * TILE_SIZE + TILE_SIZE / 2;
+					int y = TileY(location) * TILE_SIZE + TILE_SIZE / 2;
+					u->x_pos = x;
+					u->y_pos = y;
+					u->z_pos = GetSlopePixelZ(x, y);
+
+					u->vehstatus |= VS_HIDDEN;
+					u->state = RVSB_IN_DEPOT;
+					u->UpdatePosition();
+				}
+				RoadVehLeaveDepot(rv, false);
+			}
+		}
+
+		/* Refresh all level crossings to bar adjacent crossing tiles. */
+		for (TileIndex tile = 0; tile < MapSize(); tile++) {
+			if (IsLevelCrossingTile(tile)) UpdateLevelCrossing(tile, false, true);
+		}
+	}
+
 	/* Compute station catchment areas. This is needed here in case UpdateStationAcceptance is called below. */
 	Station::RecomputeCatchmentForAll();
 
@@ -3155,8 +3213,6 @@ bool AfterLoadGame()
 		for (Station *st : Station::Iterate()) UpdateStationAcceptance(st, false);
 	}
 
-	/* Road stops is 'only' updating some caches */
-	AfterLoadRoadStops();
 	AfterLoadLabelMaps();
 	AfterLoadCompanyStats();
 	AfterLoadStoryBook();

@@ -30,6 +30,10 @@
 #include "cargotype.h"
 #include "core/geometry_func.hpp"
 #include "autoreplace_func.h"
+#include "engine_cmd.h"
+#include "train_cmd.h"
+#include "vehicle_cmd.h"
+#include "zoom_func.h"
 
 #include "widgets/build_vehicle_widget.h"
 
@@ -44,7 +48,7 @@
  */
 uint GetEngineListHeight(VehicleType type)
 {
-	return std::max<uint>(FONT_HEIGHT_NORMAL + WD_MATRIX_TOP + WD_MATRIX_BOTTOM, GetVehicleImageCellSize(type, EIT_PURCHASE).height);
+	return std::max<uint>(FONT_HEIGHT_NORMAL + WidgetDimensions::scaled.matrix.Vertical(), GetVehicleImageCellSize(type, EIT_PURCHASE).height);
 }
 
 static const NWidgetPart _nested_build_vehicle_widgets[] = {
@@ -587,7 +591,7 @@ static int DrawRailWagonPurchaseInfo(int left, int right, int y, EngineID engine
 	/* Wagon weight - (including cargo) */
 	uint weight = e->GetDisplayWeight();
 	SetDParam(0, weight);
-	uint cargo_weight = (e->CanCarryCargo() ? CargoSpec::Get(te.cargo)->weight * te.capacity / 16 : 0);
+	uint cargo_weight = (e->CanCarryCargo() ? CargoSpec::Get(te.cargo)->WeightOfNUnitsInTrain(te.capacity) : 0);
 	SetDParam(1, cargo_weight + weight);
 	DrawString(left, right, y, STR_PURCHASE_INFO_WEIGHT_CWEIGHT);
 	y += FONT_HEIGHT_NORMAL;
@@ -681,7 +685,7 @@ static int DrawRoadVehPurchaseInfo(int left, int right, int y, EngineID engine_n
 		/* Road vehicle weight - (including cargo) */
 		int16 weight = e->GetDisplayWeight();
 		SetDParam(0, weight);
-		uint cargo_weight = (e->CanCarryCargo() ? CargoSpec::Get(te.cargo)->weight * te.capacity / 16 : 0);
+		uint cargo_weight = (e->CanCarryCargo() ? CargoSpec::Get(te.cargo)->WeightOfNUnits(te.capacity) : 0);
 		SetDParam(1, cargo_weight + weight);
 		DrawString(left, right, y, STR_PURCHASE_INFO_WEIGHT_CWEIGHT);
 		y += FONT_HEIGHT_NORMAL;
@@ -950,9 +954,7 @@ int DrawVehiclePurchaseInfo(int left, int right, int y, EngineID engine_number, 
 /**
  * Engine drawing loop
  * @param type Type of vehicle (VEH_*)
- * @param l The left most location of the list
- * @param r The right most location of the list
- * @param y The top most location of the list
+ * @param r The Rect of the list
  * @param eng_list What engines to draw
  * @param min where to start in the list
  * @param max where in the list to end
@@ -960,7 +962,7 @@ int DrawVehiclePurchaseInfo(int left, int right, int y, EngineID engine_number, 
  * @param show_count Whether to show the amount of engines or not
  * @param selected_group the group to list the engines of
  */
-void DrawEngineList(VehicleType type, int l, int r, int y, const GUIEngineList *eng_list, uint16 min, uint16 max, EngineID selected_id, bool show_count, GroupID selected_group)
+void DrawEngineList(VehicleType type, const Rect &r, const GUIEngineList *eng_list, uint16 min, uint16 max, EngineID selected_id, bool show_count, GroupID selected_group)
 {
 	static const int sprite_y_offsets[] = { -1, -1, -2, -2 };
 
@@ -973,8 +975,9 @@ void DrawEngineList(VehicleType type, int l, int r, int y, const GUIEngineList *
 	int sprite_right = GetVehicleImageCellSize(type, EIT_PURCHASE).extend_right;
 	int sprite_width = sprite_left + sprite_right;
 
-	int sprite_x        = rtl ? r - sprite_right - 1 : l + sprite_left + 1;
-	int sprite_y_offset = sprite_y_offsets[type] + step_size / 2;
+	Rect ir      = r.WithHeight(step_size).Shrink(WidgetDimensions::scaled.matrix);
+	int sprite_x = ir.WithWidth(sprite_width, rtl).left + sprite_left;
+	int sprite_y_offset = ScaleSpriteTrad(sprite_y_offsets[type]) + ir.Height() / 2;
 
 	Dimension replace_icon = {0, 0};
 	int count_width = 0;
@@ -984,16 +987,16 @@ void DrawEngineList(VehicleType type, int l, int r, int y, const GUIEngineList *
 		count_width = GetStringBoundingBox(STR_TINY_BLACK_COMA).width;
 	}
 
-	int text_left  = l + (rtl ? WD_FRAMERECT_LEFT + replace_icon.width + 8 + count_width : sprite_width + WD_FRAMETEXT_LEFT);
-	int text_right = r - (rtl ? sprite_width + WD_FRAMETEXT_RIGHT : WD_FRAMERECT_RIGHT + replace_icon.width + 8 + count_width);
-	int replace_icon_left = rtl ? l + WD_FRAMERECT_LEFT : r - WD_FRAMERECT_RIGHT - replace_icon.width;
-	int count_left = l;
-	int count_right = rtl ? text_left : r - WD_FRAMERECT_RIGHT - replace_icon.width - 8;
+	Rect tr = ir.Indent(sprite_width + WidgetDimensions::scaled.hsep_wide, rtl);                                      // Name position
+	Rect cr = tr.Indent(replace_icon.width + WidgetDimensions::scaled.hsep_wide, !rtl).WithWidth(count_width, !rtl);  // Count position
+	Rect rr = tr.WithWidth(replace_icon.width, !rtl);                                                                 // Replace icon position
+	if (show_count) tr = tr.Indent(count_width + WidgetDimensions::scaled.hsep_normal + replace_icon.width + WidgetDimensions::scaled.hsep_wide, !rtl);
 
-	int normal_text_y_offset = (step_size - FONT_HEIGHT_NORMAL) / 2;
-	int small_text_y_offset  = step_size - FONT_HEIGHT_SMALL - WD_FRAMERECT_BOTTOM - 1;
-	int replace_icon_y_offset = (step_size - replace_icon.height) / 2 - 1;
+	int normal_text_y_offset = (ir.Height() - FONT_HEIGHT_NORMAL) / 2;
+	int small_text_y_offset  = ir.Height() - FONT_HEIGHT_SMALL;
+	int replace_icon_y_offset = (ir.Height() - replace_icon.height) / 2;
 
+	int y = ir.top;
 	for (; min < max; min++, y += step_size) {
 		const EngineID engine = (*eng_list)[min];
 		/* Note: num_engines is only used in the autoreplace GUI, so it is correct to use _local_company here. */
@@ -1005,12 +1008,12 @@ void DrawEngineList(VehicleType type, int l, int r, int y, const GUIEngineList *
 		TextColour tc = (engine == selected_id) ? TC_WHITE : (TC_NO_SHADE | (hidden ? TC_GREY : TC_BLACK));
 
 		SetDParam(0, engine);
-		DrawString(text_left, text_right, y + normal_text_y_offset, str, tc);
-		DrawVehicleEngine(l, r, sprite_x, y + sprite_y_offset, engine, (show_count && num_engines == 0) ? PALETTE_CRASH : GetEnginePalette(engine, _local_company), EIT_PURCHASE);
+		DrawString(tr.left, tr.right, y + normal_text_y_offset, str, tc);
+		DrawVehicleEngine(r.left, r.right, sprite_x, y + sprite_y_offset, engine, (show_count && num_engines == 0) ? PALETTE_CRASH : GetEnginePalette(engine, _local_company), EIT_PURCHASE);
 		if (show_count) {
 			SetDParam(0, num_engines);
-			DrawString(count_left, count_right, y + small_text_y_offset, STR_TINY_BLACK_COMA, TC_FROMSTRING, SA_RIGHT | SA_FORCE);
-			if (EngineHasReplacementForCompany(Company::Get(_local_company), engine, selected_group)) DrawSprite(SPR_GROUP_REPLACE_ACTIVE, num_engines == 0 ? PALETTE_CRASH : PAL_NONE, replace_icon_left, y + replace_icon_y_offset);
+			DrawString(cr.left, cr.right, y + small_text_y_offset, STR_TINY_BLACK_COMA, TC_FROMSTRING, SA_RIGHT | SA_FORCE);
+			if (EngineHasReplacementForCompany(Company::Get(_local_company), engine, selected_group)) DrawSprite(SPR_GROUP_REPLACE_ACTIVE, num_engines == 0 ? PALETTE_CRASH : PAL_NONE, rr.left, y + replace_icon_y_offset);
 		}
 	}
 }
@@ -1079,7 +1082,7 @@ struct BuildVehicleWindow : Window {
 	{
 		this->vehicle_type = type;
 		this->listview_mode = tile == INVALID_TILE;
-		this->window_number = this->listview_mode ? (int)type : tile;
+		this->window_number = this->listview_mode ? (int)type : (int)tile;
 
 		this->sel_engine = INVALID_ENGINE;
 
@@ -1114,7 +1117,7 @@ struct BuildVehicleWindow : Window {
 
 		this->details_height = ((this->vehicle_type == VEH_TRAIN) ? 10 : 9);
 
-		this->FinishInitNested(tile == INVALID_TILE ? (int)type : tile);
+		this->FinishInitNested(tile == INVALID_TILE ? (int)type : (int)tile);
 
 		this->owner = (tile != INVALID_TILE) ? GetTileOwner(tile) : _local_company;
 
@@ -1226,11 +1229,11 @@ struct BuildVehicleWindow : Window {
 
 		if (!this->listview_mode) {
 			/* Query for cost and refitted capacity */
-			CommandCost ret = DoCommand(this->window_number, this->sel_engine | (cargo << 24), 0, DC_QUERY_COST, GetCmdBuildVeh(this->vehicle_type));
+			auto [ret, veh_id, refit_capacity, refit_mail] = Command<CMD_BUILD_VEHICLE>::Do(DC_QUERY_COST, this->window_number, this->sel_engine, true, cargo, INVALID_CLIENT_ID);
 			if (ret.Succeeded()) {
 				this->te.cost          = ret.GetCost() - e->GetCost();
-				this->te.capacity      = _returned_refit_capacity;
-				this->te.mail_capacity = _returned_mail_refit_capacity;
+				this->te.capacity      = refit_capacity;
+				this->te.mail_capacity = refit_mail;
 				this->te.cargo         = (cargo == CT_INVALID) ? e->GetDefaultCargoType() : cargo;
 				return;
 			}
@@ -1458,7 +1461,7 @@ struct BuildVehicleWindow : Window {
 			case WID_BV_SHOW_HIDE: {
 				const Engine *e = (this->sel_engine == INVALID_ENGINE) ? nullptr : Engine::Get(this->sel_engine);
 				if (e != nullptr) {
-					DoCommandP(0, 0, this->sel_engine | (e->IsHidden(_current_company) ? 0 : (1u << 31)), CMD_SET_VEHICLE_VISIBILITY);
+					Command<CMD_SET_VEHICLE_VISIBILITY>::Post(this->sel_engine, !e->IsHidden(_current_company));
 				}
 				break;
 			}
@@ -1466,10 +1469,13 @@ struct BuildVehicleWindow : Window {
 			case WID_BV_BUILD: {
 				EngineID sel_eng = this->sel_engine;
 				if (sel_eng != INVALID_ENGINE) {
-					CommandCallback *callback = (this->vehicle_type == VEH_TRAIN && RailVehInfo(sel_eng)->railveh_type == RAILVEH_WAGON) ? CcBuildWagon : CcBuildPrimaryVehicle;
 					CargoID cargo = this->cargo_filter[this->cargo_filter_criteria];
 					if (cargo == CF_ANY || cargo == CF_ENGINES) cargo = CF_NONE;
-					DoCommandP(this->window_number, sel_eng | (cargo << 24), 0, GetCmdBuildVeh(this->vehicle_type), callback);
+					if (this->vehicle_type == VEH_TRAIN && RailVehInfo(sel_eng)->railveh_type == RAILVEH_WAGON) {
+						Command<CMD_BUILD_VEHICLE>::Post(GetCmdBuildVehMsg(this->vehicle_type), CcBuildWagon, this->window_number, sel_eng, true, cargo, INVALID_CLIENT_ID);
+					} else {
+						Command<CMD_BUILD_VEHICLE>::Post(GetCmdBuildVehMsg(this->vehicle_type), CcBuildPrimaryVehicle, this->window_number, sel_eng, true, cargo, INVALID_CLIENT_ID);
+					}
 				}
 				break;
 			}
@@ -1545,7 +1551,7 @@ struct BuildVehicleWindow : Window {
 			case WID_BV_LIST:
 				resize->height = GetEngineListHeight(this->vehicle_type);
 				size->height = 3 * resize->height;
-				size->width = std::max(size->width, GetVehicleImageCellSize(this->vehicle_type, EIT_PURCHASE).extend_left + GetVehicleImageCellSize(this->vehicle_type, EIT_PURCHASE).extend_right + 165);
+				size->width = std::max(size->width, GetVehicleImageCellSize(this->vehicle_type, EIT_PURCHASE).extend_left + GetVehicleImageCellSize(this->vehicle_type, EIT_PURCHASE).extend_right + 165) + padding.width;
 				break;
 
 			case WID_BV_PANEL:
@@ -1582,9 +1588,7 @@ struct BuildVehicleWindow : Window {
 			case WID_BV_LIST:
 				DrawEngineList(
 					this->vehicle_type,
-					r.left + WD_FRAMERECT_LEFT,
-					r.right - WD_FRAMERECT_RIGHT,
-					r.top + WD_FRAMERECT_TOP,
+					r,
 					&this->eng_list,
 					this->vscroll->GetPosition(),
 					static_cast<uint16>(std::min<size_t>(this->vscroll->GetPosition() + this->vscroll->GetCapacity(), this->eng_list.size())),
@@ -1616,10 +1620,9 @@ struct BuildVehicleWindow : Window {
 			int needed_height = this->details_height;
 			/* Draw details panels. */
 			if (this->sel_engine != INVALID_ENGINE) {
-				NWidgetBase *nwi = this->GetWidget<NWidgetBase>(WID_BV_PANEL);
-				int text_end = DrawVehiclePurchaseInfo(nwi->pos_x + WD_FRAMETEXT_LEFT, nwi->pos_x + nwi->current_x - WD_FRAMETEXT_RIGHT,
-						nwi->pos_y + WD_FRAMERECT_TOP, this->sel_engine, this->te);
-				needed_height = std::max(needed_height, (text_end - (int)nwi->pos_y - WD_FRAMERECT_TOP) / FONT_HEIGHT_NORMAL);
+				const Rect r = this->GetWidget<NWidgetBase>(WID_BV_PANEL)->GetCurrentRect().Shrink(WidgetDimensions::scaled.frametext, WidgetDimensions::scaled.framerect);
+				int text_end = DrawVehiclePurchaseInfo(r.left, r.right, r.top, this->sel_engine, this->te);
+				needed_height = std::max(needed_height, (text_end - r.top) / FONT_HEIGHT_NORMAL);
 			}
 			if (needed_height != this->details_height) { // Details window are not high enough, enlarge them.
 				int resize = needed_height - this->details_height;
@@ -1634,7 +1637,7 @@ struct BuildVehicleWindow : Window {
 	{
 		if (str == nullptr) return;
 
-		DoCommandP(0, this->rename_engine, 0, CMD_RENAME_ENGINE | CMD_MSG(STR_ERROR_CAN_T_RENAME_TRAIN_TYPE + this->vehicle_type), nullptr, str);
+		Command<CMD_RENAME_ENGINE>::Post(STR_ERROR_CAN_T_RENAME_TRAIN_TYPE + this->vehicle_type, this->rename_engine, str);
 	}
 
 	void OnDropdownSelect(int widget, int index) override
@@ -1681,7 +1684,7 @@ void ShowBuildVehicleWindow(TileIndex tile, VehicleType type)
 	 *  so if tile == INVALID_TILE (Available XXX Window), use 'type' as unique number.
 	 *  As it always is a low value, it won't collide with any real tile
 	 *  number. */
-	uint num = (tile == INVALID_TILE) ? (int)type : tile;
+	uint num = (tile == INVALID_TILE) ? (int)type : (int)tile;
 
 	assert(IsCompanyBuildableVehicleType(type));
 

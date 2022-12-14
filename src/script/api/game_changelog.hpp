@@ -17,6 +17,15 @@
  *
  * This version is not yet released. The following changes are not set in stone yet.
  *
+ * API additions:
+ * \li GSCargo::GetWeight
+ * \li GSIndustryType::ResolveNewGRFID
+ * \li GSObjectType::ResolveNewGRFID
+ * \li GSLeagueTable
+ *
+ * Other changes:
+ * \li GSRoad::HasRoadType now correctly checks RoadType against RoadType
+ *
  * \b 12.0
  *
  * API additions:
