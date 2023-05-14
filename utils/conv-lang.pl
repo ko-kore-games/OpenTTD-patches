@@ -47,6 +47,7 @@ irish.txt
 italian.txt
 japanese.txt
 korean.txt
+korean_Kore.txt
 latin.txt
 latvian.txt
 lithuanian.txt

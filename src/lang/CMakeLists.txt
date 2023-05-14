@@ -39,6 +39,7 @@ set(LANG_SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/italian.txt
         ${CMAKE_CURRENT_SOURCE_DIR}/japanese.txt
         ${CMAKE_CURRENT_SOURCE_DIR}/korean.txt
+        ${CMAKE_CURRENT_SOURCE_DIR}/korean_Kore.txt
         ${CMAKE_CURRENT_SOURCE_DIR}/latin.txt
         ${CMAKE_CURRENT_SOURCE_DIR}/latvian.txt
         ${CMAKE_CURRENT_SOURCE_DIR}/lithuanian.txt
