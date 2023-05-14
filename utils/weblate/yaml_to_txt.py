@@ -17,7 +17,7 @@ def convert_line(line, updated):
 
 def convert(base, updated):
     lines = base.split('\n')
-    lines = [convert_line(line, updated) if line != '' and line[0]!= '#' else line for line in lines]
+    lines = [convert_line(line, updated['weblate']) if line != '' and line[0]!= '#' else line for line in lines]
     result = '\n'.join(lines)
     return result
 

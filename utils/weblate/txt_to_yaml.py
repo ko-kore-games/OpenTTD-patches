@@ -18,7 +18,8 @@ def convert(data):
     lines = [convert_line(line) for line in lines]
     lines = [line for line in lines if line is not None]
     dict = {key: value for key, value in lines}
-    result = yaml.dump(dict, allow_unicode=True, width=float('inf'))
+    content = {'weblate': dict,}
+    result = yaml.dump(content, allow_unicode=True, width=float('inf'))
     return result
 
 def main():
