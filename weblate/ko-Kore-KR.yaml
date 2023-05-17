@@ -39,7 +39,7 @@ weblate:
   STR_INTRO_TOOLTIP_TEMPERATE: '{BLACK}「溫帶氣候」選擇'
   STR_ABOUT_MENU_ABOUT_OPENTTD: 「오픈TTD」에對해서
   STR_ABOUT_MENU_AI_DEBUG: 人工知能/게임스크립트 디버그
-  STR_ABOUT_MENU_TOGGLE_CONSOLE: 콘솔表示/非表示
+  STR_ABOUT_MENU_TOGGLE_CONSOLE: 콘솔 表示/非表示
   STR_AIRCRAFT_MENU_AIRPORT_CONSTRUCTION: 空港建設
   STR_CONFIG_SETTING_TYPE_COMPANY_MENU: 會社設定 (게임貯藏파일에貯藏됨; 새게임에만適用됨)
   STR_CONFIG_SETTING_TYPE_GAME_MENU: 게임設定 (게임貯藏파일에貯藏됨; 새게임에만適用됨)
@@ -61,11 +61,12 @@ weblate:
   STR_SETTINGS_MENU_FULL_ANIMATION: 完全한애니메이션
   STR_SETTINGS_MENU_SHOW_COMPETITOR_SIGNS: 競爭社의標識板과驛이름을表示
   STR_ABANDON_GAME_QUERY: '{YELLOW}正말이게임을終了하고 메인으로移動하시겠습니까?'
-  STR_ABOUT_OPENTTD: '{WHITE}오픈TTD에對해서'
+  STR_ABOUT_OPENTTD: '{WHITE}오픈TTD에 對해서'
   STR_ABOUT_ORIGINAL_COPYRIGHT: '{BLACK}Original copyright {COPYRIGHT} 1995 Chris
     Sawyer, All rights reserved'
-  STR_AI_CONFIG_AILIST_TOOLTIP: '{BLACK}다음에게임을始作할때 이人工知能을불러옵니다'
-  STR_AI_CONFIG_CHANGE_TOOLTIP: '{BLACK}다른 게임스크립트를불러옵니다. 컨트롤+클릭하면使用可能한모든버전을보여줍니다'
+  STR_AI_CONFIG_AILIST_TOOLTIP: '{BLACK}다음에 게임을 始作할 때 이 人工知能을 불러옵 니다'
+  STR_AI_CONFIG_CHANGE_TOOLTIP: '{BLACK}다른 게임 스크립트를 불러옵니다. 컨트롤+클릭하면 使用 可能한 모든 버전을
+    보여줍니다'
   STR_SETTINGS_MENU_TOWN_NAMES_DISPLAYED: 都市이름을表示함
   STR_SUBSIDIES_MENU_SUBSIDIES: 補助金
   STR_TOWN_MENU_FOUND_TOWN: 都市建設
@@ -76,7 +77,8 @@ weblate:
   STR_ABBREV_VALUABLES: '{TINY_FONT}貴'
   STR_AI_CONFIG_MOVE_DOWN_TOOLTIP: '{BLACK}目錄에서選擇한人工知能의順序를 한칸아래로옮깁니다'
   STR_AI_DEBUG: '{WHITE}人工知能/게임스크립트 디버그'
-  STR_AI_DEBUG_BREAK_STR_ON_OFF_TOOLTIP: '{BLACK}人工知能의記錄메시지에서中斷文句가나타났을때 人工知能을中斷할지與否를設定합니다'
+  STR_AI_DEBUG_BREAK_STR_ON_OFF_TOOLTIP: '{BLACK}人工知能의 記錄 메시지에서 中斷 文句가 나타났을 때 人工知能을
+    中斷할지 與否를 設定합니다'
   STR_AI_DEBUG_MATCH_CASE_TOOLTIP: '{BLACK}人工知能記錄메시지에서 中斷文句를檢索할때 大小文字를區別할지與否를選擇합니다'
   STR_AI_DEBUG_NAME_AND_VERSION: '{BLACK}{STRING} (v{NUM})'
   STR_BASEGRAPHICS_DOS_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 도스에디션》의그래픽입니다.
@@ -139,10 +141,10 @@ weblate:
   STR_AI_CONFIG_CAPTION_AI: '{WHITE}人工知能設定'
   STR_AI_CONFIG_CAPTION_GAMESCRIPT: '{WHITE}게임스크립트設定'
   STR_AI_CONFIG_CHANGE_AI: '{BLACK}人工知能을選擇하세요'
-  STR_AI_CONFIG_CHANGE_GAMESCRIPT: '{BLACK}게임스크립트를選擇하세요'
+  STR_AI_CONFIG_CHANGE_GAMESCRIPT: '{BLACK}게임 스크립트를 選擇하세요'
   STR_AI_CONFIG_CONFIGURE: '{BLACK}設定'
   STR_AI_CONFIG_CONFIGURE_TOOLTIP: '{BLACK}人工知能의 媒介變數를設定합니다'
-  STR_AI_CONFIG_GAMELIST_TOOLTIP: '{BLACK}다음에게임을始作할때 이게임스크립트를불러옵니다'
+  STR_AI_CONFIG_GAMELIST_TOOLTIP: '{BLACK}다음에 게임을 始作할 때 이 게임 스크립트를 불러옵니다'
   STR_AI_CONFIG_GAMESCRIPT: '{SILVER}게임스크립트'
   STR_AI_CONFIG_GAMESCRIPT_PARAM: '{SILVER}媒介變數'
   STR_AI_CONFIG_HUMAN_PLAYER: 使用者플레이어
