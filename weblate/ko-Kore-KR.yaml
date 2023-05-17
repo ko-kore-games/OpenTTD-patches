@@ -3,14 +3,14 @@ weblate:
   STR_INTRO_CONFIG_SETTINGS_TREE: '{BLACK}設定'
   STR_INTRO_GAMESCRIPT_SETTINGS: '{BLACK}게임스크립트設定'
   STR_INTRO_GAME_OPTIONS: '{BLACK}게임設定'
-  STR_INTRO_NEWGRF_SETTINGS: '{BLACK}뉴GRF設定'
+  STR_INTRO_NEWGRF_SETTINGS: '{BLACK}뉴GRF 設定'
   STR_INTRO_TOOLTIP_AI_SETTINGS: '{BLACK}人工知能設定窓을엽니다'
-  STR_INTRO_TOOLTIP_GAME_OPTIONS: '{BLACK}게임基本設定窓을엽니다'
-  STR_INTRO_TOOLTIP_NEW_GAME: '{BLACK}새게임을始作합니다.{}컨트롤+클릭으로地圖設定을건너뛰고바로始作합니다'
-  STR_INTRO_TOOLTIP_QUIT: "{BLACK}'오픈TTD'를終了합니다"
+  STR_INTRO_TOOLTIP_GAME_OPTIONS: '{BLACK}게임 基本 設定 窓을 엽니다'
+  STR_INTRO_TOOLTIP_NEW_GAME: '{BLACK}새 게임을 始作합니다.{}컨트롤+클릭으로 地圖 設定을 건너뛰고 바로 始作합니다'
+  STR_INTRO_TOOLTIP_QUIT: "{BLACK}'오픈TTD'를 終了합니다"
   STR_INTRO_TOOLTIP_TOYLAND_LANDSCAPE: '{BLACK}「장난감나라」選擇'
-  STR_INTRO_TRANSLATION: '{BLACK}이버전의오픈TTD는 {NUM}個의文章이韓國語로飜譯되지않았습니다. 오픈TTD가더욱發展할수있도록
-    飜譯에參與하세요. 仔細한事項은readme.txt를參考하세요.'
+  STR_INTRO_TRANSLATION: '{BLACK}이 버전의 오픈TTD는 {NUM}個의 文章이 韓國語로 飜譯되지 않았습니다. 오픈TTD가
+    더욱 發展할 수 있도록 飜譯에 參與하세요. 仔細한 事項은 readme.txt를 參考하세요.'
   STR_NEWS_EURO_INTRODUCTION: '{BIG_FONT}{BLACK}유럽貨幣單位統一!{}{}國家의單一流通貨幣로 유로貨가導入되었습니다!'
   STR_SORT_BY_INTRO_DATE: 導入날짜
   STR_INTRO_AI_SETTINGS: '{BLACK}人工知能設定'
@@ -31,7 +31,7 @@ weblate:
   STR_INTRO_TOOLTIP_MULTIPLAYER: '{BLACK}멀티플레이게임을始作합니다'
   STR_INTRO_TOOLTIP_NEWGRF_SETTINGS: '{BLACK}NewGRF設定窓을엽니다'
   STR_INTRO_TOOLTIP_ONLINE_CONTENT: '{BLACK}새로나왔거나 업데이트된콘텐츠를選擇하여다운로드합니다'
-  STR_INTRO_TOOLTIP_PLAY_HEIGHTMAP: '{BLACK}높이맵을地形으로使用하여새로운게임을始作합니다'
+  STR_INTRO_TOOLTIP_PLAY_HEIGHTMAP: '{BLACK}높이맵을 地形으로 使用하여 새로운 게임을 始作합니다'
   STR_INTRO_TOOLTIP_PLAY_SCENARIO: '{BLACK}使用者시나리오로새게임을始作합니다'
   STR_INTRO_TOOLTIP_SCENARIO_EDITOR: '{BLACK}使用者게임/시나리오를만듭니다'
   STR_INTRO_TOOLTIP_SUB_ARCTIC_LANDSCAPE: '{BLACK}「亞寒帶氣候」選擇'
@@ -50,16 +50,17 @@ weblate:
   STR_INDUSTRY_MENU_FUND_NEW_INDUSTRY: 새産業施設建設
   STR_INDUSTRY_MENU_INDUSTRY_CHAIN: 産業施設連繫圖
   STR_LANDSCAPING_MENU_LANDSCAPING: 紙型編輯
-  STR_LANDSCAPING_MENU_PLACE_SIGN: 標識板달기
+  STR_LANDSCAPING_MENU_PLACE_SIGN: 標識板 달기
   STR_MAP_MENU_EXTRA_VIEWPORT: 外部畵面
-  STR_NETWORK_START_SERVER_NEW_GAME_NAME_TOOLTIP: '{BLACK}멀티플레이 게임選擇메뉴에서보여질 게임題目입니다'
+  STR_NETWORK_START_SERVER_NEW_GAME_NAME_TOOLTIP: '{BLACK}멀티플레이 게임 選擇 메뉴에서 보여질 게임
+    題目입니다'
   STR_RAIL_MENU_ELRAIL_CONSTRUCTION: 電氣線路建設
   STR_RAIL_MENU_RAILROAD_CONSTRUCTION: 線路建設
   STR_ROAD_MENU_ROAD_CONSTRUCTION: 道路建設
   STR_SCENEDIT_FILE_MENU_LOAD_HEIGHTMAP: 높이맵불러오기
   STR_SETTINGS_MENU_AI_SETTINGS: 人工知能設定
   STR_SETTINGS_MENU_FULL_ANIMATION: 完全한애니메이션
-  STR_SETTINGS_MENU_SHOW_COMPETITOR_SIGNS: 競爭社의標識板과驛이름을表示
+  STR_SETTINGS_MENU_SHOW_COMPETITOR_SIGNS: 競爭社의 標識板과 驛名을 表示
   STR_ABANDON_GAME_QUERY: '{YELLOW}正말이게임을終了하고 메인으로移動하시겠습니까?'
   STR_ABOUT_OPENTTD: '{WHITE}오픈TTD에 對해서'
   STR_ABOUT_ORIGINAL_COPYRIGHT: '{BLACK}Original copyright {COPYRIGHT} 1995 Chris
@@ -81,9 +82,9 @@ weblate:
     中斷할지 與否를 設定합니다'
   STR_AI_DEBUG_MATCH_CASE_TOOLTIP: '{BLACK}人工知能記錄메시지에서 中斷文句를檢索할때 大小文字를區別할지與否를選擇합니다'
   STR_AI_DEBUG_NAME_AND_VERSION: '{BLACK}{STRING} (v{NUM})'
-  STR_BASEGRAPHICS_DOS_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 도스에디션》의그래픽입니다.
-  STR_BASEGRAPHICS_WIN_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 윈도우에디션》의그래픽입니다.
-  STR_BASEMUSIC_WIN_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 윈도우에디션》의音樂입니다.
+  STR_BASEGRAPHICS_DOS_DESCRIPTION: 元祖《트랜스포트 타이쿤 디럭스 도스 에디션》의 그래픽입니다.
+  STR_BASEGRAPHICS_WIN_DESCRIPTION: 元祖《트랜스포트 타이쿤 디럭스 윈도우 에디션》의 그래픽입니다.
+  STR_BASEMUSIC_WIN_DESCRIPTION: 元祖 《트랜스포트 타이쿤 디럭스 윈도우 에디션》의 音樂입니다.
   STR_ABOUT_MENU_LAND_BLOCK_INFO: 地形情報
   STR_ABOUT_MENU_SCREENSHOT: 스크린샷찍기
   STR_ABOUT_MENU_SHOW_FRAMERATE: 프레임레이트보기
@@ -164,16 +165,16 @@ weblate:
   STR_AI_DEBUG_NAME_TOOLTIP: '{BLACK}이人工知能의이름입니다'
   STR_AI_DEBUG_RELOAD: '{BLACK}人工知能再始作'
   STR_BAGS: '{G=f}{COMMA}{NBSP}자루'
-  STR_BASEGRAPHICS_DOS_DE_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 도스에디션》(獨逸)의그래픽입니다.
-  STR_BASEMUSIC_DOS_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 도스에디션》의音樂입니다.
-  STR_BASEMUSIC_NONE_DESCRIPTION: 實際音樂이없는 音樂팩니다.
+  STR_BASEGRAPHICS_DOS_DE_DESCRIPTION: 元祖《트랜스포트 타이쿤 디럭스 도스 에디션》(獨逸)의 그래픽입니다.
+  STR_BASEMUSIC_DOS_DESCRIPTION: 元祖《트랜스포트 타이쿤 디럭스 도스 에디션》의 音樂입니다.
+  STR_BASEMUSIC_NONE_DESCRIPTION: 實際 音樂이 없는 音樂 팩입니다.
   STR_BASEMUSIC_TTO_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 (오리지널/월드에디터) 도스에디션》의音樂입니다.
-  STR_BASESOUNDS_DOS_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 도스에디션》의效果音입니다.
+  STR_BASESOUNDS_DOS_DESCRIPTION: 元祖《트랜스포트 타이쿤 디럭스 도스 에디션》의 效果音입니다.
   STR_BASESOUNDS_NONE_DESCRIPTION: 아무런效果音도없는 效果音팩입니다.
-  STR_BASESOUNDS_WIN_DESCRIPTION: 元祖《트랜스포트타이쿤디럭스 윈도우에디션》의效果音입니다.
+  STR_BASESOUNDS_WIN_DESCRIPTION: 元祖《트랜스포트 타이쿤 디럭스 윈도우 에디션》의 效果音입니다 .
   STR_CONFIG_SETTING_TYPE_DROPDOWN_COMPANY_MENU: 會社設定 (게임貯藏파일에貯藏됨; 새게임에만適用됨)
   STR_CONFIG_SETTING_TYPE_DROPDOWN_GAME_MENU: 게임設定 (게임貯藏파일에貯藏됨; 새게임에만適用됨)
-  STR_FILE_MENU_QUIT_GAME: 게임終了
+  STR_FILE_MENU_QUIT_GAME: 게임 終了
   STR_FILE_MENU_SAVE_GAME: 게임貯藏하기
   STR_GRAPH_MENU_COMPANY_LEAGUE_TABLE: 會社成就度順位
   STR_GRAPH_MENU_COMPANY_VALUE_GRAPH: 會社價値그래프
@@ -186,13 +187,13 @@ weblate:
   STR_LANDSCAPING_MENU_PLANT_TREES: 나무심기
   STR_MAP_MENU_LINGRAPH_LEGEND: 貨物흐름凡例
   STR_MAP_MENU_MAP_OF_WORLD: 全體地圖보기
-  STR_MAP_MENU_SIGN_LIST: 標識板目錄
+  STR_MAP_MENU_SIGN_LIST: 標識板 目錄
   STR_NEWS_MENU_DELETE_ALL_MESSAGES: 모든뉴스메시지削除
   STR_NEWS_MENU_LAST_MESSAGE_NEWS_REPORT: 最近메시지/뉴스記錄
   STR_NEWS_MENU_MESSAGE_HISTORY_MENU: 過去메시지目錄
   STR_RAIL_MENU_MAGLEV_CONSTRUCTION: 磁氣浮上鐵道建設
   STR_RAIL_MENU_MONORAIL_CONSTRUCTION: 모노레일建設
-  STR_ROAD_MENU_TRAM_CONSTRUCTION: 路面電車軌道建設
+  STR_ROAD_MENU_TRAM_CONSTRUCTION: 路面電車 軌道 建設
   STR_SCENEDIT_FILE_MENU_LOAD_SCENARIO: 시나리오불러오기
   STR_SCENEDIT_FILE_MENU_QUIT: 게임終了
   STR_SCENEDIT_FILE_MENU_QUIT_EDITOR: 시나리오編輯機 終了
@@ -202,30 +203,33 @@ weblate:
   STR_SETTINGS_MENU_FULL_DETAIL: 그래픽을아주詳細하게
   STR_SETTINGS_MENU_GAMESCRIPT_SETTINGS: 게임스크립트設定
   STR_SETTINGS_MENU_GAME_OPTIONS: 게임基本設定
-  STR_SETTINGS_MENU_NEWGRF_SETTINGS: 뉴GRF設定
-  STR_SETTINGS_MENU_SIGNS_DISPLAYED: 標識板을表示함
+  STR_SETTINGS_MENU_NEWGRF_SETTINGS: 뉴GRF 設定
+  STR_SETTINGS_MENU_SIGNS_DISPLAYED: 標識板을 表示함
   STR_SETTINGS_MENU_STATION_NAMES_DISPLAYED: 驛이름을表示함
-  STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS: 透明化設定
+  STR_SETTINGS_MENU_TRANSPARENCY_OPTIONS: 透明化 設定
   STR_SETTINGS_MENU_TRANSPARENT_BUILDINGS: 建物감추기
   STR_SETTINGS_MENU_TRANSPARENT_SIGNS: 驛名板감추기
-  STR_SETTINGS_MENU_WAYPOINTS_DISPLAYED: 經由地이름表示
+  STR_SETTINGS_MENU_WAYPOINTS_DISPLAYED: 經由地 이름 表示
   STR_BUTTON_CANCEL: '{BLACK}取消'
   STR_BUTTON_CATCHMENT: '{BLACK}驛勢圈'
   STR_BUTTON_DEFAULT: '{BLACK}基本값'
   STR_BUTTON_OK: '{BLACK}確認'
   STR_BUY_VEHICLE_AIRCRAFT_BUY_REFIT_VEHICLE_BUTTON: '{BLACK}航空機購入및改造'
-  STR_BUY_VEHICLE_AIRCRAFT_BUY_REFIT_VEHICLE_TOOLTIP: '{BLACK}選擇한航空機를購入하고改造합니다. 시프트+클릭하면豫想費用을볼수있습니다'
+  STR_BUY_VEHICLE_AIRCRAFT_BUY_REFIT_VEHICLE_TOOLTIP: '{BLACK}選擇한 航空機를 購入하고 改造합니다.
+    시프트+클릭하면 豫想 費用을 볼 수 있습니다'
   STR_BUY_VEHICLE_AIRCRAFT_BUY_VEHICLE_BUTTON: '{BLACK}航空機購入'
-  STR_BUY_VEHICLE_AIRCRAFT_BUY_VEHICLE_TOOLTIP: '{BLACK}選擇한航空機를購入합니다. 시프트+클릭으로豫想購入費用을볼수있습니다'
+  STR_BUY_VEHICLE_AIRCRAFT_BUY_VEHICLE_TOOLTIP: '{BLACK}選擇한 航空機를 購入합니다. 시프트+클릭으로 豫想
+    購入 費用을 볼 수 있습니다'
   STR_BUY_VEHICLE_AIRCRAFT_CAPTION: 새航空機
   STR_BUY_VEHICLE_AIRCRAFT_HIDE_TOGGLE_BUTTON: '{BLACK}숨김'
-  STR_BUY_VEHICLE_AIRCRAFT_LIST_TOOLTIP: '{BLACK}航空機購買目錄입니다. 航空機의情報를보려면클릭하세요. 컨트롤+클릭하면該當航空機를숨김/表示處理할수있습니다'
+  STR_BUY_VEHICLE_AIRCRAFT_LIST_TOOLTIP: '{BLACK}航空機 購買 目錄입니다. 航空機의 情報를 보려면 클릭하세요.
+    컨트롤+클릭하면 該當 航空機를 숨김/表示 處理할 수 있습니다'
   STR_BUY_VEHICLE_AIRCRAFT_RENAME_BUTTON: '{BLACK}이름指定'
   STR_BUY_VEHICLE_AIRCRAFT_RENAME_TOOLTIP: '{BLACK}航空機의모델名을變更합니다'
   STR_BUY_VEHICLE_AIRCRAFT_SHOW_TOGGLE_BUTTON: '{BLACK}表示'
   STR_BUY_VEHICLE_ROAD_VEHICLE_ALL_CAPTION: 새自動車
-  STR_BUY_VEHICLE_ROAD_VEHICLE_BUY_REFIT_VEHICLE_TOOLTIP: '{BLACK}選擇한自動車를購入하고改造합니다.
-    시프트+클릭하면豫想費用을볼수있습니다'
+  STR_BUY_VEHICLE_ROAD_VEHICLE_BUY_REFIT_VEHICLE_TOOLTIP: '{BLACK}選擇한 自動車를 購入하고 改造합니다.
+    시프트+클릭하면 豫想 費用을 볼 수 있습니다'
   STR_BUY_VEHICLE_ROAD_VEHICLE_BUY_VEHICLE_BUTTON: '{BLACK}車輛購入'
   STR_BUY_VEHICLE_ROAD_VEHICLE_CAPTION: 새自動車
   STR_BUY_VEHICLE_ROAD_VEHICLE_HIDE_SHOW_TOGGLE_TOOLTIP: '{BLACK}숨김處理한車輛모델을 目錄에보여주거나숨깁니다'
@@ -262,7 +266,8 @@ weblate:
   STR_DAY_NUMBER_8TH: '8'
   STR_DAY_NUMBER_9TH: '9'
   STR_DEFAULT_SIGN_NAME: 標識板
-  STR_DEPOT_AIRCRAFT_LOCATION_TOOLTIP: '{BLACK}이格納庫로移動합니다. 컨트롤+클릭하면 이格納庫의位置를基準으로 새로운外部畵面을엽니다'
+  STR_DEPOT_AIRCRAFT_LOCATION_TOOLTIP: '{BLACK}이 格納庫로 移動합니다. 컨트롤+클릭하면 이 格納庫의 位置를 基準으로
+    새로운 外部 畵面을 엽니다'
   STR_DEPOT_AIRCRAFT_NEW_VEHICLES_BUTTON: '{BLACK}새航空機'
   STR_DEPOT_AIRCRAFT_NEW_VEHICLES_TOOLTIP: '{BLACK}새航空機를購入합니다'
   STR_DEPOT_AIRCRAFT_SELL_TOOLTIP: '{BLACK}航空機를팔려면 여기로드래그하세요'
@@ -273,12 +278,12 @@ weblate:
   STR_DEPOT_CAPTION: '{WHITE}{DEPOT}'
   STR_DEPOT_CLONE_AIRCRAFT: '{BLACK}航空機複製'
   STR_DEPOT_CLONE_ROAD_VEHICLE: '{BLACK}車輛複製'
-  STR_DEPOT_CLONE_ROAD_VEHICLE_DEPOT_INFO: '{BLACK}車輛을複製합니다. 이버튼을클릭하고 車庫地안이나밖에있는列車를클릭하십시오.
-    컨트롤+클릭하면經路를共有합니다'
+  STR_DEPOT_CLONE_ROAD_VEHICLE_DEPOT_INFO: '{BLACK}車輛을 複製합니다. 이 버튼을 클릭하고 車庫地 안이나 밖에
+    있는 列車를 클릭하십시오. 컨트롤+클릭하면 經路를 共有합니다'
   STR_DEPOT_CLONE_SHIP: '{BLACK}船舶複製'
   STR_DEPOT_CLONE_TRAIN: '{BLACK}列車複製'
-  STR_DEPOT_CLONE_TRAIN_DEPOT_INFO: '{BLACK}客車/貨車를包含한列車全體를複製합니다. 이버튼을클릭하고 車輛基地안이나밖에있는列車를
-    클릭하십시오. 컨트롤+클릭하면經路를共有합니다'
+  STR_DEPOT_CLONE_TRAIN_DEPOT_INFO: '{BLACK}客車/貨車를 包含한 列車 全體를 複製합니다. 이 버튼을 클릭하고 車輛基地
+    안이나 밖에 있는 列車를 클릭하십시오. 컨트롤+클릭하면 經路를 共有합니다'
   STR_DEPOT_DRAG_WHOLE_TRAIN_TO_SELL_TOOLTIP: '{BLACK}列車全體를팔려면 機關車를여기로드래그하세요'
   STR_DEPOT_MASS_START_DEPOT_ROAD_VEHICLE_TOOLTIP: '{BLACK}이車庫地안에있는 모든車輛의運行을始作합니다'
   STR_DEPOT_MASS_START_DEPOT_SHIP_TOOLTIP: '{BLACK}이碇泊所안에있는 모든船舶의運行을始作합니다'
@@ -289,7 +294,7 @@ weblate:
   STR_DEPOT_NO_ENGINE: '{BLACK}-'
   STR_DEPOT_RENAME_DEPOT_CAPTION: 車輛基地이름變更
   STR_DEPOT_RENAME_TOOLTIP: '{BLACK}이車輛基地의이름을變更합니다'
-  STR_DEPOT_ROAD_VEHICLE_LIST_TOOLTIP: '{BLACK}車輛 - 車輛의情報를보려면右클릭하세요'
+  STR_DEPOT_ROAD_VEHICLE_LIST_TOOLTIP: '{BLACK}車輛 - 車輛의 情報를 보려면 右클릭하세요'
   STR_DEPOT_ROAD_VEHICLE_NEW_VEHICLES_BUTTON: '{BLACK}새車輛'
   STR_DEPOT_ROAD_VEHICLE_NEW_VEHICLES_TOOLTIP: '{BLACK}새車輛을購入합니다'
   STR_DEPOT_ROAD_VEHICLE_SELL_TOOLTIP: '{BLACK}車輛을팔려면여기로드래그하세요'
@@ -300,22 +305,24 @@ weblate:
   STR_DAY_NUMBER_10TH: '10'
   STR_DAY_NUMBER_22ND: '22'
   STR_DAY_NUMBER_31ST: '31'
-  STR_DEPOT_AIRCRAFT_LIST_TOOLTIP: '{BLACK}航空機 - 航空機의情報를보려면右클릭하세요'
+  STR_DEPOT_AIRCRAFT_LIST_TOOLTIP: '{BLACK}航空機 - 航空機의 情報를 보려면 右클릭하세요'
   STR_DEPOT_AUTOREPLACE_AIRCRAFT_TOOLTIP: '{BLACK}이格納庫에있는모든航空機를 自動으로交替합니다'
   STR_DEPOT_AUTOREPLACE_TRAIN_TOOLTIP: '{BLACK}이車輛基地에있는모든列車를自動으로交替합니다'
-  STR_DEPOT_CLONE_AIRCRAFT_INFO_HANGAR_WINDOW: '{BLACK}航空機를複製합니다. 이버튼을누르고 格納庫의안이나밖에있는航空機를클릭하십시오.
-    컨트롤+클릭하면經路를共有합니다'
-  STR_DEPOT_CLONE_SHIP_DEPOT_INFO: '{BLACK}船舶을複製합니다. 이버튼을누르고 停留所의안이나밖에있는船舶을클릭하십시오.
-    컨트롤+클릭하면經路를共有합니다'
+  STR_DEPOT_CLONE_AIRCRAFT_INFO_HANGAR_WINDOW: '{BLACK}航空機를 複製합니다. 이 버튼을 누르고 格納庫의
+    안이나 밖에 있는 航空機를 클릭하십시오. 컨트롤+클릭하면 經路를 共有합니다'
+  STR_DEPOT_CLONE_SHIP_DEPOT_INFO: '{BLACK}船舶을 複製합니다. 이 버튼을 누르고 停留所의 안이나 밖에 있는 船舶을
+    클릭하십시오. 컨트롤+클릭하면 經路를 共有합니다'
   STR_DEPOT_MASS_START_DEPOT_TRAIN_TOOLTIP: '{BLACK}이車輛基地안에있는 모든列車의運行을始作합니다'
   STR_DEPOT_MASS_STOP_DEPOT_ROAD_VEHICLE_TOOLTIP: '{BLACK}클릭하면 이車庫地안에있는모든車輛의運行을中止합니다'
   STR_DEPOT_MASS_STOP_HANGAR_TOOLTIP: '{BLACK}클릭하면 이格納庫안에있는 모든航空機의運行을中止합니다'
-  STR_DEPOT_ROAD_VEHICLE_LOCATION_TOOLTIP: '{BLACK}이車庫地로移動합니다. 컨트롤+클릭하면이車庫地의位置를基準으로
-    새로운外部畵面을엽니다'
+  STR_DEPOT_ROAD_VEHICLE_LOCATION_TOOLTIP: '{BLACK}이 車庫地로 移動합니다. 컨트롤+클릭하면 이 車庫地의 位置를
+    基準으로 새로운 外部 畵面을 엽니다'
   STR_BUS: '{G=f}{BLACK}{BUS}'
   STR_BUTTON_SORT_BY: '{BLACK}整列'
   STR_BUY_COMPANY_MESSAGE: '{WHITE}저희會社를거두어주실運送會社를찾고있습니다.{}{}저희 {COMPANY} 會社를 {CURRENCY_LONG}의價格으로引受合倂하시겠습니까?'
   STR_BUY_VEHICLE_AIRCRAFT_HIDE_SHOW_TOGGLE_TOOLTIP: '{BLACK}숨김處理한航空機모델을目錄에보여주거나숨깁니다'
   STR_BUY_VEHICLE_ROAD_VEHICLE_BUY_REFIT_VEHICLE_BUTTON: '{BLACK}車輛購入및改造'
-  STR_BUY_VEHICLE_ROAD_VEHICLE_BUY_VEHICLE_TOOLTIP: '{BLACK}選擇한車輛을購入합니다. 시프트+클릭하면豫想購入費用을볼수있습니다'
-  STR_BUY_VEHICLE_ROAD_VEHICLE_LIST_TOOLTIP: '{BLACK}車輛購買目錄입니다. 車輛의情報를보려면클릭하세요. 컨트롤+클릭하면該當車輛을숨김/表示處理할수있습니다'
+  STR_BUY_VEHICLE_ROAD_VEHICLE_BUY_VEHICLE_TOOLTIP: '{BLACK}選擇한 車輛을 購入합니다. 시프트+클릭하면
+    豫想 購入 費用을 볼 수 있습니다'
+  STR_BUY_VEHICLE_ROAD_VEHICLE_LIST_TOOLTIP: '{BLACK}車輛 購買 目錄입니다. 車輛의 情報를 보려면 클릭하세요.
+    컨트롤+클릭하면 該當 車輛을 숨김/表示 處理할 수 있습니다'
