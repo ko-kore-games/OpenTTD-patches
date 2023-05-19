@@ -2,16 +2,32 @@
 import sys
 import yaml
 import os.path as path
+from functools import reduce
+
+replacements = [
+    [' ', ''],
+    ['...', '…'],
+    ['..', '‥'],
+    ['.', '。'],
+    [',', '、'],
+    ['?', '？'],
+    ['!', '！'],
+    [':', '：'],
+    [';', '；'],
+]
 
 def get_key(line):
     key = line.split(':')[0]
     return key
 
+def convert_updated(updated):
+    return reduce(lambda acc, rep: acc.replace(rep[0], rep[1]), replacements, updated)
+
 def convert_line(line, updated):
     key = get_key(line)
     stripped = key.strip()
     if stripped in updated:
-        return '%s:%s' % (key, updated[stripped])
+        return '%s:%s' % (key, convert_updated(updated[stripped]))
     else:
         return line
 
@@ -42,7 +58,6 @@ def main():
         updated = yaml.load(f, Loader=yaml.FullLoader)
     
     result = convert(base, updated)
-
     with open(base_file, 'w') as f:
         f.write(result)
 
