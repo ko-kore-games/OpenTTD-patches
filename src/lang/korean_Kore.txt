@@ -129,38 +129,38 @@ STR_QUANTITY_N_A                                                :없음
 
 # Two letter abbreviation of cargo name
 STR_ABBREV_NOTHING                                              :
-STR_ABBREV_PASSENGERS                                           :{TINY_FONT}승
-STR_ABBREV_COAL                                                 :{TINY_FONT}석
-STR_ABBREV_MAIL                                                 :{TINY_FONT}우
-STR_ABBREV_OIL                                                  :{TINY_FONT}유
-STR_ABBREV_LIVESTOCK                                            :{TINY_FONT}축
-STR_ABBREV_GOODS                                                :{TINY_FONT}품
-STR_ABBREV_GRAIN                                                :{TINY_FONT}곡
-STR_ABBREV_WOOD                                                 :{TINY_FONT}목
-STR_ABBREV_IRON_ORE                                             :{TINY_FONT}광
-STR_ABBREV_STEEL                                                :{TINY_FONT}철
-STR_ABBREV_VALUABLES                                            :{TINY_FONT}귀
-STR_ABBREV_COPPER_ORE                                           :{TINY_FONT}구
+STR_ABBREV_PASSENGERS                                           :{TINY_FONT}客
+STR_ABBREV_COAL                                                 :{TINY_FONT}炭
+STR_ABBREV_MAIL                                                 :{TINY_FONT}郵
+STR_ABBREV_OIL                                                  :{TINY_FONT}油
+STR_ABBREV_LIVESTOCK                                            :{TINY_FONT}畜
+STR_ABBREV_GOODS                                                :{TINY_FONT}品
+STR_ABBREV_GRAIN                                                :{TINY_FONT}穀
+STR_ABBREV_WOOD                                                 :{TINY_FONT}木
+STR_ABBREV_IRON_ORE                                             :{TINY_FONT}鑛
+STR_ABBREV_STEEL                                                :{TINY_FONT}鐵
+STR_ABBREV_VALUABLES                                            :{TINY_FONT}貴
+STR_ABBREV_COPPER_ORE                                           :{TINY_FONT}銅
 STR_ABBREV_MAIZE                                                :{TINY_FONT}옥
-STR_ABBREV_FRUIT                                                :{TINY_FONT}과
+STR_ABBREV_FRUIT                                                :{TINY_FONT}果
 STR_ABBREV_DIAMONDS                                             :{TINY_FONT}다
-STR_ABBREV_FOOD                                                 :{TINY_FONT}식
-STR_ABBREV_PAPER                                                :{TINY_FONT}종
-STR_ABBREV_GOLD                                                 :{TINY_FONT}금
-STR_ABBREV_WATER                                                :{TINY_FONT}물
+STR_ABBREV_FOOD                                                 :{TINY_FONT}食
+STR_ABBREV_PAPER                                                :{TINY_FONT}紙
+STR_ABBREV_GOLD                                                 :{TINY_FONT}金
+STR_ABBREV_WATER                                                :{TINY_FONT}水
 STR_ABBREV_WHEAT                                                :{TINY_FONT}밀
 STR_ABBREV_RUBBER                                               :{TINY_FONT}고
-STR_ABBREV_SUGAR                                                :{TINY_FONT}설
+STR_ABBREV_SUGAR                                                :{TINY_FONT}糖
 STR_ABBREV_TOYS                                                 :{TINY_FONT}장
-STR_ABBREV_SWEETS                                               :{TINY_FONT}사
+STR_ABBREV_SWEETS                                               :{TINY_FONT}糖
 STR_ABBREV_COLA                                                 :{TINY_FONT}콜
 STR_ABBREV_CANDYFLOSS                                           :{TINY_FONT}솜
-STR_ABBREV_BUBBLES                                              :{TINY_FONT}거
+STR_ABBREV_BUBBLES                                              :{TINY_FONT}泡
 STR_ABBREV_TOFFEE                                               :{TINY_FONT}토
-STR_ABBREV_BATTERIES                                            :{TINY_FONT}건
+STR_ABBREV_BATTERIES                                            :{TINY_FONT}乾
 STR_ABBREV_PLASTIC                                              :{TINY_FONT}플
-STR_ABBREV_FIZZY_DRINKS                                         :{TINY_FONT}탄
-STR_ABBREV_NONE                                                 :{TINY_FONT}X
+STR_ABBREV_FIZZY_DRINKS                                         :{TINY_FONT}飮
+STR_ABBREV_NONE                                                 :{TINY_FONT}無
 STR_ABBREV_ALL                                                  :{TINY_FONT}모두
 
 # 'Mode' of transport for cargoes
@@ -245,8 +245,8 @@ STR_TOOLTIP_GROUP_ORDER                                         :{BLACK}그룹�
 STR_TOOLTIP_SORT_ORDER                                          :{BLACK}정렬 방법을 선택하세요 (내림차순/오름차순)
 STR_TOOLTIP_SORT_CRITERIA                                       :{BLACK}정렬 기준을 선택하세요
 STR_TOOLTIP_FILTER_CRITERIA                                     :{BLACK}검색 기준 선택
-STR_BUTTON_SORT_BY                                              :{BLACK}정렬
-STR_BUTTON_CATCHMENT                                            :{BLACK}역세권
+STR_BUTTON_SORT_BY                                              :{BLACK}整列
+STR_BUTTON_CATCHMENT                                            :{BLACK}驛勢圈
 STR_TOOLTIP_CATCHMENT                                           :{BLACK}이 역의 역세권을 표시하거나 끕니다.
 
 STR_TOOLTIP_CLOSE_WINDOW                                        :{BLACK}창을 닫습니다.
@@ -275,9 +275,9 @@ STR_SHOW_HIDDEN_ENGINES_VEHICLE_SHIP_TOOLTIP                    :{BLACK}이 버�
 STR_SHOW_HIDDEN_ENGINES_VEHICLE_AIRCRAFT_TOOLTIP                :{BLACK}이 버튼을 누르면 숨겨진 항공기도 구매 목록에 모두 표시합니다.
 
 # Query window
-STR_BUTTON_DEFAULT                                              :{BLACK}기본값
-STR_BUTTON_CANCEL                                               :{BLACK}취소
-STR_BUTTON_OK                                                   :{BLACK}확인
+STR_BUTTON_DEFAULT                                              :{BLACK}基本값
+STR_BUTTON_CANCEL                                               :{BLACK}取消
+STR_BUTTON_OK                                                   :{BLACK}確認
 STR_WARNING_PASSWORD_SECURITY                                   :{YELLOW}경고: 서버 관리자가 여기에 입력되는 모든 텍스트를 읽을 수 있습니다.
 
 # On screen keyboard window
@@ -426,7 +426,7 @@ STR_FILE_MENU_SAVE_GAME                                         :게임貯藏하
 STR_FILE_MENU_LOAD_GAME                                         :게임불러오기
 STR_FILE_MENU_QUIT_GAME                                         :게임終了
 STR_FILE_MENU_SEPARATOR                                         :
-STR_FILE_MENU_EXIT                                              :종료
+STR_FILE_MENU_EXIT                                              :終了
 
 # Map menu
 ###length 4
@@ -442,7 +442,7 @@ STR_TOWN_MENU_FOUND_TOWN                                        :都市建設
 
 # Subsidies menu
 ###length 1
-STR_SUBSIDIES_MENU_SUBSIDIES                                    :보조금
+STR_SUBSIDIES_MENU_SUBSIDIES                                    :補助金
 
 # Graph menu
 ###length 6
@@ -580,18 +580,18 @@ STR_MONTH_ABBREV_NOV                                            :11
 STR_MONTH_ABBREV_DEC                                            :12
 
 ###length 12
-STR_MONTH_JAN                                                   :{G=m}1월
-STR_MONTH_FEB                                                   :{G=m}2월
-STR_MONTH_MAR                                                   :{G=m}3월
-STR_MONTH_APR                                                   :{G=m}4월
-STR_MONTH_MAY                                                   :{G=m}5월
-STR_MONTH_JUN                                                   :{G=m}6월
-STR_MONTH_JUL                                                   :{G=m}7월
-STR_MONTH_AUG                                                   :{G=m}8월
-STR_MONTH_SEP                                                   :{G=m}9월
-STR_MONTH_OCT                                                   :{G=m}10월
-STR_MONTH_NOV                                                   :{G=m}11월
-STR_MONTH_DEC                                                   :{G=m}12월
+STR_MONTH_JAN                                                   :{G=m}1月
+STR_MONTH_FEB                                                   :{G=m}2月
+STR_MONTH_MAR                                                   :{G=m}3月
+STR_MONTH_APR                                                   :{G=m}4月
+STR_MONTH_MAY                                                   :{G=m}5月
+STR_MONTH_JUN                                                   :{G=m}6月
+STR_MONTH_JUL                                                   :{G=m}7月
+STR_MONTH_AUG                                                   :{G=m}8月
+STR_MONTH_SEP                                                   :{G=m}9月
+STR_MONTH_OCT                                                   :{G=m}10月
+STR_MONTH_NOV                                                   :{G=m}11月
+STR_MONTH_DEC                                                   :{G=m}12月
 
 # Graph window
 STR_GRAPH_KEY_BUTTON                                            :{BLACK}범례
@@ -684,8 +684,8 @@ STR_MUSIC_TITLE_NONE                                            :{TINY_FONT}{DKG
 STR_MUSIC_TITLE_NOMUSIC                                         :{TINY_FONT}{DKGREEN}使用可能한音樂없음
 STR_MUSIC_TITLE_NAME                                            :{TINY_FONT}{DKGREEN}"{STRING}"
 STR_MUSIC_TRACK                                                 :{TINY_FONT}{BLACK}트랙
-STR_MUSIC_XTITLE                                                :{TINY_FONT}{BLACK}제목
-STR_MUSIC_SHUFFLE                                               :{TINY_FONT}{BLACK}무작위
+STR_MUSIC_XTITLE                                                :{TINY_FONT}{BLACK}題目
+STR_MUSIC_SHUFFLE                                               :{TINY_FONT}{BLACK}無作爲
 STR_MUSIC_PROGRAM                                               :{TINY_FONT}{BLACK}프로그램
 STR_MUSIC_TOOLTIP_SKIP_TO_PREVIOUS_TRACK                        :{BLACK}以前트랙으로건너뛰기
 STR_MUSIC_TOOLTIP_SKIP_TO_NEXT_TRACK_IN_SELECTION               :{BLACK}다음트랙으로건너뛰기
@@ -1076,7 +1076,7 @@ STR_CURRENCY_CHANGE_PARAMETER                                   :{BLACK}사용�
 
 STR_NONE                                                        :없음
 STR_FUNDING_ONLY                                                :투자만 가능
-STR_MINIMAL                                                     :최소
+STR_MINIMAL                                                     :最少
 STR_NUM_VERY_LOW                                                :매우 적음
 STR_NUM_LOW                                                     :낮음
 STR_NUM_NORMAL                                                  :보통
@@ -2231,8 +2231,8 @@ STR_FACE_TIE_EARRING_TOOLTIP                                    :{BLACK}넥타�
 # Matches ServerGameType
 ###length 3
 STR_NETWORK_SERVER_VISIBILITY_LOCAL                             :로컬
-STR_NETWORK_SERVER_VISIBILITY_PUBLIC                            :공개
-STR_NETWORK_SERVER_VISIBILITY_INVITE_ONLY                       :초대만
+STR_NETWORK_SERVER_VISIBILITY_PUBLIC                            :公開
+STR_NETWORK_SERVER_VISIBILITY_INVITE_ONLY                       :招待만
 
 # Network server list
 STR_NETWORK_SERVER_LIST_CAPTION                                 :{WHITE}멀티플레이
@@ -2388,12 +2388,12 @@ STR_NETWORK_CLIENT_LIST_ASK_COMPANY_RESET                       :{YELLOW}'{COMPA
 STR_NETWORK_CLIENT_LIST_ASK_COMPANY_UNLOCK                      :{YELLOW}'{COMPANY}'會社의秘密番號를正말로初期化하시겠습니까？
 
 STR_NETWORK_ASK_RELAY_CAPTION                                   :{WHITE}中繼를利用할까요？
-STR_NETWORK_ASK_RELAY_TEXT                                      :{YELLOW}'{0：STRING}'서버와連結하는데失敗했습니다。{}'{1：STRING}'{G1"을""를"}通해連結을中繼하시겠습니까？
+STR_NETWORK_ASK_RELAY_TEXT                                      :{YELLOW}'{0:STRING}'서버와連結하는데失敗했습니다。{}'{1:STRING}'{G 1 "을" "를"}通해連結을中繼하시겠습니까？
 STR_NETWORK_ASK_RELAY_NO                                        :{BLACK}아니요
 STR_NETWORK_ASK_RELAY_YES_ONCE                                  :{BLACK}이番에만使用
 STR_NETWORK_ASK_RELAY_YES_ALWAYS                                :{BLACK}恒常使用
 
-STR_NETWORK_SPECTATORS                                          :관전자
+STR_NETWORK_SPECTATORS                                          :觀戰者
 
 # Network set password
 STR_COMPANY_PASSWORD_CANCEL                                     :{BLACK}입력한 비밀번호는 저장하지 않기
@@ -2420,7 +2420,7 @@ STR_NETWORK_CHAT_TO_COMPANY                                     :[팀]{STRING}�
 STR_NETWORK_CHAT_CLIENT                                         :[귓속말]{STRING}：{WHITE}{STRING}
 STR_NETWORK_CHAT_TO_CLIENT                                      :[귓속말]{STRING}에게：{WHITE}{STRING}
 STR_NETWORK_CHAT_ALL                                            :[모두]{STRING}：{WHITE}{STRING}
-STR_NETWORK_CHAT_EXTERNAL                                       :[{3：STRING}]{0：STRING}：{WHITE}{1：STRING}
+STR_NETWORK_CHAT_EXTERNAL                                       :[{3:STRING}]{0:STRING}：{WHITE}{1:STRING}
 STR_NETWORK_CHAT_OSKTITLE                                       :{BLACK}채팅메시지를入力하세요
 
 # Network messages
@@ -2475,7 +2475,7 @@ STR_NETWORK_ERROR_CLIENT_TIMEOUT_JOIN                           :지도 생성 /
 STR_NETWORK_ERROR_CLIENT_INVALID_CLIENT_NAME                    :유효하지 않은 클라이언트 이름
 
 # Network related errors
-STR_NETWORK_SERVER_MESSAGE                                      :***{1：STRING}
+STR_NETWORK_SERVER_MESSAGE                                      :***{1:STRING}
 
 ###length 12
 STR_NETWORK_SERVER_MESSAGE_GAME_PAUSED                          :게임이一時停止되었습니다。({STRING})
@@ -3197,10 +3197,10 @@ STR_MAPGEN_TOWN_NAME_CATALAN                                    :카탈로니아
 
 # Strings for map borders at game generation
 STR_MAPGEN_BORDER_TYPE                                          :{BLACK}지도 가장자리:
-STR_MAPGEN_NORTHWEST                                            :{BLACK}북서
-STR_MAPGEN_NORTHEAST                                            :{BLACK}북동
-STR_MAPGEN_SOUTHEAST                                            :{BLACK}남동
-STR_MAPGEN_SOUTHWEST                                            :{BLACK}남서
+STR_MAPGEN_NORTHWEST                                            :{BLACK}北西
+STR_MAPGEN_NORTHEAST                                            :{BLACK}北東
+STR_MAPGEN_SOUTHEAST                                            :{BLACK}南東
+STR_MAPGEN_SOUTHWEST                                            :{BLACK}南西
 STR_MAPGEN_BORDER_FREEFORM                                      :{BLACK}변경 가능
 STR_MAPGEN_BORDER_WATER                                         :{BLACK}물
 STR_MAPGEN_BORDER_RANDOM                                        :{BLACK}임의
@@ -3405,17 +3405,17 @@ STR_NEWGRF_LIST_COMPATIBLE                                      :{YELLOW}호환�
 STR_NEWGRF_LIST_MISSING                                         :{RED}파일 없음
 
 # NewGRF 'it's broken' warnings
-STR_NEWGRF_BROKEN                                               :{WHITE}'{0：STRING}'NewGRF가適用되는過程에서非同期化나衝突이일어날수있습니다
-STR_NEWGRF_BROKEN_POWERED_WAGON                                 :{WHITE}車庫地안에있지않은'{1：ENGINE}'動力車輛의狀態가바뀌었습니다
-STR_NEWGRF_BROKEN_VEHICLE_LENGTH                                :{WHITE}'{1：ENGINE}'{G1"이""가"}車庫地안에있지않으면車輛길이가바뀝니다
-STR_NEWGRF_BROKEN_CAPACITY                                      :{WHITE}車輛이基地안에있지않거나改造가不可能한狀態에서'{1：ENGINE}'의輸送量이變更되었습니다
+STR_NEWGRF_BROKEN                                               :{WHITE}'{0:STRING}'NewGRF가適用되는過程에서非同期化나衝突이일어날수있습니다
+STR_NEWGRF_BROKEN_POWERED_WAGON                                 :{WHITE}車庫地안에있지않은'{1:ENGINE}'動力車輛의狀態가바뀌었습니다
+STR_NEWGRF_BROKEN_VEHICLE_LENGTH                                :{WHITE}'{1:ENGINE}'{G 1 "이" "가"}車庫地안에있지않으면車輛길이가바뀝니다
+STR_NEWGRF_BROKEN_CAPACITY                                      :{WHITE}車輛이基地안에있지않거나改造가不可能한狀態에서'{1:ENGINE}'의輸送量이變更되었습니다
 STR_BROKEN_VEHICLE_LENGTH                                       :{WHITE}'{1:COMPANY}'에 속한 열차 '{0:VEHICLE}'의 길이가 잘못된 값을 가지고 있습니다. NewGRF에 의한 문제로 보입니다. 게임이 비동기화 또는 충돌을 일으킬 수 있습니다
 
 STR_NEWGRF_BUGGY                                                :{WHITE}NewGRF'{STRING}'에서잘못된情報를提供하고있습니다
-STR_NEWGRF_BUGGY_ARTICULATED_CARGO                              :{WHITE}{1：ENGINE}(을)를만들기以前과以後의貨物/改造情報가現在의購買目錄과다릅니다。이境遇自動交替時列車改造에失敗할수도있습니다
-STR_NEWGRF_BUGGY_ENDLESS_PRODUCTION_CALLBACK                    :{WHITE}'{1：STRING}'때문에結果物콜백過程에서無限루프가發生하고있습니다
+STR_NEWGRF_BUGGY_ARTICULATED_CARGO                              :{WHITE}{1:ENGINE}(을)를만들기以前과以後의貨物/改造情報가現在의購買目錄과다릅니다。이境遇自動交替時列車改造에失敗할수도있습니다
+STR_NEWGRF_BUGGY_ENDLESS_PRODUCTION_CALLBACK                    :{WHITE}'{1:STRING}'때문에結果物콜백過程에서無限루프가發生하고있습니다
 STR_NEWGRF_BUGGY_UNKNOWN_CALLBACK_RESULT                        :{WHITE}콜백 함수({1:HEX})가 알 수 없거나 잘못된 결과 값({2:HEX})을 반환했습니다
-STR_NEWGRF_BUGGY_INVALID_CARGO_PRODUCTION_CALLBACK              :{WHITE}'{1：STRING}'-生産콜백函數의{2：HEX}에서잘못된貨物種類를返還했습니다
+STR_NEWGRF_BUGGY_INVALID_CARGO_PRODUCTION_CALLBACK              :{WHITE}'{1:STRING}'-生産콜백函數의{2:HEX}에서잘못된貨物種類를返還했습니다
 
 # 'User removed essential NewGRFs'-placeholders for stuff without specs
 STR_NEWGRF_INVALID_CARGO                                        :<알 수 없는 화물>
@@ -3975,7 +3975,7 @@ STR_BUY_VEHICLE_AIRCRAFT_HIDE_TOGGLE_BUTTON                     :{BLACK}숨김
 STR_BUY_VEHICLE_TRAIN_SHOW_TOGGLE_BUTTON                        :{BLACK}보이기
 STR_BUY_VEHICLE_ROAD_VEHICLE_SHOW_TOGGLE_BUTTON                 :{BLACK}보이기
 STR_BUY_VEHICLE_SHIP_SHOW_TOGGLE_BUTTON                         :{BLACK}보이기
-STR_BUY_VEHICLE_AIRCRAFT_SHOW_TOGGLE_BUTTON                     :{BLACK}보이기
+STR_BUY_VEHICLE_AIRCRAFT_SHOW_TOGGLE_BUTTON                     :{BLACK}表示
 
 ###length VEHICLE_TYPES
 STR_BUY_VEHICLE_TRAIN_HIDE_SHOW_TOGGLE_TOOLTIP                  :{BLACK}숨김 처리한 열차 모델을 목록에 보여주거나 숨깁니다
@@ -5553,7 +5553,7 @@ STR_FORMAT_DEPOT_NAME_AIRCRAFT                                  :{STATION} 격�
 # _SERIAL version of AIRACRAFT doesn't exist
 
 STR_UNKNOWN_STATION                                             :알 수 없는 정거장
-STR_DEFAULT_SIGN_NAME                                           :팻말
+STR_DEFAULT_SIGN_NAME                                           :標識板
 STR_COMPANY_SOMEONE                                             :누군가
 
 STR_SAVEGAME_NAME_DEFAULT                                       :{COMPANY}의 게임 ({STRING})
