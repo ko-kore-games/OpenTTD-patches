@@ -621,3 +621,81 @@ weblate:
   STR_SCENEDIT_TOOLBAR_LANDSCAPE_GENERATION: '{BLACK}地形을 生成합니다'
   STR_SCENEDIT_TOOLBAR_TOWN_GENERATION: '{BLACK}都市를 生成합니다'
   STR_BLACK_1: '{G=m}{BLACK}1'
+  STR_AI_DEBUG_RELOAD_TOOLTIP: '{BLACK}인공지능을 종료시키고 스크립트를 다시 불러온 다음, 인공지능을 재시작합니다'
+  STR_AI_DEBUG_SELECT_AI_TOOLTIP: '{BLACK}人工知能을 終了시키고 스크립트를 다시 불러온 다음, 人工知能을 再始作합니다'
+  STR_AI_DEBUG_SETTINGS: '{BLACK}設定'
+  STR_AI_DEBUG_SETTINGS_TOOLTIP: '{BLACK}人工知能과 關聯된 設定을 變更합니다'
+  STR_AI_GAME_SCRIPT: '{BLACK}게임 스크립트'
+  STR_AI_LIST_ACCEPT: '{BLACK}適用'
+  STR_AI_LIST_ACCEPT_TOOLTIP: '{BLACK}選擇한 스크립트를 適用합니다'
+  STR_AI_LIST_AUTHOR: '{LTBLUE}著者: {ORANGE}{STRING}'
+  STR_AI_LIST_CANCEL: '{BLACK}取消'
+  STR_AI_LIST_CANCEL_TOOLTIP: '{BLACK}人工知能 스크립트를 바꾸지 않습니다'
+  STR_AI_LIST_CAPTION_AI: 人工知能
+  STR_AI_LIST_CAPTION_GAMESCRIPT: 게임 스크립트
+  STR_AI_LIST_TOOLTIP: '{BLACK}스크립트를 選擇하려면 클릭하세요'
+  STR_AI_LIST_VERSION: '{LTBLUE}버전: {ORANGE}{NUM}'
+  STR_AI_SETTINGS_CAPTION: '{WHITE}{STRING} 媒介 變數'
+  STR_AI_SETTINGS_CAPTION_AI: 人工知能
+  STR_AI_SETTINGS_CAPTION_GAMESCRIPT: 게임 스크립트
+  STR_AI_SETTINGS_CLOSE: '{BLACK}닫기'
+  STR_AI_SETTINGS_RESET: '{BLACK}初期化'
+  STR_AI_SETTINGS_SETTING: '{STRING}: {ORANGE}{STRING}'
+  STR_AI_SPEED_FAST: 빠름
+  STR_AI_SPEED_MEDIUM: 普通
+  STR_AI_SPEED_SLOW: 느림
+  STR_AI_SPEED_VERY_FAST: 매우 빠름
+  STR_AI_SPEED_VERY_SLOW: 매우 느림
+  STR_BLACK_2: '{G=f}{BLACK}2'
+  STR_BLACK_3: '{G=m}{BLACK}3'
+  STR_BLACK_6: '{G=m}{BLACK}6'
+  STR_BLACK_7: '{G=m}{BLACK}7'
+  STR_BLACK_COMMA: '{BLACK}{COMMA}'
+  STR_BLACK_DATE_LONG: '{BLACK}{DATE_LONG}'
+  STR_BLACK_INT: '{BLACK}{NUM}'
+  STR_BLACK_STRING: '{BLACK}{STRING}'
+  STR_BLUE_COMMA: '{BLUE}{COMMA}'
+  STR_BRIDGE_NAME_CANTILEVER_STEEL: 鋼鐵 캔틸레버橋
+  STR_BRIDGE_NAME_CONCRETE: 콘크리트橋
+  STR_BRIDGE_NAME_GIRDER_STEEL: 鋼鐵 거더橋
+  STR_BRIDGE_NAME_SUSPENSION_CONCRETE: 콘크리트 懸垂橋
+  STR_BRIDGE_NAME_SUSPENSION_STEEL: 鋼鐵 懸垂橋
+  STR_BRIDGE_NAME_WOODEN: 나무 다리
+  STR_BRIDGE_TUBULAR_SILICON: 실리콘 圓筒形 다리
+  STR_BUILD_DEPOT_ROAD_ORIENTATION_CAPTION: '{WHITE}車庫地 方向 選擇'
+  STR_BUILD_DEPOT_ROAD_ORIENTATION_SELECT_TOOLTIP: '{BLACK}車庫地의 方向을 選擇합니다'
+  STR_BUILD_DEPOT_TRAIN_ORIENTATION_CAPTION: '{WHITE}車輛基地 方向 選擇'
+  STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP: '{BLACK}車輛基地의 方向을 選擇하세요'
+  STR_BUILD_DEPOT_TRAM_ORIENTATION_CAPTION: '{WHITE}電車 車輛基地 方向 選擇'
+  STR_BUILD_DEPOT_TRAM_ORIENTATION_SELECT_TOOLTIP: '{BLACK}車輛基地의 方向을 選擇합니다'
+  STR_BUILD_SIGNAL_CAPTION: '{WHITE}信號旗 選擇'
+  STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_DECREASE_TOOLTIP: '{BLACK}드래그로 設置할 信號旗 間隔을
+    줄입니다'
+  STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_INCREASE_TOOLTIP: '{BLACK}드래그로 設置할 信號旗 間隔을
+    늘입니다'
+  STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP: '{BLACK}드래그로 設置할 때 信號旗 사이의 間隔입니다'
+  STR_BUILD_SIGNAL_ELECTRIC_ENTRY_TOOLTIP: '{BLACK}入口 信號旗 (電子式){}다음 閉塞 區間에 있는 出口 信號旗가
+    하나라도 파란불이면 파란불이 되며, 그렇지 않은 境遇에는 빨간불이 됩니다'
+  STR_BUILD_SIGNAL_ELECTRIC_EXIT_TOOLTIP: '{BLACK}出口 信號旗 (電子式){}一般 信號旗와 機能이 똑같지만,
+    入口 & 複合 信號旗와 올바르게 連繫되어야 합니다'
+  STR_BUILD_SIGNAL_ELECTRIC_PBS_OWAY_TOOLTIP: '{BLACK}單方向 經路 信號旗 (電子式){}經路가 겹치지 않는
+    境遇에 한 臺 以上의 列車가 한 閉塞 區間에 同時에 들어갈 수 있게 해주는 經路 信號旗입니다. 單方向 經路 信號旗는 反對便에서 通過가 不可能합니다'
+  STR_AI_GAME_SCRIPT_TOOLTIP: '{BLACK}게임 스크립트 記錄 체크'
+  STR_AI_LIST_CAPTION: '{WHITE}使用 可能한 {STRING}'
+  STR_AI_LIST_URL: '{LTBLUE}住所: {ORANGE}{STRING}'
+  STR_AI_SETTINGS_START_DELAY: '以前 人工知能 以後 이 人工知能이 나타나기 위한 날짜數: {ORANGE}약 {STRING}일'
+  STR_BLACK_4: '{G=f}{BLACK}4'
+  STR_BLACK_5: '{G=f}{BLACK}5'
+  STR_BLACK_RAW_STRING: '{BLACK}{STRING}'
+  STR_BRIDGE_NAME_TUBULAR_STEEL: 鋼鐵 圓筒形 다리
+  STR_BROKEN_VEHICLE_LENGTH: "{WHITE}'{1:COMPANY}'에 屬한 列車 '{0:VEHICLE}'의 길이가 잘못된 값을\
+    \ 가지고 있습니다. NewGRF에 依한 問題로 보입니다. 게임이 非同期化 또는 衝突을 일으킬 수 있습니다"
+  STR_BUILD_SIGNAL_CONVERT_TOOLTIP: '{BLACK}信號旗 變換{}이 버튼을 選擇한 뒤 이미 設置된 信號旗를 클릭하면,
+    信號旗의 種類(一般/入口/出口/複合/經路)와 型式(舊式↔電子式)을 變更하고, CTRL+클릭하면 信號旗의 型式을 變更합니다. SHIFT+클릭을
+    使用하면 豫想 費用을 볼 수 있습니다'
+  STR_BUILD_SIGNAL_ELECTRIC_COMBO_TOOLTIP: '{BLACK}複合 信號旗 (電子式){}複合 信號旗는 入口 信號旗와 出口
+    信號旗의 役割을 同時에 합니다. 이 信號旗는 事前 信號旗의 巨大한 "나뭇가지式 構造"를 建設할 수 있도록 도와줍니다'
+  STR_BUILD_SIGNAL_ELECTRIC_NORM_TOOLTIP: '{BLACK}閉塞 信號旗 (電子式){}가장 基本的인 信號旗 型式입니다.
+    단 한 臺의 列車만이 이 閉塞 區間을 通過할 수 있습니다'
+  STR_BUILD_SIGNAL_ELECTRIC_PBS_TOOLTIP: '{BLACK}經路 信號旗 (電子式){}經路가 겹치지 않는 境遇에 한 臺
+    以上의 列車가 한 閉塞 區間에 同時에 들어갈 수 있게 해주는 經路 信號旗입니다. 經路 信號旗는 反對便에서 通過가 可能합니다'
