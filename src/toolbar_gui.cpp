@@ -55,6 +55,11 @@
 #include "screenshot_gui.h"
 #include "league_gui.h"
 #include "league_base.h"
+#include "object.h"
+#include "newgrf_object.h"
+#include "newgrf_roadstop.h"
+#include "newgrf_station.h"
+#include "zoom_func.h"
 
 #include "widgets/toolbar_widget.h"
 
@@ -84,6 +89,7 @@ enum CallBackFunction {
 	CBF_NONE,
 	CBF_PLACE_SIGN,
 	CBF_PLACE_LANDINFO,
+	CBF_PLACE_PICKER,
 };
 
 static CallBackFunction _last_started_action = CBF_NONE; ///< Last started user action.
@@ -207,11 +213,11 @@ static void PopupMainToolbMenu(Window *w, int widget, DropDownList &&list, int d
  * @param string String for the first item in the menu
  * @param count Number of items in the menu
  */
-static void PopupMainToolbMenu(Window *w, int widget, StringID string, int count)
+static void PopupMainToolbMenu(Window *w, int widget, StringID string, int count, uint32 disabled = 0)
 {
 	DropDownList list;
 	for (int i = 0; i < count; i++) {
-		list.emplace_back(new DropDownListStringItem(string + i, i, false));
+		list.emplace_back(new DropDownListStringItem(string + i, i, i < 32 && HasBit(disabled, i)));
 	}
 	PopupMainToolbMenu(w, widget, std::move(list), 0);
 }
@@ -1108,6 +1114,98 @@ static CallBackFunction MenuClickNewspaper(int index)
 
 /* --- Help button menu --- */
 
+/**
+ * Help button menu entries.
+ */
+enum HelpMenuEntries {
+	HME_LANDINFO = 0,
+	HME_PICKER,
+	HME_CONSOLE = 3,
+	HME_SCRIPT_DEBUG,
+	HME_SCREENSHOT,
+	HME_FRAMERATE,
+	HME_MODIFIER_KEYS,
+	HME_ABOUT,
+
+	HME_SPRITE_ALIGNER,
+	HME_BOUNDING_BOXES,
+	HME_DIRTY_BLOCKS,
+
+	HME_LAST,
+	HME_LAST_NON_DEV = HME_SPRITE_ALIGNER,
+};
+
+static void ShowBuildRailToolbarFromTile(TileIndex tile)
+{
+	ShowBuildRailToolbar(GetRailType(tile));
+}
+
+static void ShowBuildRoadToolbarFromTile(TileIndex tile)
+{
+	if (HasRoadTypeRoad(tile)) {
+		CreateRoadTramToolbarForRoadType(GetRoadTypeRoad(tile), RTT_ROAD);
+	} else {
+		CreateRoadTramToolbarForRoadType(GetRoadTypeTram(tile), RTT_TRAM);
+	}
+}
+
+static void UsePickerTool(TileIndex tile)
+{
+	switch (GetTileType(tile)) {
+		case MP_RAILWAY:
+			ShowBuildRailToolbarFromTile(tile);
+			break;
+
+		case MP_ROAD: {
+			ShowBuildRoadToolbarFromTile(tile);
+			break;
+		}
+
+		case MP_STATION: {
+			StationType station_type = GetStationType(tile);
+			switch (station_type) {
+				case STATION_RAIL:
+				case STATION_WAYPOINT:
+					ShowBuildRailStationPickerAndSelect(station_type, GetStationSpec(tile));
+					break;
+
+				case STATION_TRUCK:
+				case STATION_BUS:
+				case STATION_ROADWAYPOINT:
+					ShowBuildRoadStopPickerAndSelect(station_type, GetRoadStopSpec(tile), HasRoadTypeRoad(tile) ? RTT_ROAD : RTT_TRAM);
+					break;
+
+				default:
+					break;
+			}
+			break;
+		}
+
+		case MP_TUNNELBRIDGE:
+			switch (GetTunnelBridgeTransportType(tile)) {
+				case TRANSPORT_RAIL:
+					ShowBuildRailToolbarFromTile(tile);
+					break;
+
+				case TRANSPORT_ROAD:
+					ShowBuildRoadToolbarFromTile(tile);
+					break;
+
+				default:
+					break;
+			}
+			break;
+
+		case MP_OBJECT: {
+			ShowBuildObjectPickerAndSelect(ObjectSpec::GetByTile(tile));
+			break;
+		}
+
+		default:
+			break;
+	}
+}
+
 static CallBackFunction PlaceLandBlockInfo()
 {
 	if (_last_started_action == CBF_PLACE_LANDINFO) {
@@ -1119,9 +1217,26 @@ static CallBackFunction PlaceLandBlockInfo()
 	}
 }
 
+static CallBackFunction PlacePickerTool()
+{
+	if (_local_company == COMPANY_SPECTATOR) return CBF_NONE;
+	if (_last_started_action == CBF_PLACE_PICKER) {
+		ResetObjectToPlace();
+		return CBF_NONE;
+	} else {
+		SetObjectToPlace(SPR_CURSOR_QUERY, PAL_NONE, HT_RECT, WC_MAIN_TOOLBAR, 0);
+		SetSelectionPalette(SPR_ZONING_INNER_HIGHLIGHT_GREEN);
+		return CBF_PLACE_PICKER;
+	}
+}
+
 static CallBackFunction ToolbarHelpClick(Window *w)
 {
-	PopupMainToolbMenu(w, _game_mode == GM_EDITOR ? (int)WID_TE_HELP : (int)WID_TN_HELP, STR_ABOUT_MENU_LAND_BLOCK_INFO, _settings_client.gui.newgrf_developer_tools ? 11 : 8);
+	uint mask = 0;
+	if (_local_company == COMPANY_SPECTATOR) SetBit(mask, HME_PICKER);
+	int count = _settings_client.gui.newgrf_developer_tools ? HME_LAST : HME_LAST_NON_DEV;
+	int widget = (_game_mode == GM_EDITOR) ? (int)WID_TE_HELP : (int)WID_TN_HELP;
+	PopupMainToolbMenu(w, widget, STR_ABOUT_MENU_LAND_BLOCK_INFO, count, mask);
 	return CBF_NONE;
 }
 
@@ -1174,6 +1289,7 @@ void SetStartingYear(Year year)
 	SetDate(new_date, 0);
 }
 
+
 /**
  * Choose the proper callback function for the main toolbar's help menu.
  * @param index The menu index which was selected.
@@ -1182,16 +1298,17 @@ void SetStartingYear(Year year)
 static CallBackFunction MenuClickHelp(int index)
 {
 	switch (index) {
-		case  0: return PlaceLandBlockInfo();
-		case  2: IConsoleSwitch();                 break;
-		case  3: ShowScriptDebugWindow();          break;
-		case  4: ShowScreenshotWindow();           break;
-		case  5: ShowFramerateWindow();            break;
-		case  6: ShowModifierKeyToggleWindow();    break;
-		case  7: ShowAboutWindow();                break;
-		case  8: ShowSpriteAlignerWindow();        break;
-		case  9: ToggleBoundingBoxes();            break;
-		case 10: ToggleDirtyBlocks();              break;
+		case HME_LANDINFO:       return PlaceLandBlockInfo();
+		case HME_PICKER:         return PlacePickerTool();
+		case HME_CONSOLE:        IConsoleSwitch();                 break;
+		case HME_SCRIPT_DEBUG:   ShowScriptDebugWindow();          break;
+		case HME_SCREENSHOT:     ShowScreenshotWindow();           break;
+		case HME_FRAMERATE:      ShowFramerateWindow();            break;
+		case HME_MODIFIER_KEYS:  ShowModifierKeyToggleWindow();    break;
+		case HME_ABOUT:          ShowAboutWindow();                break;
+		case HME_SPRITE_ALIGNER: ShowSpriteAlignerWindow();        break;
+		case HME_BOUNDING_BOXES: ToggleBoundingBoxes();            break;
+		case HME_DIRTY_BLOCKS:   ToggleDirtyBlocks();              break;
 	}
 	return CBF_NONE;
 }
@@ -2034,6 +2151,8 @@ struct MainToolbarWindow : Window {
 
 	MainToolbarWindow(WindowDesc *desc) : Window(desc)
 	{
+		MainToolbarScaleAdjuster scale_adjust;
+
 		this->InitNested(0);
 
 		_last_started_action = CBF_NONE;
@@ -2047,11 +2166,15 @@ struct MainToolbarWindow : Window {
 
 	void FindWindowPlacementAndResize(int def_width, int def_height) override
 	{
+		MainToolbarScaleAdjuster scale_adjust;
+
 		Window::FindWindowPlacementAndResize(_toolbar_width, def_height);
 	}
 
 	void OnPaint() override
 	{
+		MainToolbarScaleAdjuster scale_adjust;
+
 		/* If spectator, disable all construction buttons
 		 * ie : Build road, rail, ships, airports and landscaping
 		 * Since enabled state is the default, just disable when needed */
@@ -2127,6 +2250,7 @@ struct MainToolbarWindow : Window {
 			case MTHK_CLIENT_LIST: if (_networking) ShowClientList(); break;
 			case MTHK_SIGN_LIST: ShowSignList(); break;
 			case MTHK_LANDINFO: cbf = PlaceLandBlockInfo(); break;
+			case MTHK_PICKER: cbf = PlacePickerTool(); break;
 			case MTHK_PLAN_LIST: ShowPlansWindow(); break;
 			case MTHK_LINK_GRAPH_LEGEND: ShowLinkGraphLegend(); break;
 			case MTHK_MESSAGE_HISTORY: ShowMessageHistory(); break;
@@ -2148,6 +2272,10 @@ struct MainToolbarWindow : Window {
 
 			case CBF_PLACE_LANDINFO:
 				ShowLandInfo(tile);
+				break;
+
+			case CBF_PLACE_PICKER:
+				UsePickerTool(tile);
 				break;
 
 			default: NOT_REACHED();
@@ -2249,6 +2377,7 @@ static Hotkey maintoolbar_hotkeys[] = {
 	Hotkey((uint16)0, "client_list", MTHK_CLIENT_LIST),
 	Hotkey((uint16)0, "sign_list", MTHK_SIGN_LIST),
 	Hotkey((uint16)0, "land_info", MTHK_LANDINFO),
+	Hotkey((uint16)0, "picker_tool", MTHK_PICKER),
 	Hotkey('P', "plan_list", MTHK_PLAN_LIST),
 	Hotkey('Y', "link_graph_legend", MTHK_LINK_GRAPH_LEGEND),
 	Hotkey((uint16)0, "message_history", MTHK_MESSAGE_HISTORY),
@@ -2399,6 +2528,7 @@ enum MainToolbarEditorHotkeys {
 	MTEHK_SIGN,
 	MTEHK_MUSIC,
 	MTEHK_LANDINFO,
+	MTEHK_PICKER,
 	MTEHK_SMALL_SCREENSHOT,
 	MTEHK_ZOOMEDIN_SCREENSHOT,
 	MTEHK_DEFAULTZOOM_SCREENSHOT,
@@ -2415,6 +2545,8 @@ struct ScenarioEditorToolbarWindow : Window {
 
 	ScenarioEditorToolbarWindow(WindowDesc *desc) : Window(desc)
 	{
+		MainToolbarScaleAdjuster scale_adjust;
+
 		this->InitNested(0);
 
 		_last_started_action = CBF_NONE;
@@ -2427,11 +2559,15 @@ struct ScenarioEditorToolbarWindow : Window {
 
 	void FindWindowPlacementAndResize(int def_width, int def_height) override
 	{
+		MainToolbarScaleAdjuster scale_adjust;
+
 		Window::FindWindowPlacementAndResize(_toolbar_width, def_height);
 	}
 
 	void OnPaint() override
 	{
+		MainToolbarScaleAdjuster scale_adjust;
+
 		this->SetWidgetDisabledState(WID_TE_DATE_BACKWARD, _settings_game.game_creation.starting_year <= MIN_YEAR);
 		this->SetWidgetDisabledState(WID_TE_DATE_FORWARD, _settings_game.game_creation.starting_year >= MAX_YEAR);
 		this->SetWidgetDisabledState(WID_TE_ROADS, (GetRoadTypes(true) & ~_roadtypes_type) == ROADTYPES_NONE);
@@ -2474,7 +2610,7 @@ struct ScenarioEditorToolbarWindow : Window {
 
 			case WID_TE_DATE:
 				SetDParam(0, ConvertYMDToDate(MAX_YEAR, 0, 1));
-				*size = GetStringBoundingBox(STR_WHITE_DATE_LONG);
+				*size = GetStringBoundingBox(STR_JUST_DATE_LONG);
 				break;
 		}
 	}
@@ -2511,6 +2647,7 @@ struct ScenarioEditorToolbarWindow : Window {
 			case MTEHK_SIGN:                   cbf = ToolbarScenPlaceSign(this); break;
 			case MTEHK_MUSIC:                  ShowMusicWindow(); break;
 			case MTEHK_LANDINFO:               cbf = PlaceLandBlockInfo(); break;
+			case MTEHK_PICKER:                 cbf = PlacePickerTool(); break;
 			case MTEHK_SMALL_SCREENSHOT:       MakeScreenshotWithConfirm(SC_VIEWPORT); break;
 			case MTEHK_ZOOMEDIN_SCREENSHOT:    MakeScreenshotWithConfirm(SC_ZOOMEDIN); break;
 			case MTEHK_DEFAULTZOOM_SCREENSHOT: MakeScreenshotWithConfirm(SC_DEFAULTZOOM); break;
@@ -2535,6 +2672,10 @@ struct ScenarioEditorToolbarWindow : Window {
 
 			case CBF_PLACE_LANDINFO:
 				ShowLandInfo(tile);
+				break;
+
+			case CBF_PLACE_PICKER:
+				UsePickerTool(tile);
 				break;
 
 			default: NOT_REACHED();
@@ -2616,6 +2757,7 @@ static Hotkey scenedit_maintoolbar_hotkeys[] = {
 	Hotkey(WKC_F10, "build_sign", MTEHK_SIGN),
 	Hotkey(WKC_F11, "music", MTEHK_MUSIC),
 	Hotkey(WKC_F12, "land_info", MTEHK_LANDINFO),
+	Hotkey((uint16)0, "picker_tool", MTEHK_PICKER),
 	Hotkey(WKC_CTRL  | 'S', "small_screenshot", MTEHK_SMALL_SCREENSHOT),
 	Hotkey(WKC_CTRL  | 'P', "zoomedin_screenshot", MTEHK_ZOOMEDIN_SCREENSHOT),
 	Hotkey(WKC_CTRL  | 'D', "defaultzoom_screenshot", MTEHK_DEFAULTZOOM_SCREENSHOT),
@@ -2640,7 +2782,7 @@ static const NWidgetPart _nested_toolb_scen_inner_widgets[] = {
 	NWidget(WWT_PANEL, COLOUR_GREY, WID_TE_DATE_PANEL),
 		NWidget(NWID_HORIZONTAL), SetPIP(2, 2, 2), SetPadding(1),
 			NWidget(WWT_IMGBTN, COLOUR_GREY, WID_TE_DATE_BACKWARD), SetDataTip(SPR_ARROW_DOWN, STR_SCENEDIT_TOOLBAR_TOOLTIP_MOVE_THE_STARTING_DATE_BACKWARD), SetFill(0, 1),
-			NWidget(WWT_TEXT, COLOUR_GREY, WID_TE_DATE), SetDataTip(STR_WHITE_DATE_LONG, STR_SCENEDIT_TOOLBAR_TOOLTIP_SET_DATE), SetAlignment(SA_CENTER), SetFill(0, 1),
+			NWidget(WWT_TEXT, COLOUR_GREY, WID_TE_DATE), SetDataTip(STR_JUST_DATE_LONG, STR_SCENEDIT_TOOLBAR_TOOLTIP_SET_DATE), SetTextStyle(TC_WHITE), SetAlignment(SA_CENTER), SetFill(0, 1),
 			NWidget(WWT_IMGBTN, COLOUR_GREY, WID_TE_DATE_FORWARD), SetDataTip(SPR_ARROW_UP, STR_SCENEDIT_TOOLBAR_TOOLTIP_MOVE_THE_STARTING_DATE_FORWARD), SetFill(0, 1),
 		EndContainer(),
 	EndContainer(),
@@ -2688,5 +2830,32 @@ void AllocateToolbar()
 		new ScenarioEditorToolbarWindow(&_toolb_scen_desc);
 	} else {
 		new MainToolbarWindow(&_toolb_normal_desc);
+	}
+}
+
+static uint _toolbar_scale_adjuster_depth = 0;
+MainToolbarScaleAdjuster::MainToolbarScaleAdjuster()
+{
+	_toolbar_scale_adjuster_depth++;
+	if (_settings_client.gui.bigger_main_toolbar && _toolbar_scale_adjuster_depth == 1) {
+		this->old_gui_zoom = _gui_zoom;
+		this->old_gui_scale = _gui_scale;
+
+		/* Bump scale to next integer multiple */
+		_gui_scale = Clamp(100 * ((_gui_scale / 100) + 1), MIN_INTERFACE_SCALE, MAX_INTERFACE_SCALE);
+
+		int8 new_zoom = ScaleGUITrad(1) <= 1 ? ZOOM_LVL_OUT_4X : ScaleGUITrad(1) >= 4 ? ZOOM_LVL_MIN : ZOOM_LVL_OUT_2X;
+		_gui_zoom = static_cast<ZoomLevel>(Clamp(new_zoom, _settings_client.gui.zoom_min, _settings_client.gui.zoom_max));
+		SetupWidgetDimensions();
+	}
+}
+
+MainToolbarScaleAdjuster::~MainToolbarScaleAdjuster()
+{
+	_toolbar_scale_adjuster_depth--;
+	if (_settings_client.gui.bigger_main_toolbar && _toolbar_scale_adjuster_depth == 0) {
+		_gui_zoom = this->old_gui_zoom;
+		_gui_scale = this->old_gui_scale;
+		SetupWidgetDimensions();
 	}
 }

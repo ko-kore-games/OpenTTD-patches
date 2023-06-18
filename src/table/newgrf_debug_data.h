@@ -35,9 +35,16 @@
 #define NIC_END() { nullptr, 0, 0, 0, 0 }
 
 /* Helper for filling variable tables */
-#define NIV(var, name) { name, var }
-#define NIV_END() { nullptr, 0 }
+#define NIV(var, name) { name, var, NIVF_NONE }
+#define NIVF(var, name, flags) { name, var, flags }
+#define NIV_END() { nullptr, 0, NIVF_NONE }
 
+
+static uint GetTownInspectWindowNumber(const Town *town)
+{
+	if (town == nullptr) return UINT32_MAX;
+	return GetInspectWindowNumber(GSF_FAKE_TOWNS, town->index);
+}
 
 /*** NewGRF Vehicles ***/
 
@@ -448,6 +455,41 @@ class NIHVehicle : public NIHelper {
 				seprintf(buffer, lastof(buffer), "    Reliability: %u, spd_dec: %u, start: %u, max: %u, final: %u",
 						e->reliability, e->reliability_spd_dec, e->reliability_start, e->reliability_max, e->reliability_final);
 				output.print(buffer);
+				seprintf(buffer, lastof(buffer), "    Cargo type: %u, refit mask: 0x" OTTD_PRINTFHEX64 ", refit cost: %u",
+						e->info.cargo_type, e->info.refit_mask, e->info.refit_cost);
+				output.print(buffer);
+
+				output.register_next_line_click_flag_toggle(2 << flag_shift);
+				if (output.flags & (2 << flag_shift)) {
+					seprintf(buffer, lastof(buffer), "    [-] Engine Misc Flags:\n");
+					output.print(buffer);
+					auto print_bit = [&](int bit, const char *name) {
+						if (HasBit(e->info.misc_flags, bit)) {
+							seprintf(buffer, lastof(buffer), "      %s\n", name);
+							output.print(buffer);
+						}
+					};
+					print_bit(EF_RAIL_TILTS,                  "EF_RAIL_TILTS");
+					print_bit(EF_USES_2CC,                    "EF_USES_2CC");
+					print_bit(EF_RAIL_IS_MU,                  "EF_RAIL_IS_MU");
+					print_bit(EF_RAIL_FLIPS,                  "EF_RAIL_FLIPS");
+					print_bit(EF_AUTO_REFIT,                  "EF_AUTO_REFIT");
+					print_bit(EF_NO_DEFAULT_CARGO_MULTIPLIER, "EF_NO_DEFAULT_CARGO_MULTIPLIER");
+					print_bit(EF_NO_BREAKDOWN_SMOKE,          "EF_NO_BREAKDOWN_SMOKE");
+					print_bit(EF_SPRITE_STACK,                "EF_SPRITE_STACK");
+				} else {
+					seprintf(buffer, lastof(buffer), "    [+] Engine Misc Flags: %c%c%c%c%c%c%c%c",
+							HasBit(e->info.misc_flags, EF_RAIL_TILTS)                  ? 't' : '-',
+							HasBit(e->info.misc_flags, EF_USES_2CC)                    ? '2' : '-',
+							HasBit(e->info.misc_flags, EF_RAIL_IS_MU)                  ? 'm' : '-',
+							HasBit(e->info.misc_flags, EF_RAIL_FLIPS)                  ? 'f' : '-',
+							HasBit(e->info.misc_flags, EF_AUTO_REFIT)                  ? 'r' : '-',
+							HasBit(e->info.misc_flags, EF_NO_DEFAULT_CARGO_MULTIPLIER) ? 'c' : '-',
+							HasBit(e->info.misc_flags, EF_NO_BREAKDOWN_SMOKE)          ? 'b' : '-',
+							HasBit(e->info.misc_flags, EF_SPRITE_STACK)                ? 's' : '-');
+					output.print(buffer);
+				}
+
 				if (e->type == VEH_TRAIN) {
 					const RailtypeInfo *rti = GetRailTypeInfo(e->u.rail.railtype);
 					seprintf(buffer, lastof(buffer), "    Railtype: %u (0x" OTTD_PRINTFHEX64 "), Compatible: 0x" OTTD_PRINTFHEX64 ", Powered: 0x" OTTD_PRINTFHEX64 ", All compatible: 0x" OTTD_PRINTFHEX64,
@@ -460,37 +502,6 @@ class NIHVehicle : public NIHelper {
 					};
 					seprintf(buffer, lastof(buffer), "    Rail veh type: %s, power: %u", engine_types[e->u.rail.railveh_type], e->u.rail.power);
 					output.print(buffer);
-
-					output.register_next_line_click_flag_toggle(2 << flag_shift);
-					if (output.flags & (2 << flag_shift)) {
-						seprintf(buffer, lastof(buffer), "    [-] Engine Misc Flags:\n");
-						output.print(buffer);
-						auto print_bit = [&](int bit, const char *name) {
-							if (HasBit(e->info.misc_flags, bit)) {
-								seprintf(buffer, lastof(buffer), "      %s\n", name);
-								output.print(buffer);
-							}
-						};
-						print_bit(EF_RAIL_TILTS,                  "EF_RAIL_TILTS");
-						print_bit(EF_USES_2CC,                    "EF_USES_2CC");
-						print_bit(EF_RAIL_IS_MU,                  "EF_RAIL_IS_MU");
-						print_bit(EF_RAIL_FLIPS,                  "EF_RAIL_FLIPS");
-						print_bit(EF_AUTO_REFIT,                  "EF_AUTO_REFIT");
-						print_bit(EF_NO_DEFAULT_CARGO_MULTIPLIER, "EF_NO_DEFAULT_CARGO_MULTIPLIER");
-						print_bit(EF_NO_BREAKDOWN_SMOKE,          "EF_NO_BREAKDOWN_SMOKE");
-						print_bit(EF_SPRITE_STACK,                "EF_SPRITE_STACK");
-					} else {
-						seprintf(buffer, lastof(buffer), "    [+] Engine Misc Flags: %c%c%c%c%c%c%c%c",
-								HasBit(e->info.misc_flags, EF_RAIL_TILTS)                  ? 't' : '-',
-								HasBit(e->info.misc_flags, EF_USES_2CC)                    ? '2' : '-',
-								HasBit(e->info.misc_flags, EF_RAIL_IS_MU)                  ? 'm' : '-',
-								HasBit(e->info.misc_flags, EF_RAIL_FLIPS)                  ? 'f' : '-',
-								HasBit(e->info.misc_flags, EF_AUTO_REFIT)                  ? 'r' : '-',
-								HasBit(e->info.misc_flags, EF_NO_DEFAULT_CARGO_MULTIPLIER) ? 'c' : '-',
-								HasBit(e->info.misc_flags, EF_NO_BREAKDOWN_SMOKE)          ? 'b' : '-',
-								HasBit(e->info.misc_flags, EF_SPRITE_STACK)                ? 's' : '-');
-						output.print(buffer);
-					}
 				}
 				if (e->type == VEH_ROAD) {
 					const RoadTypeInfo* rti = GetRoadTypeInfo(e->u.road.roadtype);
@@ -584,12 +595,13 @@ static const NIVariable _niv_stations[] = {
 	NIV(0x68, "station info of nearby tiles"),
 	NIV(0x69, "information about cargo accepted in the past"),
 	NIV(0x6A, "GRFID of nearby station tiles"),
+	NIVF(A2VRI_STATION_INFO_NEARBY_TILES_V2, "station info of nearby tiles v2", NIVF_SHOW_PARAMS),
 	NIV_END()
 };
 
 class NIHStation : public NIHelper {
 	bool IsInspectable(uint index) const override        { return GetStationSpec(index) != nullptr; }
-	uint GetParent(uint index) const override            { return GetInspectWindowNumber(GSF_FAKE_TOWNS, Station::GetByTile(index)->town->index); }
+	uint GetParent(uint index) const override            { return GetTownInspectWindowNumber(Station::GetByTile(index)->town); }
 	bool ShowSpriteDumpButton(uint index) const override { return true; }
 	const void *GetInstance(uint index)const override    { return nullptr; }
 	const void *GetSpec(uint index) const override       { return GetStationSpec(index); }
@@ -968,7 +980,7 @@ static const NIVariable _niv_industries[] = {
 class NIHIndustry : public NIHelper {
 	bool IsInspectable(uint index) const override        { return true; }
 	bool ShowSpriteDumpButton(uint index) const override { return true; }
-	uint GetParent(uint index) const override            { return HasBit(index, 26) ? UINT32_MAX : GetInspectWindowNumber(GSF_FAKE_TOWNS, Industry::Get(index)->town->index); }
+	uint GetParent(uint index) const override            { return HasBit(index, 26) ? UINT32_MAX : GetTownInspectWindowNumber(Industry::Get(index)->town); }
 	const void *GetInstance(uint index)const override    { return HasBit(index, 26) ? nullptr : Industry::Get(index); }
 	uint32 GetGRFID(uint index) const override           { return (!this->ShowExtraInfoOnly(index)) ? ((const IndustrySpec *)this->GetSpec(index))->grf_prop.grffile->grfid : 0; }
 
@@ -1343,7 +1355,7 @@ class NIHObject : public NIHelper {
 	bool IsInspectable(uint index) const override        { return true; }
 	bool ShowExtraInfoOnly(uint index) const override    { return ObjectSpec::GetByTile(index)->grf_prop.grffile == nullptr; }
 	bool ShowSpriteDumpButton(uint index) const override { return true; }
-	uint GetParent(uint index) const override            { return GetInspectWindowNumber(GSF_FAKE_TOWNS, Object::GetByTile(index)->town->index); }
+	uint GetParent(uint index) const override            { return GetTownInspectWindowNumber(Object::GetByTile(index)->town); }
 	const void *GetInstance(uint index)const override    { return Object::GetByTile(index); }
 	const void *GetSpec(uint index) const override       { return ObjectSpec::GetByTile(index); }
 	void SetStringParameters(uint index) const override  { this->SetObjectAtStringParameters(STR_NEWGRF_INSPECT_CAPTION_OBJECT_AT_OBJECT, INVALID_STRING_ID, index); }
@@ -1595,7 +1607,7 @@ static const NICallback _nic_airporttiles[] = {
 
 class NIHAirportTile : public NIHelper {
 	bool IsInspectable(uint index) const override        { return AirportTileSpec::Get(GetAirportGfx(index))->grf_prop.grffile != nullptr; }
-	uint GetParent(uint index) const override            { return GetInspectWindowNumber(GSF_FAKE_TOWNS, Station::GetByTile(index)->town->index); }
+	uint GetParent(uint index) const override            { return GetTownInspectWindowNumber(Station::GetByTile(index)->town); }
 	const void *GetInstance(uint index)const override    { return nullptr; }
 	const void *GetSpec(uint index) const override       { return AirportTileSpec::Get(GetAirportGfx(index)); }
 	void SetStringParameters(uint index) const override  { this->SetObjectAtStringParameters(STR_STATION_NAME, GetStationIndex(index), index); }
@@ -1673,9 +1685,8 @@ class NIHTown : public NIHelper {
 	{
 		Town *t = Town::Get(index);
 
-		std::list<PersistentStorage *>::iterator iter;
-		for (iter = t->psa_list.begin(); iter != t->psa_list.end(); iter++) {
-			if ((*iter)->grfid == grfid) return (int32 *)(&(*iter)->storage[0]);
+		for (const auto &it : t->psa_list) {
+			if (it->grfid == grfid) return &it->storage[0];
 		}
 
 		return nullptr;
@@ -1780,13 +1791,13 @@ class NIHStationStruct : public NIHelper {
 		const Station *st = Station::GetIfValid(index);
 		if (st) {
 			if (st->industry) {
-				seprintf(buffer, lastof(buffer), "  Neutral industry: %u: %s", st->industry->index, st->industry->GetCachedName());
+				seprintf(buffer, lastof(buffer), "  Neutral industry: %u: %s", st->industry->index, st->industry->GetCachedName().c_str());
 				output.print(buffer);
 			}
 			seprintf(buffer, lastof(buffer), "  Nearby industries: %u", (uint) st->industries_near.size());
 			output.print(buffer);
 			for (const auto &i : st->industries_near) {
-				seprintf(buffer, lastof(buffer), "    %u: %s, distance: %u", i.industry->index, i.industry->GetCachedName(), i.distance);
+				seprintf(buffer, lastof(buffer), "    %u: %s, distance: %u", i.industry->index, i.industry->GetCachedName().c_str(), i.distance);
 				output.print(buffer);
 			}
 			seprintf(buffer, lastof(buffer), "  Station tiles: %u", st->station_tiles);
@@ -1945,14 +1956,15 @@ static const NIVariable _nif_roadstops[] = {
 	NIV(0x69, "information about cargo accepted in the past"),
 	NIV(0x6A, "GRFID of nearby road stop tiles"),
 	NIV(0x6B, "Road info of nearby plain road tiles"),
-	NIV(A2VRI_ROADSTOP_INFO_NEARBY_TILES_V2, "road stop info of nearby tiles v2"),
+	NIVF(A2VRI_ROADSTOP_INFO_NEARBY_TILES_EXT, "road stop info of nearby tiles ext", NIVF_SHOW_PARAMS),
+	NIVF(A2VRI_ROADSTOP_INFO_NEARBY_TILES_V2, "road stop info of nearby tiles v2", NIVF_SHOW_PARAMS),
 	NIV_END(),
 };
 
 class NIHRoadStop : public NIHelper {
 	bool IsInspectable(uint index) const override        { return GetRoadStopSpec(index) != nullptr; }
 	bool ShowSpriteDumpButton(uint index) const override { return true; }
-	uint GetParent(uint index) const override            { return GetInspectWindowNumber(GSF_FAKE_TOWNS, BaseStation::GetByTile(index)->town->index); }
+	uint GetParent(uint index) const override            { return GetTownInspectWindowNumber(BaseStation::GetByTile(index)->town); }
 	const void *GetInstance(uint index)const override    { return nullptr; }
 	const void *GetSpec(uint index) const override       { return GetRoadStopSpec(index); }
 	void SetStringParameters(uint index) const override  { this->SetObjectAtStringParameters(STR_STATION_NAME, GetStationIndex(index), index); }
