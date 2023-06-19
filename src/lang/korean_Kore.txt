@@ -26,69 +26,69 @@ STR_JUST_NOTHING                                                :없음
 # Cargo related strings
 # Plural cargo name
 STR_CARGO_PLURAL_NOTHING                                        :
-STR_CARGO_PLURAL_PASSENGERS                                     :{G=m}승객
-STR_CARGO_PLURAL_COAL                                           :{G=m}석탄
-STR_CARGO_PLURAL_MAIL                                           :{G=m}우편
-STR_CARGO_PLURAL_OIL                                            :{G=f}석유
-STR_CARGO_PLURAL_LIVESTOCK                                      :{G=m}가축
-STR_CARGO_PLURAL_GOODS                                          :{G=m}상품
-STR_CARGO_PLURAL_GRAIN                                          :{G=m}곡물
-STR_CARGO_PLURAL_WOOD                                           :{G=f}목재
+STR_CARGO_PLURAL_PASSENGERS                                     :{G=m}乘客
+STR_CARGO_PLURAL_COAL                                           :{G=m}石炭
+STR_CARGO_PLURAL_MAIL                                           :{G=m}郵便
+STR_CARGO_PLURAL_OIL                                            :{G=f}石油
+STR_CARGO_PLURAL_LIVESTOCK                                      :{G=m}家畜
+STR_CARGO_PLURAL_GOODS                                          :{G=m}商品
+STR_CARGO_PLURAL_GRAIN                                          :{G=m}穀物
+STR_CARGO_PLURAL_WOOD                                           :{G=f}木材
 STR_CARGO_PLURAL_IRON_ORE                                       :{G=m}철광석
-STR_CARGO_PLURAL_STEEL                                          :{G=m}철
-STR_CARGO_PLURAL_VALUABLES                                      :{G=m}귀금속
+STR_CARGO_PLURAL_STEEL                                          :{G=m}鐵
+STR_CARGO_PLURAL_VALUABLES                                      :{G=m}貴金屬
 STR_CARGO_PLURAL_COPPER_ORE                                     :{G=m}구리 광석
 STR_CARGO_PLURAL_MAIZE                                          :{G=f}옥수수
 STR_CARGO_PLURAL_FRUIT                                          :{G=m}과일
 STR_CARGO_PLURAL_DIAMONDS                                       :{G=f}다이아몬드
-STR_CARGO_PLURAL_FOOD                                           :{G=m}식품
+STR_CARGO_PLURAL_FOOD                                           :{G=m}食品
 STR_CARGO_PLURAL_PAPER                                          :{G=f}종이
-STR_CARGO_PLURAL_GOLD                                           :{G=m}금
+STR_CARGO_PLURAL_GOLD                                           :{G=m}金
 STR_CARGO_PLURAL_WATER                                          :{G=m}물
 STR_CARGO_PLURAL_WHEAT                                          :{G=m}밀
 STR_CARGO_PLURAL_RUBBER                                         :{G=f}고무
-STR_CARGO_PLURAL_SUGAR                                          :{G=m}설탕
+STR_CARGO_PLURAL_SUGAR                                          :{G=m}雪糖
 STR_CARGO_PLURAL_TOYS                                           :{G=m}장난감
-STR_CARGO_PLURAL_SWEETS                                         :{G=m}사탕
+STR_CARGO_PLURAL_SWEETS                                         :{G=m}沙糖
 STR_CARGO_PLURAL_COLA                                           :{G=f}콜라
-STR_CARGO_PLURAL_CANDYFLOSS                                     :{G=m}솜사탕
+STR_CARGO_PLURAL_CANDYFLOSS                                     :{G=m}솜沙糖
 STR_CARGO_PLURAL_BUBBLES                                        :{G=m}거품
 STR_CARGO_PLURAL_TOFFEE                                         :{G=f}토피
-STR_CARGO_PLURAL_BATTERIES                                      :{G=f}건전지
+STR_CARGO_PLURAL_BATTERIES                                      :{G=f}乾電池
 STR_CARGO_PLURAL_PLASTIC                                        :{G=m}플라스틱
 STR_CARGO_PLURAL_FIZZY_DRINKS                                   :{G=f}탄산음료
 
 # Singular cargo name
 STR_CARGO_SINGULAR_NOTHING                                      :
-STR_CARGO_SINGULAR_PASSENGER                                    :{G=m}승객
-STR_CARGO_SINGULAR_COAL                                         :{G=m}석탄
-STR_CARGO_SINGULAR_MAIL                                         :{G=m}우편
-STR_CARGO_SINGULAR_OIL                                          :{G=f}석유
-STR_CARGO_SINGULAR_LIVESTOCK                                    :{G=m}가축
-STR_CARGO_SINGULAR_GOODS                                        :{G=m}상품
-STR_CARGO_SINGULAR_GRAIN                                        :{G=m}곡물
-STR_CARGO_SINGULAR_WOOD                                         :{G=f}목재
+STR_CARGO_SINGULAR_PASSENGER                                    :{G=m}乘客
+STR_CARGO_SINGULAR_COAL                                         :{G=m}石炭
+STR_CARGO_SINGULAR_MAIL                                         :{G=m}郵便
+STR_CARGO_SINGULAR_OIL                                          :{G=f}石油
+STR_CARGO_SINGULAR_LIVESTOCK                                    :{G=m}家畜
+STR_CARGO_SINGULAR_GOODS                                        :{G=m}商品
+STR_CARGO_SINGULAR_GRAIN                                        :{G=m}穀物
+STR_CARGO_SINGULAR_WOOD                                         :{G=f}木材
 STR_CARGO_SINGULAR_IRON_ORE                                     :{G=m}철광석
-STR_CARGO_SINGULAR_STEEL                                        :{G=m}철
-STR_CARGO_SINGULAR_VALUABLES                                    :{G=m}귀금속
+STR_CARGO_SINGULAR_STEEL                                        :{G=m}鐵
+STR_CARGO_SINGULAR_VALUABLES                                    :{G=m}貴金屬
 STR_CARGO_SINGULAR_COPPER_ORE                                   :{G=m}구리 광석
 STR_CARGO_SINGULAR_MAIZE                                        :{G=f}옥수수
 STR_CARGO_SINGULAR_FRUIT                                        :{G=m}과일
 STR_CARGO_SINGULAR_DIAMOND                                      :{G=f}다이아몬드
-STR_CARGO_SINGULAR_FOOD                                         :{G=m}식품
+STR_CARGO_SINGULAR_FOOD                                         :{G=m}食品
 STR_CARGO_SINGULAR_PAPER                                        :{G=f}종이
-STR_CARGO_SINGULAR_GOLD                                         :{G=m}금
+STR_CARGO_SINGULAR_GOLD                                         :{G=m}金
 STR_CARGO_SINGULAR_WATER                                        :{G=m}물
 STR_CARGO_SINGULAR_WHEAT                                        :{G=m}밀
 STR_CARGO_SINGULAR_RUBBER                                       :{G=f}고무
-STR_CARGO_SINGULAR_SUGAR                                        :{G=m}설탕
+STR_CARGO_SINGULAR_SUGAR                                        :{G=m}雪糖
 STR_CARGO_SINGULAR_TOY                                          :{G=m}장난감
-STR_CARGO_SINGULAR_SWEETS                                       :{G=m}사탕
+STR_CARGO_SINGULAR_SWEETS                                       :{G=m}沙糖
 STR_CARGO_SINGULAR_COLA                                         :{G=f}콜라
-STR_CARGO_SINGULAR_CANDYFLOSS                                   :{G=m}솜사탕
+STR_CARGO_SINGULAR_CANDYFLOSS                                   :{G=m}솜沙糖
 STR_CARGO_SINGULAR_BUBBLE                                       :{G=m}거품
 STR_CARGO_SINGULAR_TOFFEE                                       :{G=f}토피
-STR_CARGO_SINGULAR_BATTERY                                      :{G=f}건전지
+STR_CARGO_SINGULAR_BATTERY                                      :{G=f}乾電池
 STR_CARGO_SINGULAR_PLASTIC                                      :{G=m}플라스틱
 STR_CARGO_SINGULAR_FIZZY_DRINK                                  :{G=f}탄산음료
 
@@ -171,25 +171,25 @@ STR_LITERS                                                      :{G=f}{COMMA}{NB
 STR_ITEMS                                                       :{G=m}{COMMA}{NBSP}마리
 STR_CRATES                                                      :{G=f}{COMMA}{NBSP}상자
 
-STR_COLOUR_DEFAULT                                              :기본
+STR_COLOUR_DEFAULT                                              :基本
 ###length 17
 STR_COLOUR_DARK_BLUE                                            :어두운 파랑
 STR_COLOUR_PALE_GREEN                                           :연한 녹색
-STR_COLOUR_PINK                                                 :분홍
+STR_COLOUR_PINK                                                 :粉紅
 STR_COLOUR_YELLOW                                               :노랑
 STR_COLOUR_RED                                                  :빨강
 STR_COLOUR_LIGHT_BLUE                                           :밝은 파랑
-STR_COLOUR_GREEN                                                :녹색
+STR_COLOUR_GREEN                                                :綠色
 STR_COLOUR_DARK_GREEN                                           :어두운 녹색
 STR_COLOUR_BLUE                                                 :파랑
-STR_COLOUR_CREAM                                                :연한 분홍
-STR_COLOUR_MAUVE                                                :연한 보라
+STR_COLOUR_CREAM                                                :軟粉紅
+STR_COLOUR_MAUVE                                                :軟보라
 STR_COLOUR_PURPLE                                               :보라
-STR_COLOUR_ORANGE                                               :주황
-STR_COLOUR_BROWN                                                :갈색
-STR_COLOUR_GREY                                                 :회색
-STR_COLOUR_WHITE                                                :흰색
-STR_COLOUR_RANDOM                                               :무작위
+STR_COLOUR_ORANGE                                               :朱黃
+STR_COLOUR_BROWN                                                :褐色
+STR_COLOUR_GREY                                                 :灰色
+STR_COLOUR_WHITE                                                :흰色
+STR_COLOUR_RANDOM                                               :無作爲
 
 # Units used in OpenTTD
 STR_UNITS_VELOCITY_IMPERIAL                                     :{COMMA}mph
@@ -383,9 +383,9 @@ STR_SCENEDIT_TOOLBAR_TOOLTIP_MOVE_THE_STARTING_DATE_BACKWARD    :{BLACK}시작�
 STR_SCENEDIT_TOOLBAR_TOOLTIP_MOVE_THE_STARTING_DATE_FORWARD     :{BLACK}시작년도를 1년 늦춥니다.
 STR_SCENEDIT_TOOLBAR_TOOLTIP_SET_DATE                           :{BLACK}시작 연도를 입력하세요.
 STR_SCENEDIT_TOOLBAR_TOOLTIP_DISPLAY_MAP_TOWN_DIRECTORY         :{BLACK}지도, 도시 목록 보여주기
-STR_SCENEDIT_TOOLBAR_LANDSCAPE_GENERATION                       :{BLACK}지형을 생성합니다.
-STR_SCENEDIT_TOOLBAR_TOWN_GENERATION                            :{BLACK}도시를 생성합니다.
-STR_SCENEDIT_TOOLBAR_INDUSTRY_GENERATION                        :{BLACK}산업시설을 건설합니다.
+STR_SCENEDIT_TOOLBAR_LANDSCAPE_GENERATION                       :{BLACK}地形을生成합니다
+STR_SCENEDIT_TOOLBAR_TOWN_GENERATION                            :{BLACK}都市를生成합니다
+STR_SCENEDIT_TOOLBAR_INDUSTRY_GENERATION                        :{BLACK}産業施設을建設합니다
 STR_SCENEDIT_TOOLBAR_ROAD_CONSTRUCTION                          :{BLACK}도로를 건설합니다.
 STR_SCENEDIT_TOOLBAR_TRAM_CONSTRUCTION                          :{BLACK}전찻길 건설
 STR_SCENEDIT_TOOLBAR_PLANT_TREES                                :{BLACK}나무를 심습니다. CTRL 키를 누른 채로 사용하면 대각선 방향의 영역을 선택할 수 있습니다. SHIFT 키를 누른 채로 사용하면 예상 비용을 볼 수 있습니다
@@ -626,15 +626,15 @@ STR_GRAPH_KEY_COMPANY_SELECTION_TOOLTIP                         :{BLACK}특정 �
 # Company league window
 STR_COMPANY_LEAGUE_TABLE_CAPTION                                :{WHITE}회사 성취도 순위
 STR_COMPANY_LEAGUE_COMPANY_NAME                                 :{ORANGE}{COMPANY} {BLACK}{COMPANY_NUM} '{STRING}'
-STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_ENGINEER                   :{G=f}기사
+STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_ENGINEER                   :{G=f}技師
 STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_TRAFFIC_MANAGER            :{G=f}교통망 관리자
 STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_TRANSPORT_COORDINATOR      :{G=f}수송 조정자
 STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_ROUTE_SUPERVISOR           :{G=f}노선 관리자
-STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_DIRECTOR                   :{G=m}임원
+STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_DIRECTOR                   :{G=m}任員
 STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_CHIEF_EXECUTIVE            :{G=m}최고 경영자
-STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_CHAIRMAN                   :{G=m}사장
-STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_PRESIDENT                  :{G=m}회장
-STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_TYCOON                     :{G=m}타이쿤!
+STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_CHAIRMAN                   :{G=m}社長
+STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_PRESIDENT                  :{G=m}會長
+STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_TYCOON                     :{G=m}타이쿤！
 
 # Performance detail window
 STR_PERFORMANCE_DETAIL                                          :{WHITE}상세 성취도
@@ -1092,11 +1092,11 @@ STR_VARIETY_HIGH                                                :높음
 STR_VARIETY_VERY_HIGH                                           :매우 높음
 
 ###length 5
-STR_AI_SPEED_VERY_SLOW                                          :매우 느림
+STR_AI_SPEED_VERY_SLOW                                          :매우느림
 STR_AI_SPEED_SLOW                                               :느림
-STR_AI_SPEED_MEDIUM                                             :보통
+STR_AI_SPEED_MEDIUM                                             :普通
 STR_AI_SPEED_FAST                                               :빠름
-STR_AI_SPEED_VERY_FAST                                          :매우 빠름
+STR_AI_SPEED_VERY_FAST                                          :매우빠름
 
 ###length 6
 STR_SEA_LEVEL_VERY_LOW                                          :매우 낮음
@@ -1139,8 +1139,8 @@ STR_TERRAIN_TYPE_CUSTOM                                         :사용자 지�
 STR_TERRAIN_TYPE_CUSTOM_VALUE                                   :사용자 지정 높이 ({NUM})
 
 ###length 4
-STR_CITY_APPROVAL_LENIENT                                       :관대함
-STR_CITY_APPROVAL_TOLERANT                                      :신경 씀
+STR_CITY_APPROVAL_LENIENT                                       :寬大함
+STR_CITY_APPROVAL_TOLERANT                                      :神經씀
 STR_CITY_APPROVAL_HOSTILE                                       :싫어함
 STR_CITY_APPROVAL_PERMISSIVE                                    :신경 안씀 (회사 행동에 영향 없음)
 
@@ -1148,7 +1148,7 @@ STR_WARNING_NO_SUITABLE_AI                                      :{WHITE}사용�
 
 # Settings tree window
 STR_CONFIG_SETTING_TREE_CAPTION                                 :{WHITE}설정
-STR_CONFIG_SETTING_FILTER_TITLE                                 :{BLACK}검색:
+STR_CONFIG_SETTING_FILTER_TITLE                                 :{BLACK}檢索：
 STR_CONFIG_SETTING_EXPAND_ALL                                   :{BLACK}모두 펼치기
 STR_CONFIG_SETTING_COLLAPSE_ALL                                 :{BLACK}모두 접기
 STR_CONFIG_SETTING_RESET_ALL                                    :{BLACK}모든 설정 초기화
@@ -1160,11 +1160,11 @@ STR_CONFIG_SETTING_TYPE_GAME_MENU                               :게임設定(�
 STR_CONFIG_SETTING_TYPE_GAME_INGAME                             :게임 설정 (게임 저장 파일에 저장됨; 현재 게임에만 적용됨)
 STR_CONFIG_SETTING_TYPE_COMPANY_MENU                            :會社設定(게임貯藏파일에貯藏됨；새게임에만適用됨)
 STR_CONFIG_SETTING_TYPE_COMPANY_INGAME                          :회사 설정 (게임 저장 파일에 저장됨; 현재 회사에만 적용됨)
-STR_CONFIG_SETTING_RESET_ALL_CONFIRMATION_DIALOG_CAPTION        :{WHITE}경고!
+STR_CONFIG_SETTING_RESET_ALL_CONFIRMATION_DIALOG_CAPTION        :{WHITE}警告！
 STR_CONFIG_SETTING_RESET_ALL_CONFIRMATION_DIALOG_TEXT           :{WHITE}게임의 모든 설정을 기본값으로 되돌립니다.{}정말 모든 설정을 초기화하시겠습니까?
 
-STR_CONFIG_SETTING_RESTRICT_CATEGORY                            :{BLACK}분류:
-STR_CONFIG_SETTING_RESTRICT_TYPE                                :{BLACK}종류:
+STR_CONFIG_SETTING_RESTRICT_CATEGORY                            :{BLACK}分類：
+STR_CONFIG_SETTING_RESTRICT_TYPE                                :{BLACK}種類：
 STR_CONFIG_SETTING_RESTRICT_DROPDOWN_HELPTEXT                   :{BLACK}미리 지정한 검색어에 해당하는 설정 목록에 표시하도록 할 수 있습니다.
 STR_CONFIG_SETTING_RESTRICT_BASIC                               :기본 설정 (일부 중요한 설정만 보임)
 STR_CONFIG_SETTING_RESTRICT_ADVANCED                            :고급 설정 (대부분의 설정을 보여줌)
@@ -1189,7 +1189,7 @@ STR_CONFIG_SETTING_CATEGORY_AND_TYPE_HIDES                      :{BLACK}검색 �
 ###length 3
 STR_CONFIG_SETTING_OFF                                          :아니요
 STR_CONFIG_SETTING_ON                                           :예
-STR_CONFIG_SETTING_DISABLED                                     :사용 안 함
+STR_CONFIG_SETTING_DISABLED                                     :使用안함
 
 ###length 3
 STR_CONFIG_SETTING_COMPANIES_OFF                                :끄기
@@ -1199,7 +1199,7 @@ STR_CONFIG_SETTING_COMPANIES_ALL                                :모든 회사�
 ###length 3
 STR_CONFIG_SETTING_NONE                                         :없음
 STR_CONFIG_SETTING_ORIGINAL                                     :오리지널
-STR_CONFIG_SETTING_REALISTIC                                    :현실적
+STR_CONFIG_SETTING_REALISTIC                                    :現實的
 
 ###length 3
 STR_CONFIG_SETTING_HORIZONTAL_POS_LEFT                          :왼쪽
@@ -1253,7 +1253,7 @@ STR_CONFIG_SETTING_MAP_HEIGHT_LIMIT                             :지도 높이 �
 STR_CONFIG_SETTING_MAP_HEIGHT_LIMIT_HELPTEXT                    :지도 지형의 최대 높이를 설정합니다. "(자동)"으로 설정하면 지형이 생성된 뒤에 적절한 값을 골라줍니다.
 STR_CONFIG_SETTING_MAP_HEIGHT_LIMIT_VALUE                       :{NUM}
 ###setting-zero-is-special
-STR_CONFIG_SETTING_MAP_HEIGHT_LIMIT_AUTO                        :(자동)
+STR_CONFIG_SETTING_MAP_HEIGHT_LIMIT_AUTO                        :(自動)
 STR_CONFIG_SETTING_TOO_HIGH_MOUNTAIN                            :{WHITE}이 값을 지도 높이 최댓값으로 설정할 수 없습니다. 이 값보다 고도가 높은 산이 최소 한 개 이상 존재합니다.
 
 STR_CONFIG_SETTING_AUTOSLOPE                                    :건물, 트랙 등의 하부 지형 편집 허용: {STRING}
@@ -1309,9 +1309,9 @@ STR_CONFIG_SETTING_MAX_TUNNEL_LENGTH_HELPTEXT                   :터널의 최�
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD             :1차 산업시설 건설 방법: {STRING}
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_HELPTEXT    :1차 산업시설에 대한 투자 방법을 선택합니다. '없음'은 투자가 불가능함을 뜻하고, '건설 가능 (무작위 위치)'은 투자는 가능하지만 지도 상 임의의 장소에 산업시설이 들어서거나 투자에 실패할 수 있음을 의미하고, '건설 가능 (위치 선택 가능)'은 생산 산업시설처럼 회사가 원하는 위치에 7배 비용을 주고 설치가 가능함을 의미합니다.
 ###length 3
-STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_NONE        :건설 불가
+STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_NONE        :建設不可
 STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_NORMAL      :건설 가능 (위치 선택 가능, 7배 비용)
-STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_PROSPECTING :투자 (무작위 위치에 건설)
+STR_CONFIG_SETTING_RAW_INDUSTRY_CONSTRUCTION_METHOD_PROSPECTING :投資(無作爲位置에建設)
 
 STR_CONFIG_SETTING_INDUSTRY_PLATFORM                            :산업시설 주위의 평지: {STRING}
 STR_CONFIG_SETTING_INDUSTRY_PLATFORM_HELPTEXT                   :산업시설 주변에 도로나 선로를 설치할 수 있는 평지 넓이를 설정합니다. 이 설정을 통해 산업시설 주변에 선로나 역 등을 건설할 공간을 마련할 수 있습니다.
@@ -1342,7 +1342,7 @@ STR_CONFIG_SETTING_STOP_LOCATION_FAR_END                        :먼쪽
 STR_CONFIG_SETTING_AUTOSCROLL                                   :가장자리에 마우스를 가져가면 화면 움직이기: {STRING}
 STR_CONFIG_SETTING_AUTOSCROLL_HELPTEXT                          :이 설정을 켜면, 마우스를 게임 및 외부 화면 창의 가장자리에 가까이 가져가면 화면을 이동시킵니다.
 ###length 4
-STR_CONFIG_SETTING_AUTOSCROLL_DISABLED                          :사용 안 함
+STR_CONFIG_SETTING_AUTOSCROLL_DISABLED                          :使用안함
 STR_CONFIG_SETTING_AUTOSCROLL_MAIN_VIEWPORT_FULLSCREEN          :전체 화면에서 주 게임 화면만
 STR_CONFIG_SETTING_AUTOSCROLL_MAIN_VIEWPORT                     :주 게임 화면만
 STR_CONFIG_SETTING_AUTOSCROLL_EVERY_VIEWPORT                    :모든 화면에서
@@ -1374,7 +1374,7 @@ STR_CONFIG_SETTING_PLANE_CRASHES_HELPTEXT                       :항공기 충�
 ###length 3
 STR_CONFIG_SETTING_PLANE_CRASHES_NONE                           :없음*
 STR_CONFIG_SETTING_PLANE_CRASHES_REDUCED                        :적음
-STR_CONFIG_SETTING_PLANE_CRASHES_NORMAL                         :보통
+STR_CONFIG_SETTING_PLANE_CRASHES_NORMAL                         :普通
 
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD                            :도시 소유의 도로 위에 버스 정류장 건설 허용: {STRING}
 STR_CONFIG_SETTING_STOP_ON_TOWN_ROAD_HELPTEXT                   :도시 소유의 도로 위에 버스 정류장 건설을 허용합니다.
@@ -1397,7 +1397,7 @@ STR_CONFIG_SETTING_WARN_LOST_VEHICLE_HELPTEXT                   :다음 목적�
 STR_CONFIG_SETTING_ORDER_REVIEW                                 :차량의 경로를 검사: {STRING}
 STR_CONFIG_SETTING_ORDER_REVIEW_HELPTEXT                        :이 설정을 켜면, 차량의 경로를 주기적으로 검사하여 문제가 발견되면 뉴스 메시지로 알려줍니다.
 ###length 3
-STR_CONFIG_SETTING_ORDER_REVIEW_OFF                             :검사하지 않음
+STR_CONFIG_SETTING_ORDER_REVIEW_OFF                             :檢査하지않음
 STR_CONFIG_SETTING_ORDER_REVIEW_EXDEPOT                         :정지한 차량을 제외하고 검사
 STR_CONFIG_SETTING_ORDER_REVIEW_ON                              :모든 차량을 검사
 
@@ -1447,7 +1447,7 @@ STR_CONFIG_SETTING_LAND_GENERATOR                               :지형 만들�
 STR_CONFIG_SETTING_LAND_GENERATOR_HELPTEXT                      :오리지널 모드는 기본 그래픽 세트에 따라 다른 지형을 생성하며, 단조로운 지형을 구성합니다. 천지창조는 개선된 제어 설정을 가진 생성기로 만들어진 임의 지형(펄린 노이즈)을 구성합니다.
 ###length 2
 STR_CONFIG_SETTING_LAND_GENERATOR_ORIGINAL                      :오리지널
-STR_CONFIG_SETTING_LAND_GENERATOR_TERRA_GENESIS                 :천지창조
+STR_CONFIG_SETTING_LAND_GENERATOR_TERRA_GENESIS                 :天地創造
 
 STR_CONFIG_SETTING_TERRAIN_TYPE                                 :지형 종류: {STRING}
 STR_CONFIG_SETTING_TERRAIN_TYPE_HELPTEXT                        :(천지창조 전용) 지형의 언덕 모양을 결정합니다.
@@ -1500,7 +1500,7 @@ STR_CONFIG_SETTING_ROAD_SIDE_RIGHT                              :우측통행
 STR_CONFIG_SETTING_HEIGHTMAP_ROTATION                           :높이맵 회전: {STRING}
 ###length 2
 STR_CONFIG_SETTING_HEIGHTMAP_ROTATION_COUNTER_CLOCKWISE         :반시계방향
-STR_CONFIG_SETTING_HEIGHTMAP_ROTATION_CLOCKWISE                 :시계방향
+STR_CONFIG_SETTING_HEIGHTMAP_ROTATION_CLOCKWISE                 :時計方向
 
 STR_CONFIG_SETTING_SE_FLAT_WORLD_HEIGHT                         :평지 시나리오의 평지 높이: {STRING}
 ###length 2
@@ -1529,7 +1529,7 @@ STR_CONFIG_SETTING_LINKGRAPH_COLOURS_HELPTEXT                   :화물 흐름 �
 STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREEN_TO_RED               :녹색 & 적색 (기본값)
 STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREEN_TO_BLUE              :녹색 & 청색
 STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREY_TO_RED                :회색 & 적색
-STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREYSCALE                  :흑백
+STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREYSCALE                  :黑白
 
 STR_CONFIG_SETTING_SCROLLMODE                                   :외부 화면 스크롤 행동: {STRING}
 STR_CONFIG_SETTING_SCROLLMODE_HELPTEXT                          :지도를 스크롤 할 때의 행동을 선택합니다.
@@ -1568,7 +1568,7 @@ STR_CONFIG_SETTING_SCROLLWHEEL_OFF                              :끄기
 STR_CONFIG_SETTING_OSK_ACTIVATION                               :화상 키보드: {STRING}
 STR_CONFIG_SETTING_OSK_ACTIVATION_HELPTEXT                      :마우스와 같은 장치만을 이용하여 입력 칸에 글자를 입력하기 위해 화상 키보드를 어떤 방식으로 띄울지 선택합니다. 이 설정은 실제 키보드가 없는 소형 기기를 사용하는 분을 위한 기능입니다.
 ###length 4
-STR_CONFIG_SETTING_OSK_ACTIVATION_DISABLED                      :사용 안 함
+STR_CONFIG_SETTING_OSK_ACTIVATION_DISABLED                      :使用안함
 STR_CONFIG_SETTING_OSK_ACTIVATION_DOUBLE_CLICK                  :더블 클릭
 STR_CONFIG_SETTING_OSK_ACTIVATION_SINGLE_CLICK_FOCUS            :한 번 클릭 (커서가 활성화되어 있을 때)
 STR_CONFIG_SETTING_OSK_ACTIVATION_SINGLE_CLICK                  :한 번 클릭 (즉시)
@@ -1583,8 +1583,8 @@ STR_CONFIG_SETTING_USE_RELAY_SERVICE_ALLOW                      :사용
 STR_CONFIG_SETTING_RIGHT_MOUSE_BTN_EMU                          :오른쪽 클릭 매크로: {STRING}
 STR_CONFIG_SETTING_RIGHT_MOUSE_BTN_EMU_HELPTEXT                 :오른쪽 마우스 버튼 클릭을 대신할 방법을 선택합니다.
 ###length 3
-STR_CONFIG_SETTING_RIGHT_MOUSE_BTN_EMU_COMMAND                  :커맨드 + 클릭
-STR_CONFIG_SETTING_RIGHT_MOUSE_BTN_EMU_CONTROL                  :CTRL + 클릭
+STR_CONFIG_SETTING_RIGHT_MOUSE_BTN_EMU_COMMAND                  :커맨드+클릭
+STR_CONFIG_SETTING_RIGHT_MOUSE_BTN_EMU_CONTROL                  :컨트롤+클릭
 STR_CONFIG_SETTING_RIGHT_MOUSE_BTN_EMU_OFF                      :끄기
 
 STR_CONFIG_SETTING_RIGHT_MOUSE_WND_CLOSE                        :오른쪽 클릭으로 창 닫기: {STRING}
@@ -1700,7 +1700,7 @@ STR_CONFIG_SETTING_AI_PROFILE                                   :기본 설정 �
 STR_CONFIG_SETTING_AI_PROFILE_HELPTEXT                          :무작위 인공지능이 사용할 난이도 설정이나 인공지능 또는 게임 스크립트를 추가할 때 사용할 난이도 초기값을 고르십시오
 ###length 3
 STR_CONFIG_SETTING_AI_PROFILE_EASY                              :쉬움
-STR_CONFIG_SETTING_AI_PROFILE_MEDIUM                            :중간
+STR_CONFIG_SETTING_AI_PROFILE_MEDIUM                            :中間
 STR_CONFIG_SETTING_AI_PROFILE_HARD                              :어려움
 
 STR_CONFIG_SETTING_AI_IN_MULTIPLAYER                            :멀티 플레이에서 컴퓨터 플레이어의 참여 허용: {STRING}
@@ -1725,7 +1725,7 @@ STR_CONFIG_SETTING_SERVINT_SHIPS                                :선박에 대�
 STR_CONFIG_SETTING_SERVINT_SHIPS_HELPTEXT                       :선박에 따로 점검 기간이 설정되어있지 않은 경우에 사용할 기본 점검 기간을 설정합니다.
 STR_CONFIG_SETTING_SERVINT_VALUE                                :{COMMA}{NBSP}일/%
 ###setting-zero-is-special
-STR_CONFIG_SETTING_SERVINT_DISABLED                             :사용 안 함
+STR_CONFIG_SETTING_SERVINT_DISABLED                             :使用안함
 
 STR_CONFIG_SETTING_NOSERVICE                                    :차량 고장 설정을 껐으면 점검을 하지 않음: {STRING}
 STR_CONFIG_SETTING_NOSERVICE_HELPTEXT                           :이 설정을 켜면, 차량이 고장나지 않도록 설정되어 있는 경우 차량이 자동으로 점검을 하러 가지 않습니다
@@ -1785,8 +1785,8 @@ STR_CONFIG_SETTING_NEWS_GENERAL_INFORMATION                     :일반 정보: 
 STR_CONFIG_SETTING_NEWS_GENERAL_INFORMATION_HELPTEXT            :도로 재건축 투자나 수송 독점권의 구입 등과 같은 일반적인 사건에 대한 소식을 메시지로 알려줍니다
 ###length 3
 STR_CONFIG_SETTING_NEWS_MESSAGES_OFF                            :끄기
-STR_CONFIG_SETTING_NEWS_MESSAGES_SUMMARY                        :상태 표시줄로 알림
-STR_CONFIG_SETTING_NEWS_MESSAGES_FULL                           :전체 메시지로 알림
+STR_CONFIG_SETTING_NEWS_MESSAGES_SUMMARY                        :狀態表示줄로알림
+STR_CONFIG_SETTING_NEWS_MESSAGES_FULL                           :全體메시지로알림
 
 STR_CONFIG_SETTING_COLOURED_NEWS_YEAR                           :컬러로 된 뉴스가 시작되는 해: {STRING}년
 STR_CONFIG_SETTING_COLOURED_NEWS_YEAR_HELPTEXT                  :신문이 컬러로 나오게 되는 연도를 설정합니다. 이 연도 이전까지는 신문이 흑백으로 나옵니다
@@ -1796,12 +1796,12 @@ STR_CONFIG_SETTING_ENDING_YEAR                                  :게임 종료 �
 STR_CONFIG_SETTING_ENDING_YEAR_HELPTEXT                         :점수를 기록할 게임 종료 연도를 설정합니다. 이 연도가 지나면, 회사의 점수가 고득점 순위표에 기록되어 표시됩니다. 하지만 플레이어는 계속해서 게임을 진행할 수 있습니다.{}이 값이 시작 연도보다 이전으로 설정되어 있다면, 고득점 순위표는 나타나지 않습니다.
 STR_CONFIG_SETTING_ENDING_YEAR_VALUE                            :{NUM}
 ###setting-zero-is-special
-STR_CONFIG_SETTING_ENDING_YEAR_ZERO                             :안 함
+STR_CONFIG_SETTING_ENDING_YEAR_ZERO                             :안함
 
 STR_CONFIG_SETTING_ECONOMY_TYPE                                 :경제 변화: {STRING}
 STR_CONFIG_SETTING_ECONOMY_TYPE_HELPTEXT                        :부드러운 경제에서는 생산량이 소량으로 자주 변하게 됩니다. 멈춘 경제에서는 생산량이 변하지 않고 산업시설의 폐쇄를 막습니다. 이 설정은 NewGRF로 추가한 산업시설에는 적용되지 않을 수 있습니다.
 ###length 3
-STR_CONFIG_SETTING_ECONOMY_TYPE_ORIGINAL                        :기본
+STR_CONFIG_SETTING_ECONOMY_TYPE_ORIGINAL                        :基本
 STR_CONFIG_SETTING_ECONOMY_TYPE_SMOOTH                          :부드러움
 STR_CONFIG_SETTING_ECONOMY_TYPE_FROZEN                          :멈춤
 
@@ -1941,9 +1941,9 @@ STR_CONFIG_SETTING_DISTRIBUTION_ARMOURED_HELPTEXT               :귀금속 화�
 STR_CONFIG_SETTING_DISTRIBUTION_DEFAULT                         :다른 화물에 대한 분배 형식: {STRING}
 STR_CONFIG_SETTING_DISTRIBUTION_DEFAULT_HELPTEXT                :"비대칭"은 화물이 아무 방향이나 임의의 양만큼 가게 됨을 뜻합니다. "수동"은 자동적인 화물 분배가 일어나지 않고 기존 방식을 사용하겠음을 뜻합니다. 특별한 이유가 없는 한, "비대칭"이나 "수동"으로 설정하십시오.
 ###length 3
-STR_CONFIG_SETTING_DISTRIBUTION_MANUAL                          :수동
-STR_CONFIG_SETTING_DISTRIBUTION_ASYMMETRIC                      :비대칭
-STR_CONFIG_SETTING_DISTRIBUTION_SYMMETRIC                       :대칭
+STR_CONFIG_SETTING_DISTRIBUTION_MANUAL                          :受動
+STR_CONFIG_SETTING_DISTRIBUTION_ASYMMETRIC                      :非對稱
+STR_CONFIG_SETTING_DISTRIBUTION_SYMMETRIC                       :對稱
 
 STR_CONFIG_SETTING_LINKGRAPH_ACCURACY                           :분배 정확도: {STRING}
 STR_CONFIG_SETTING_LINKGRAPH_ACCURACY_HELPTEXT                  :값이 높으면 높을수록 CPU가 연결 상태를 계산하는 시간이 더 오래 걸립니다. 만약 이 시간이 너무 오래 걸리면 게임이 버벅일 것입니다. 하지만, 낮은 값으로 설정하면 분배가 부정확하게 일어나서, 화물이 원하는 곳으로 분배되지 않을 수 있습니다.
@@ -2001,28 +2001,28 @@ STR_CONFIG_SETTING_LOCALISATION_UNITS_HEIGHT_IMPERIAL           :야드파운드
 STR_CONFIG_SETTING_LOCALISATION_UNITS_HEIGHT_METRIC             :미터법 (m)
 STR_CONFIG_SETTING_LOCALISATION_UNITS_HEIGHT_SI                 :국제표준규격 (m)
 
-STR_CONFIG_SETTING_LOCALISATION                                 :{ORANGE}단위 설정
+STR_CONFIG_SETTING_LOCALISATION                                 :{ORANGE}單位設定
 STR_CONFIG_SETTING_GRAPHICS                                     :{ORANGE}그래픽
 STR_CONFIG_SETTING_SOUND                                        :{ORANGE}효과음
 STR_CONFIG_SETTING_INTERFACE                                    :{ORANGE}인터페이스
-STR_CONFIG_SETTING_INTERFACE_GENERAL                            :{ORANGE}일반
-STR_CONFIG_SETTING_INTERFACE_VIEWPORTS                          :{ORANGE}게임 화면
-STR_CONFIG_SETTING_INTERFACE_CONSTRUCTION                       :{ORANGE}건설
+STR_CONFIG_SETTING_INTERFACE_GENERAL                            :{ORANGE}一般
+STR_CONFIG_SETTING_INTERFACE_VIEWPORTS                          :{ORANGE}게임畵面
+STR_CONFIG_SETTING_INTERFACE_CONSTRUCTION                       :{ORANGE}建設
 STR_CONFIG_SETTING_ADVISORS                                     :{ORANGE}뉴스 / 정보
-STR_CONFIG_SETTING_COMPANY                                      :{ORANGE}회사
-STR_CONFIG_SETTING_ACCOUNTING                                   :{ORANGE}회계
+STR_CONFIG_SETTING_COMPANY                                      :{ORANGE}會社
+STR_CONFIG_SETTING_ACCOUNTING                                   :{ORANGE}會計
 STR_CONFIG_SETTING_VEHICLES                                     :{ORANGE}차량
 STR_CONFIG_SETTING_VEHICLES_PHYSICS                             :{ORANGE}물리
 STR_CONFIG_SETTING_VEHICLES_ROUTING                             :{ORANGE}경로
-STR_CONFIG_SETTING_LIMITATIONS                                  :{ORANGE}제한
+STR_CONFIG_SETTING_LIMITATIONS                                  :{ORANGE}制限
 STR_CONFIG_SETTING_ACCIDENTS                                    :{ORANGE}재앙 / 사고
 STR_CONFIG_SETTING_GENWORLD                                     :{ORANGE}세계 제작
-STR_CONFIG_SETTING_ENVIRONMENT                                  :{ORANGE}환경
-STR_CONFIG_SETTING_ENVIRONMENT_AUTHORITIES                      :{ORANGE}지역 당국
-STR_CONFIG_SETTING_ENVIRONMENT_TOWNS                            :{ORANGE}도시
-STR_CONFIG_SETTING_ENVIRONMENT_INDUSTRIES                       :{ORANGE}산업시설
+STR_CONFIG_SETTING_ENVIRONMENT                                  :{ORANGE}環境
+STR_CONFIG_SETTING_ENVIRONMENT_AUTHORITIES                      :{ORANGE}地域當局
+STR_CONFIG_SETTING_ENVIRONMENT_TOWNS                            :{ORANGE}都市
+STR_CONFIG_SETTING_ENVIRONMENT_INDUSTRIES                       :{ORANGE}産業施設
 STR_CONFIG_SETTING_ENVIRONMENT_CARGODIST                        :{ORANGE}화물 분배
-STR_CONFIG_SETTING_AI                                           :{ORANGE}경쟁자
+STR_CONFIG_SETTING_AI                                           :{ORANGE}競爭者
 STR_CONFIG_SETTING_AI_NPC                                       :{ORANGE}컴퓨터 플레이어
 STR_CONFIG_SETTING_NETWORK                                      :{ORANGE}네트워크
 
@@ -2051,7 +2051,7 @@ STR_CONFIG_ERROR_INVALID_GRF_NOT_FOUND                          :찾을 수 없�
 STR_CONFIG_ERROR_INVALID_GRF_UNSAFE                             :사용하기에 불안함
 STR_CONFIG_ERROR_INVALID_GRF_SYSTEM                             :NewGRF 시스템
 STR_CONFIG_ERROR_INVALID_GRF_INCOMPATIBLE                       :현재 OpenTTD 버전과 맞지 않음
-STR_CONFIG_ERROR_INVALID_GRF_UNKNOWN                            :알 수 없음
+STR_CONFIG_ERROR_INVALID_GRF_UNKNOWN                            :알수없음
 STR_CONFIG_ERROR_INVALID_SAVEGAME_COMPRESSION_LEVEL             :{WHITE}... 압축 레벨 '{STRING}' : 유효하지 않습니다
 STR_CONFIG_ERROR_INVALID_SAVEGAME_COMPRESSION_ALGORITHM         :{WHITE}... '{STRING}' 형식으로 게임을 저장할 수 없습니다. '{STRING}' 형식으로 변환합니다
 STR_CONFIG_ERROR_INVALID_BASE_GRAPHICS_NOT_FOUND                :{WHITE}... 기본 그래픽 세트({STRING})가 무시되었습니다: 파일을 찾을 수 없습니다
@@ -2403,9 +2403,9 @@ STR_COMPANY_PASSWORD_MAKE_DEFAULT                               :{BLACK}회사 �
 STR_COMPANY_PASSWORD_MAKE_DEFAULT_TOOLTIP                       :{BLACK}이 비밀번호를 새 회사의 비밀번호 기본값으로 사용합니다
 
 # Network company info join/password
-STR_COMPANY_VIEW_JOIN                                           :{BLACK}참여
+STR_COMPANY_VIEW_JOIN                                           :{BLACK}參與
 STR_COMPANY_VIEW_JOIN_TOOLTIP                                   :{BLACK}이 회사에 참여해서 플레이합니다
-STR_COMPANY_VIEW_PASSWORD                                       :{BLACK}비밀번호
+STR_COMPANY_VIEW_PASSWORD                                       :{BLACK}秘密番號
 STR_COMPANY_VIEW_PASSWORD_TOOLTIP                               :{BLACK}다른 참가자가 이 회사에 참여하여 플레이하지 못 하도록 암호로 보호합니다
 STR_COMPANY_VIEW_SET_PASSWORD                                   :{BLACK}회사 비밀번호 설정
 
@@ -2661,8 +2661,8 @@ STR_RAIL_NAME_MONORAIL                                          :모노레일
 STR_RAIL_NAME_MAGLEV                                            :자기부상열차
 
 # Rail depot construction window
-STR_BUILD_DEPOT_TRAIN_ORIENTATION_CAPTION                       :{WHITE}차량기지 방향 선택
-STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP                       :{BLACK}차량기지의 방향을 선택하세요
+STR_BUILD_DEPOT_TRAIN_ORIENTATION_CAPTION                       :{WHITE}車輛基地方向選擇
+STR_BUILD_DEPOT_TRAIN_ORIENTATION_TOOLTIP                       :{BLACK}車輛基地의方向을選擇하세요
 
 # Rail waypoint construction window
 STR_WAYPOINT_CAPTION                                            :{WHITE}경유지
@@ -2686,7 +2686,7 @@ STR_STATION_CLASS_DFLT                                          :기본 역사
 STR_STATION_CLASS_WAYP                                          :경유지
 
 # Signal window
-STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}신호기 선택
+STR_BUILD_SIGNAL_CAPTION                                        :{WHITE}信號旗選擇
 STR_BUILD_SIGNAL_TOGGLE_ADVANCED_SIGNAL_TOOLTIP                 :{BLACK}고급 신호기 종류를 보이거나 감춥니다
 STR_BUILD_SIGNAL_SEMAPHORE_NORM_TOOLTIP                         :{BLACK}폐색 신호기 (구식){}가장 기본적인 신호기 형식입니다. 단 한 대의 열차만이 이 폐색 구간을 통과할 수 있습니다
 STR_BUILD_SIGNAL_SEMAPHORE_ENTRY_TOOLTIP                        :{BLACK}입구 신호기 (구식){}다음 폐색 구간에 있는 출구 신호기가 하나라도 파란불이면 파란불이 되며, 그렇지 않은 경우에는 빨간불이 됩니다
@@ -2694,16 +2694,16 @@ STR_BUILD_SIGNAL_SEMAPHORE_EXIT_TOOLTIP                         :{BLACK}출구 �
 STR_BUILD_SIGNAL_SEMAPHORE_COMBO_TOOLTIP                        :{BLACK}복합 신호기 (구식){}복합 신호기는 입구 신호기와 출구 신호기의 역할을 동시에 합니다. 이 신호기는 사전 신호기의 거대한 "나뭇가지 구조"를 건설할 수 있도록 도와줍니다
 STR_BUILD_SIGNAL_SEMAPHORE_PBS_TOOLTIP                          :{BLACK}경로 신호기 (구식){}경로가 겹치지 않는 경우에 한 대 이상의 열차가 한 폐색 구간에 동시에 들어갈 수 있게 해주는 경로 신호기입니다. 경로 신호기는 반대편에서 통과가 가능합니다
 STR_BUILD_SIGNAL_SEMAPHORE_PBS_OWAY_TOOLTIP                     :{BLACK}단방향 경로 신호기 (구식){}경로가 겹치지 않는 경우에 한 대 이상의 열차가 한 폐색 구간에 동시에 들어갈 수 있게 해주는 경로 신호기입니다. 단방향 경로 신호기는 반대편에서 통과가 불가능합니다
-STR_BUILD_SIGNAL_ELECTRIC_NORM_TOOLTIP                          :{BLACK}폐색 신호기 (전자식){}가장 기본적인 신호기 형식입니다. 단 한 대의 열차만이 이 폐색 구간을 통과할 수 있습니다
-STR_BUILD_SIGNAL_ELECTRIC_ENTRY_TOOLTIP                         :{BLACK}입구 신호기 (전자식){}다음 폐색 구간에 있는 출구 신호기가 하나라도 파란불이면 파란불이 되며, 그렇지 않은 경우에는 빨간불이 됩니다
-STR_BUILD_SIGNAL_ELECTRIC_EXIT_TOOLTIP                          :{BLACK}출구 신호기 (전자식){}일반 신호기와 기능이 똑같지만, 입구 & 복합 신호기와 올바르게 연계되어야 합니다
-STR_BUILD_SIGNAL_ELECTRIC_COMBO_TOOLTIP                         :{BLACK}복합 신호기 (전자식){}복합 신호기는 입구 신호기와 출구 신호기의 역할을 동시에 합니다. 이 신호기는 사전 신호기의 거대한 "나뭇가지식 구조"를 건설할 수 있도록 도와줍니다
-STR_BUILD_SIGNAL_ELECTRIC_PBS_TOOLTIP                           :{BLACK}경로 신호기 (전자식){}경로가 겹치지 않는 경우에 한 대 이상의 열차가 한 폐색 구간에 동시에 들어갈 수 있게 해주는 경로 신호기입니다. 경로 신호기는 반대편에서 통과가 가능합니다
-STR_BUILD_SIGNAL_ELECTRIC_PBS_OWAY_TOOLTIP                      :{BLACK}단방향 경로 신호기 (전자식){}경로가 겹치지 않는 경우에 한 대 이상의 열차가 한 폐색 구간에 동시에 들어갈 수 있게 해주는 경로 신호기입니다. 단방향 경로 신호기는 반대편에서 통과가 불가능합니다
-STR_BUILD_SIGNAL_CONVERT_TOOLTIP                                :{BLACK}신호기 변환{}이 버튼을 선택한 뒤 이미 설치된 신호기를 클릭하면, 신호기의 종류(일반/입구/출구/복합/경로)와 형식(구식↔전자식)을 변경하고, CTRL+클릭하면 신호기의 형식을 변경합니다. SHIFT+클릭을 사용하면 예상 비용을 볼 수 있습니다
-STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP                   :{BLACK}드래그로 설치할 때 신호기 사이의 간격입니다
-STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_DECREASE_TOOLTIP          :{BLACK}드래그로 설치할 신호기 간격을 줄입니다
-STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_INCREASE_TOOLTIP          :{BLACK}드래그로 설치할 신호기 간격을 늘입니다
+STR_BUILD_SIGNAL_ELECTRIC_NORM_TOOLTIP                          :{BLACK}閉塞信號旗(電子式){}가장基本的인信號旗型式입니다。단한臺의列車만이이閉塞區間을通過할수있습니다
+STR_BUILD_SIGNAL_ELECTRIC_ENTRY_TOOLTIP                         :{BLACK}入口信號旗(電子式){}다음閉塞區間에있는出口信號旗가하나라도파란불이면파란불이되며、그렇지않은境遇에는빨간불이됩니다
+STR_BUILD_SIGNAL_ELECTRIC_EXIT_TOOLTIP                          :{BLACK}出口信號旗(電子式){}一般信號旗와機能이똑같지만、入口&複合信號旗와올바르게連繫되어야합니다
+STR_BUILD_SIGNAL_ELECTRIC_COMBO_TOOLTIP                         :{BLACK}複合信號旗(電子式){}複合信號旗는入口信號旗와出口信號旗의役割을同時에합니다。이信號旗는事前信號旗의巨大한"나뭇가지式構造"를建設할수있도록도와줍니다
+STR_BUILD_SIGNAL_ELECTRIC_PBS_TOOLTIP                           :{BLACK}經路信號旗(電子式){}經路가겹치지않는境遇에한臺以上의列車가한閉塞區間에同時에들어갈수있게해주는經路信號旗입니다。經路信號旗는反對便에서通過가可能합니다
+STR_BUILD_SIGNAL_ELECTRIC_PBS_OWAY_TOOLTIP                      :{BLACK}單方向經路信號旗(電子式){}經路가겹치지않는境遇에한臺以上의列車가한閉塞區間에同時에들어갈수있게해주는經路信號旗입니다。單方向經路信號旗는反對便에서通過가不可能합니다
+STR_BUILD_SIGNAL_CONVERT_TOOLTIP                                :{BLACK}信號旗變換{}이버튼을選擇한뒤이미設置된信號旗를클릭하면、信號旗의種類(一般/入口/出口/複合/經路)와型式(舊式↔電子式)을變更하고、CTRL+클릭하면信號旗의型式을變更합니다。SHIFT+클릭을使用하면豫想費用을볼수있습니다
+STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_TOOLTIP                   :{BLACK}드래그로設置할때信號旗사이의間隔입니다
+STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_DECREASE_TOOLTIP          :{BLACK}드래그로設置할信號旗間隔을줄입니다
+STR_BUILD_SIGNAL_DRAG_SIGNALS_DENSITY_INCREASE_TOOLTIP          :{BLACK}드래그로設置할信號旗間隔을늘입니다
 
 # Bridge selection window
 STR_SELECT_RAIL_BRIDGE_CAPTION                                  :{WHITE}철교 선택
@@ -2713,14 +2713,14 @@ STR_SELECT_BRIDGE_INFO_NAME                                     :{GOLD}{STRING}
 STR_SELECT_BRIDGE_INFO_NAME_MAX_SPEED                           :{GOLD}{STRING},{} {VELOCITY}
 STR_SELECT_BRIDGE_INFO_NAME_COST                                :{GOLD}{0:STRING},{} {WHITE}{2:CURRENCY_LONG}
 STR_SELECT_BRIDGE_INFO_NAME_MAX_SPEED_COST                      :{GOLD}{STRING},{} {VELOCITY} {WHITE}{CURRENCY_LONG}
-STR_BRIDGE_NAME_SUSPENSION_STEEL                                :강철 현수교
-STR_BRIDGE_NAME_GIRDER_STEEL                                    :강철 거더교
-STR_BRIDGE_NAME_CANTILEVER_STEEL                                :강철 캔틸레버교
-STR_BRIDGE_NAME_SUSPENSION_CONCRETE                             :콘크리트 현수교
-STR_BRIDGE_NAME_WOODEN                                          :나무 다리
-STR_BRIDGE_NAME_CONCRETE                                        :콘크리트교
-STR_BRIDGE_NAME_TUBULAR_STEEL                                   :강철 원통형 다리
-STR_BRIDGE_TUBULAR_SILICON                                      :실리콘 원통형 다리
+STR_BRIDGE_NAME_SUSPENSION_STEEL                                :鋼鐵懸垂橋
+STR_BRIDGE_NAME_GIRDER_STEEL                                    :鋼鐵거더橋
+STR_BRIDGE_NAME_CANTILEVER_STEEL                                :鋼鐵캔틸레버橋
+STR_BRIDGE_NAME_SUSPENSION_CONCRETE                             :콘크리트懸垂橋
+STR_BRIDGE_NAME_WOODEN                                          :나무다리
+STR_BRIDGE_NAME_CONCRETE                                        :콘크리트橋
+STR_BRIDGE_NAME_TUBULAR_STEEL                                   :鋼鐵圓筒形다리
+STR_BRIDGE_TUBULAR_SILICON                                      :실리콘圓筒形다리
 
 
 # Road construction toolbar
@@ -2750,10 +2750,10 @@ STR_ROAD_NAME_ROAD                                              :도로
 STR_ROAD_NAME_TRAM                                              :전찻길
 
 # Road depot construction window
-STR_BUILD_DEPOT_ROAD_ORIENTATION_CAPTION                        :{WHITE}차고지 방향 선택
-STR_BUILD_DEPOT_ROAD_ORIENTATION_SELECT_TOOLTIP                 :{BLACK}차고지의 방향을 선택합니다
-STR_BUILD_DEPOT_TRAM_ORIENTATION_CAPTION                        :{WHITE}전차 차량기지 방향 선택
-STR_BUILD_DEPOT_TRAM_ORIENTATION_SELECT_TOOLTIP                 :{BLACK}차량기지의 방향을 선택합니다
+STR_BUILD_DEPOT_ROAD_ORIENTATION_CAPTION                        :{WHITE}車庫地方向選擇
+STR_BUILD_DEPOT_ROAD_ORIENTATION_SELECT_TOOLTIP                 :{BLACK}車庫地의方向을選擇합니다
+STR_BUILD_DEPOT_TRAM_ORIENTATION_CAPTION                        :{WHITE}電車車輛基地方向選擇
+STR_BUILD_DEPOT_TRAM_ORIENTATION_SELECT_TOOLTIP                 :{BLACK}車輛基地의方向을選擇합니다
 
 # Road vehicle station construction window
 STR_STATION_BUILD_BUS_ORIENTATION                               :{WHITE}버스 정류장 방향 선택
@@ -3409,7 +3409,7 @@ STR_NEWGRF_BROKEN                                               :{WHITE}'{0:STRI
 STR_NEWGRF_BROKEN_POWERED_WAGON                                 :{WHITE}車庫地안에있지않은'{1:ENGINE}'動力車輛의狀態가바뀌었습니다
 STR_NEWGRF_BROKEN_VEHICLE_LENGTH                                :{WHITE}'{1:ENGINE}'{G 1 "이" "가"}車庫地안에있지않으면車輛길이가바뀝니다
 STR_NEWGRF_BROKEN_CAPACITY                                      :{WHITE}車輛이基地안에있지않거나改造가不可能한狀態에서'{1:ENGINE}'의輸送量이變更되었습니다
-STR_BROKEN_VEHICLE_LENGTH                                       :{WHITE}'{1:COMPANY}'에 속한 열차 '{0:VEHICLE}'의 길이가 잘못된 값을 가지고 있습니다. NewGRF에 의한 문제로 보입니다. 게임이 비동기화 또는 충돌을 일으킬 수 있습니다
+STR_BROKEN_VEHICLE_LENGTH                                       :{WHITE}'{1:COMPANY}'에屬한列車'{0:VEHICLE}'의길이가잘못된값을가지고있습니다。NewGRF에依한問題로보입니다。게임이非同期化또는衝突을일으킬수있습니다
 
 STR_NEWGRF_BUGGY                                                :{WHITE}NewGRF'{STRING}'에서잘못된情報를提供하고있습니다
 STR_NEWGRF_BUGGY_ARTICULATED_CARGO                              :{WHITE}{1:ENGINE}(을)를만들기以前과以後의貨物/改造情報가現在의購買目錄과다릅니다。이境遇自動交替時列車改造에失敗할수도있습니다
@@ -3627,14 +3627,14 @@ STR_STATION_VIEW_GROUP_D_S_V                                    :도착-출발-�
 STR_STATION_VIEW_GROUP_D_V_S                                    :도착-경유-출발
 
 ###length 8
-STR_CARGO_RATING_APPALLING                                      :형편없음
+STR_CARGO_RATING_APPALLING                                      :形便없음
 STR_CARGO_RATING_VERY_POOR                                      :매우 나쁨
 STR_CARGO_RATING_POOR                                           :나쁨
-STR_CARGO_RATING_MEDIOCRE                                       :보통
+STR_CARGO_RATING_MEDIOCRE                                       :普通
 STR_CARGO_RATING_GOOD                                           :좋음
 STR_CARGO_RATING_VERY_GOOD                                      :매우 좋음
 STR_CARGO_RATING_EXCELLENT                                      :훌륭함
-STR_CARGO_RATING_OUTSTANDING                                    :매우 훌륭함
+STR_CARGO_RATING_OUTSTANDING                                    :매우훌륭함
 
 STR_STATION_VIEW_CENTER_TOOLTIP                                 :{BLACK}이 역의 위치로 시점을 변경합니다. CTRL+클릭하면 이 역 위치를 기준으로 새로운 외부 화면을 엽니다
 STR_STATION_VIEW_RENAME_TOOLTIP                                 :{BLACK}이 역의 이름을 변경합니다
@@ -3707,7 +3707,7 @@ STR_COMPANY_VIEW_PRESIDENT_MANAGER_TITLE                        :{WHITE}{PRESIDE
 
 STR_COMPANY_VIEW_INAUGURATED_TITLE                              :{GOLD}설립: {WHITE}{NUM}
 STR_COMPANY_VIEW_COLOUR_SCHEME_TITLE                            :{GOLD}색상:
-STR_COMPANY_VIEW_VEHICLES_TITLE                                 :{GOLD}차량:
+STR_COMPANY_VIEW_VEHICLES_TITLE                                 :{GOLD}車輛：
 STR_COMPANY_VIEW_TRAINS                                         :{WHITE}열차 {COMMA}대
 STR_COMPANY_VIEW_ROAD_VEHICLES                                  :{WHITE}자동차/전차 {COMMA}대
 STR_COMPANY_VIEW_AIRCRAFT                                       :{WHITE}항공기 {COMMA}대
@@ -3715,7 +3715,7 @@ STR_COMPANY_VIEW_SHIPS                                          :{WHITE}선박 {
 STR_COMPANY_VIEW_VEHICLES_NONE                                  :{WHITE}없음
 STR_COMPANY_VIEW_COMPANY_VALUE                                  :{GOLD}회사가치: {WHITE}{CURRENCY_LONG}
 STR_COMPANY_VIEW_SHARES_OWNED_BY                                :{WHITE}({COMMA}% {COMPANY}의 소유)
-STR_COMPANY_VIEW_INFRASTRUCTURE                                 :{GOLD}기반시설:
+STR_COMPANY_VIEW_INFRASTRUCTURE                                 :{GOLD}基盤施設：
 STR_COMPANY_VIEW_INFRASTRUCTURE_RAIL                            :{WHITE}선로 {COMMA}칸
 STR_COMPANY_VIEW_INFRASTRUCTURE_ROAD                            :{WHITE}도로 {COMMA}칸
 STR_COMPANY_VIEW_INFRASTRUCTURE_WATER                           :{WHITE}항만시설 {COMMA}칸
@@ -3729,7 +3729,7 @@ STR_COMPANY_VIEW_VIEW_HQ_BUTTON                                 :{BLACK}본사 �
 STR_COMPANY_VIEW_VIEW_HQ_TOOLTIP                                :{BLACK}회사 본사 위치로 이동합니다
 STR_COMPANY_VIEW_RELOCATE_HQ                                    :{BLACK}본사 위치 변경
 STR_COMPANY_VIEW_RELOCATE_COMPANY_HEADQUARTERS                  :{BLACK}회사가치의 1% 가격을 들여 본사를 다른 위치로 옮깁니다. SHIFT+클릭을 사용하면 예상 비용을 볼 수 있습니다
-STR_COMPANY_VIEW_INFRASTRUCTURE_BUTTON                          :{BLACK}상세정보
+STR_COMPANY_VIEW_INFRASTRUCTURE_BUTTON                          :{BLACK}詳細情報
 STR_COMPANY_VIEW_INFRASTRUCTURE_TOOLTIP                         :{BLACK}기반시설 상세정보 창을 엽니다
 STR_COMPANY_VIEW_GIVE_MONEY_BUTTON                              :{BLACK}돈 보내기
 STR_COMPANY_VIEW_GIVE_MONEY_TOOLTIP                             :{BLACK}이 회사에 돈을 보냅니다
@@ -3757,15 +3757,15 @@ STR_BUY_COMPANY_MESSAGE                                         :{WHITE}저희�
 # Company infrastructure window
 STR_COMPANY_INFRASTRUCTURE_VIEW_CAPTION                         :{WHITE}{COMPANY}의 기반시설
 STR_COMPANY_INFRASTRUCTURE_VIEW_RAIL_SECT                       :{GOLD}철도 기반시설:
-STR_COMPANY_INFRASTRUCTURE_VIEW_SIGNALS                         :{WHITE}신호기
+STR_COMPANY_INFRASTRUCTURE_VIEW_SIGNALS                         :{WHITE}信號旗
 STR_COMPANY_INFRASTRUCTURE_VIEW_ROAD_SECT                       :{GOLD}도로 기반시설:
 STR_COMPANY_INFRASTRUCTURE_VIEW_TRAM_SECT                       :{GOLD}전찻길:
 STR_COMPANY_INFRASTRUCTURE_VIEW_WATER_SECT                      :{GOLD}해운 기반시설:
-STR_COMPANY_INFRASTRUCTURE_VIEW_CANALS                          :{WHITE}운하
-STR_COMPANY_INFRASTRUCTURE_VIEW_STATION_SECT                    :{GOLD}정거장 시설:
+STR_COMPANY_INFRASTRUCTURE_VIEW_CANALS                          :{WHITE}運河
+STR_COMPANY_INFRASTRUCTURE_VIEW_STATION_SECT                    :{GOLD}停車場施設：
 STR_COMPANY_INFRASTRUCTURE_VIEW_STATIONS                        :{WHITE}정류장, 역
-STR_COMPANY_INFRASTRUCTURE_VIEW_AIRPORTS                        :{WHITE}공항
-STR_COMPANY_INFRASTRUCTURE_VIEW_TOTAL                           :{WHITE}{CURRENCY_LONG}/년
+STR_COMPANY_INFRASTRUCTURE_VIEW_AIRPORTS                        :{WHITE}空港
+STR_COMPANY_INFRASTRUCTURE_VIEW_TOTAL                           :{WHITE}{CURRENCY_LONG}/年
 
 # Industry directory
 STR_INDUSTRY_DIRECTORY_CAPTION                                  :{WHITE}산업시설
@@ -3920,7 +3920,7 @@ STR_PURCHASE_INFO_AIRCRAFT_TYPE                                 :{BLACK}항공�
 
 ###length 3
 STR_CARGO_TYPE_FILTER_ALL                                       :모든 화물 종류
-STR_CARGO_TYPE_FILTER_FREIGHT                                   :화물
+STR_CARGO_TYPE_FILTER_FREIGHT                                   :貨物
 STR_CARGO_TYPE_FILTER_NONE                                      :없음
 
 ###length VEHICLE_TYPES
@@ -3954,9 +3954,9 @@ STR_BUY_VEHICLE_SHIP_BUY_REFIT_VEHICLE_TOOLTIP                  :{BLACK}선택�
 STR_BUY_VEHICLE_AIRCRAFT_BUY_REFIT_VEHICLE_TOOLTIP              :{BLACK}選擇한航空機를購入하고改造합니다。시프트+클릭하면豫想費用을볼수있습니다
 
 ###length VEHICLE_TYPES
-STR_BUY_VEHICLE_TRAIN_RENAME_BUTTON                             :{BLACK}이름 지정
+STR_BUY_VEHICLE_TRAIN_RENAME_BUTTON                             :{BLACK}이름指定
 STR_BUY_VEHICLE_ROAD_VEHICLE_RENAME_BUTTON                      :{BLACK}이름指定
-STR_BUY_VEHICLE_SHIP_RENAME_BUTTON                              :{BLACK}이름 지정
+STR_BUY_VEHICLE_SHIP_RENAME_BUTTON                              :{BLACK}이름指定
 STR_BUY_VEHICLE_AIRCRAFT_RENAME_BUTTON                          :{BLACK}이름指定
 
 ###length VEHICLE_TYPES
@@ -4563,10 +4563,10 @@ STR_DATE_YEAR_TOOLTIP                                           :{BLACK}년(年)
 STR_AI_DEBUG                                                    :{WHITE}人工知能/게임스크립트디버그
 STR_AI_DEBUG_NAME_AND_VERSION                                   :{BLACK}{STRING}(v{NUM})
 STR_AI_DEBUG_NAME_TOOLTIP                                       :{BLACK}이人工知能의이름입니다
-STR_AI_DEBUG_SETTINGS                                           :{BLACK}설정
-STR_AI_DEBUG_SETTINGS_TOOLTIP                                   :{BLACK}인공지능과 관련된 설정을 변경합니다
+STR_AI_DEBUG_SETTINGS                                           :{BLACK}設定
+STR_AI_DEBUG_SETTINGS_TOOLTIP                                   :{BLACK}人工知能과關聯된設定을變更합니다
 STR_AI_DEBUG_RELOAD                                             :{BLACK}人工知能再始作
-STR_AI_DEBUG_RELOAD_TOOLTIP                                     :{BLACK}인공지능을 종료시키고 스크립트를 다시 불러온 다음, 인공지능을 재시작합니다
+STR_AI_DEBUG_RELOAD_TOOLTIP                                     :{BLACK}인공지능을종료시키고스크립트를다시불러온다음、인공지능을재시작합니다
 STR_AI_DEBUG_BREAK_STR_ON_OFF_TOOLTIP                           :{BLACK}人工知能의記錄메시지에서中斷文句가나타났을때人工知能을中斷할지與否를設定합니다
 STR_AI_DEBUG_BREAK_ON_LABEL                                     :{BLACK}中斷文句：
 STR_AI_DEBUG_BREAK_STR_OSKTITLE                                 :{BLACK}中斷文句
@@ -4575,9 +4575,9 @@ STR_AI_DEBUG_MATCH_CASE                                         :{BLACK}大小�
 STR_AI_DEBUG_MATCH_CASE_TOOLTIP                                 :{BLACK}人工知能記錄메시지에서中斷文句를檢索할때大小文字를區別할지與否를選擇합니다
 STR_AI_DEBUG_CONTINUE                                           :{BLACK}繼續
 STR_AI_DEBUG_CONTINUE_TOOLTIP                                   :{BLACK}中斷된人工知能의演算을再開합니다
-STR_AI_DEBUG_SELECT_AI_TOOLTIP                                  :{BLACK}이 인공지능에서 출력된 기록 메시지를 보여줍니다
-STR_AI_GAME_SCRIPT                                              :{BLACK}게임 스크립트
-STR_AI_GAME_SCRIPT_TOOLTIP                                      :{BLACK}게임 스크립트 기록 체크
+STR_AI_DEBUG_SELECT_AI_TOOLTIP                                  :{BLACK}人工知能을終了시키고스크립트를다시불러온다음、人工知能을再始作합니다
+STR_AI_GAME_SCRIPT                                              :{BLACK}게임스크립트
+STR_AI_GAME_SCRIPT_TOOLTIP                                      :{BLACK}게임스크립트記錄체크
 
 STR_ERROR_AI_NO_AI_FOUND                                        :사용할 수 있는 인공지능이 없습니다.{}따라서 이 경쟁사는 아무 것도 하지 못하는 회사입니다.{}'온라인 컨텐츠 다운로드'에서 새로운 인공지능을 다운로드받으세요
 STR_ERROR_AI_PLEASE_REPORT_CRASH                                :{WHITE}작동 중이던 스크립트 중 하나에서 오류가 발생하여 중단되었습니다. 인공지능/게임 스크립트 디버그 창에서 스크린샷을 찍어 스크립트 제작자에게 보고하십시오
@@ -4610,19 +4610,19 @@ STR_AI_CONFIG_CONFIGURE                                         :{BLACK}設定
 STR_AI_CONFIG_CONFIGURE_TOOLTIP                                 :{BLACK}人工知能의媒介變數를設定합니다
 
 # Available AIs window
-STR_AI_LIST_CAPTION                                             :{WHITE}사용 가능한 {STRING}
-STR_AI_LIST_CAPTION_AI                                          :인공지능
-STR_AI_LIST_CAPTION_GAMESCRIPT                                  :게임 스크립트
-STR_AI_LIST_TOOLTIP                                             :{BLACK}스크립트를 선택하려면 클릭하세요
+STR_AI_LIST_CAPTION                                             :{WHITE}使用可能한{STRING}
+STR_AI_LIST_CAPTION_AI                                          :人工知能
+STR_AI_LIST_CAPTION_GAMESCRIPT                                  :게임스크립트
+STR_AI_LIST_TOOLTIP                                             :{BLACK}스크립트를選擇하려면클릭하세요
 
-STR_AI_LIST_AUTHOR                                              :{LTBLUE}저자: {ORANGE}{STRING}
-STR_AI_LIST_VERSION                                             :{LTBLUE}버전: {ORANGE}{NUM}
-STR_AI_LIST_URL                                                 :{LTBLUE}주소: {ORANGE}{STRING}
+STR_AI_LIST_AUTHOR                                              :{LTBLUE}著者：{ORANGE}{STRING}
+STR_AI_LIST_VERSION                                             :{LTBLUE}버전：{ORANGE}{NUM}
+STR_AI_LIST_URL                                                 :{LTBLUE}住所：{ORANGE}{STRING}
 
-STR_AI_LIST_ACCEPT                                              :{BLACK}적용
-STR_AI_LIST_ACCEPT_TOOLTIP                                      :{BLACK}선택한 스크립트를 적용합니다
-STR_AI_LIST_CANCEL                                              :{BLACK}취소
-STR_AI_LIST_CANCEL_TOOLTIP                                      :{BLACK}인공지능 스크립트를 바꾸지 않습니다
+STR_AI_LIST_ACCEPT                                              :{BLACK}適用
+STR_AI_LIST_ACCEPT_TOOLTIP                                      :{BLACK}選擇한스크립트를適用합니다
+STR_AI_LIST_CANCEL                                              :{BLACK}取消
+STR_AI_LIST_CANCEL_TOOLTIP                                      :{BLACK}人工知能스크립트를바꾸지않습니다
 
 STR_SCREENSHOT_CAPTION                                          :{WHITE}스크린 샷 찍기
 STR_SCREENSHOT_SCREENSHOT                                       :{BLACK}일반 스크린 샷
@@ -4633,13 +4633,13 @@ STR_SCREENSHOT_HEIGHTMAP_SCREENSHOT                             :{BLACK}높이�
 STR_SCREENSHOT_MINIMAP_SCREENSHOT                               :{BLACK}미니맵 스크린 샷
 
 # Script Parameters
-STR_AI_SETTINGS_CAPTION                                         :{WHITE}{STRING} 매개 변수
-STR_AI_SETTINGS_CAPTION_AI                                      :인공지능
-STR_AI_SETTINGS_CAPTION_GAMESCRIPT                              :게임 스크립트
+STR_AI_SETTINGS_CAPTION                                         :{WHITE}{STRING}媒介變數
+STR_AI_SETTINGS_CAPTION_AI                                      :人工知能
+STR_AI_SETTINGS_CAPTION_GAMESCRIPT                              :게임스크립트
 STR_AI_SETTINGS_CLOSE                                           :{BLACK}닫기
-STR_AI_SETTINGS_RESET                                           :{BLACK}초기화
-STR_AI_SETTINGS_SETTING                                         :{STRING}: {ORANGE}{STRING}
-STR_AI_SETTINGS_START_DELAY                                     :이전 인공지능 이후 이 인공지능이 나타나기 위한 날짜수: {ORANGE}약 {STRING}일
+STR_AI_SETTINGS_RESET                                           :{BLACK}初期化
+STR_AI_SETTINGS_SETTING                                         :{STRING}：{ORANGE}{STRING}
+STR_AI_SETTINGS_START_DELAY                                     :以前人工知能以後이人工知能이나타나기위한날짜數：{ORANGE}약{STRING}일
 
 
 # Textfile window
