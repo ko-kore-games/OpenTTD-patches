@@ -1,11 +1,8 @@
 weblate:
+  STR_ABOUT_MENU_SHOW_PICKER_TOOL: Picker tool
   STR_ABOUT_MENU_SHOW_TOGGLE_MODIFIER_KEYS: Modifier key window
   STR_BASIC_HOUSE_SET_NAME: Basic houses
-  STR_BLACK: '{BLACK}'
-  STR_BLACK_DECIMAL: '{BLACK}{DECIMAL}'
   STR_BLACK_PLUS: '{BLACK}+'
-  STR_BLACK_STRING1: '{BLACK}{STRING1}'
-  STR_BLACK_TIME_HHMM: '{BLACK}{TIME_HHMM}'
   STR_BREAKDOWN_TYPE_BRAKES_OVERHEATED: Brakes overheated
   STR_BREAKDOWN_TYPE_CRITICAL: Mechanical failure
   STR_BREAKDOWN_TYPE_DEPOT: Heading to {STATION} Hangar for repairs
@@ -56,6 +53,11 @@ weblate:
   STR_CHEAT_STATION_RATING: '{LTBLUE}Stations ratings fixed at 100%: {ORANGE}{STRING1}'
   STR_CHEAT_TOWN_RATING: '{LTBLUE}Town local authority ratings fixed at Outstanding: {ORANGE}{STRING1}'
   STR_CLEAR_AREA_CONFIRMATION_TEXT: '{YELLOW}You are about to destroy an important structure. Are you sure?'
+  STR_COMPANY_VIEW_BUY_SHARE_BUTTON: '{BLACK}Buy 25% share in company'
+  STR_COMPANY_VIEW_BUY_SHARE_TOOLTIP: '{BLACK}Buy 25% share in this company. Shift+Click shows estimated cost without purchasing any share'
+  STR_COMPANY_VIEW_SELL_SHARE_BUTTON: '{BLACK}Sell 25% share in company'
+  STR_COMPANY_VIEW_SELL_SHARE_TOOLTIP: '{BLACK}Sell 25% share in this company. Shift+Click shows estimated income without selling any share'
+  STR_COMPANY_VIEW_SHARES_OWNED_BY: '{WHITE}({COMMA}% owned by {COMPANY})'
   STR_CONDITIONAL_FREE_PLATFORMS: Jump to order {COMMA} when Next station {STRING} {COMMA} free platform{P "" s}
   STR_CONDITIONAL_PERCENT: Jump to order {COMMA} {COMMA} percent of times
   STR_CONFIG_DEPARTURE_CALC_FREQUENCY: Calculate departure board entries every {STRING2} ticks
@@ -93,6 +95,8 @@ weblate:
   STR_CONFIG_MAX_DEPARTURES_HELPTEXT: The maximum number of entries to show on a departure board
   STR_CONFIG_MAX_DEPARTURE_TIME: Show arrivals/departures at most {STRING2} days in advance
   STR_CONFIG_MAX_DEPARTURE_TIME_HELPTEXT: How far in advance to show arrivals and departures, in days
+  STR_CONFIG_MAX_DEPARTURE_TIME_MINUTES: Show arrivals/departures at most {STRING2} minutes in advance
+  STR_CONFIG_MAX_DEPARTURE_TIME_MINUTES_HELPTEXT: How far in advance to show arrivals and departures, in minutes
   STR_CONFIG_OCCUPANCY_SMOOTHNESS: 'Smoothness of order occupancy measurement: {STRING2}'
   STR_CONFIG_OCCUPANCY_SMOOTHNESS_HELPTEXT: 0% sets the measurement to the most recent value, 100% leaves it unchanged
   STR_CONFIG_SETTING_ADJACENT_CROSSINGS: 'Close adjacent level crossings: {STRING2}'
@@ -115,6 +119,8 @@ weblate:
   STR_CONFIG_SETTING_ALLOW_ROAD_STATIONS_UNDER_BRIDGES: 'Allow road/tram stops under bridges: {STRING2}'
   STR_CONFIG_SETTING_ALLOW_ROAD_STATIONS_UNDER_BRIDGES_HELPTEXT: Allow road/tram stops under bridges. Drive through stops require 1 height level of clearance, drive in bays require 2 height levels of clearance.
   STR_CONFIG_SETTING_ALLOW_ROAD_STATIONS_UNDER_BRIDGES_HELPTEXT_EXTRA: '{STRING}{}{}NewGRF road/tram stops may override this setting and allow or disallow custom stops under bridges, and set custom height clearance requirements.'
+  STR_CONFIG_SETTING_ALLOW_SHARES: 'Allow buying shares from other companies: {STRING2}'
+  STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT: When enabled, allow buying and selling of company shares. Shares will only be available for companies reaching a certain age
   STR_CONFIG_SETTING_ALLOW_TOWN_BRIDGES: 'Towns are allowed to build bridges: {STRING2}'
   STR_CONFIG_SETTING_ALLOW_TOWN_BRIDGES_HELPTEXT: Enabling this setting allows towns to build bridges
   STR_CONFIG_SETTING_AUTOSAVE_CUSTOM_DAYS: 'Custom autosave interval in days: {STRING2}'
@@ -144,6 +150,8 @@ weblate:
   STR_CONFIG_SETTING_CATCHMENT_INCREASE_HELPTEXT: Increase radius of station catchment areas by this many tiles
   STR_CONFIG_SETTING_CHUNNEL: 'Allow construction of tunnels under water: {STRING2}'
   STR_CONFIG_SETTING_CHUNNEL_HELPTEXT: When enabled, tunnels can be constructed under bodies of water at sea level. This requires the tunnel ends to be least 3 tiles away from the shore.
+  STR_CONFIG_SETTING_CITY_IN_LABEL: 'Show city in town name label: {STRING2}'
+  STR_CONFIG_SETTING_CITY_IN_LABEL_HELPTEXT: Display if a town is also a city in their label on the map
   STR_CONFIG_SETTING_CITY_ZONE_0_MULT: 'Multiplier for City Zone 0: {STRING2}'
   STR_CONFIG_SETTING_CITY_ZONE_0_MULT_HELPTEXT: Multiplier for the size of City Zone 0 (Outermost roads with no pavement). This setting can benefit from large values.
   STR_CONFIG_SETTING_CITY_ZONE_1_MULT: 'Multiplier for City Zone 1: {STRING2}'
@@ -186,6 +194,11 @@ weblate:
   STR_CONFIG_SETTING_DEMOLISH_CONFIRM_MODE_INDUSTRY: Industries
   STR_CONFIG_SETTING_DEMOLISH_CONFIRM_MODE_OFF: 'Off'
   STR_CONFIG_SETTING_DEPARTUREBOARDS: '{ORANGE}Departure boards'
+  STR_CONFIG_SETTING_DEPOT_TOOLTIP_MODE: 'Depot viewport tooltips: {STRING2}'
+  STR_CONFIG_SETTING_DEPOT_TOOLTIP_MODE_DETAILED: Detailed
+  STR_CONFIG_SETTING_DEPOT_TOOLTIP_MODE_HELPTEXT: Set whether to show viewport tooltips when hovering over depot tiles and how much information to display.
+  STR_CONFIG_SETTING_DEPOT_TOOLTIP_MODE_OFF: 'Off'
+  STR_CONFIG_SETTING_DEPOT_TOOLTIP_MODE_SIMPLE: Simple
   STR_CONFIG_SETTING_DISABLE_TOP_VEH_LIST_MASS_ACTIONS: 'Disable mass action buttons for top-level vehicle lists: {STRING2}'
   STR_CONFIG_SETTING_DISABLE_TOP_VEH_LIST_MASS_ACTIONS_HELPTEXT: This disables depot/service and start/stop buttons for all vehicle and all ungrouped vehicle lists. This is intended to help avoid the negative impact of accidentally pressing one of these buttons.
   STR_CONFIG_SETTING_DISABLE_WATER_ANIMATION: 'Disable water animation: {STRING2}'
@@ -226,17 +239,32 @@ weblate:
   STR_CONFIG_SETTING_IMPROVED_BREAKDOWNS: 'Enable improved breakdowns: {STRING2}'
   STR_CONFIG_SETTING_INDUSTRY_CARGO_FACTOR: 'Industry cargo generation factor (less < 0 < more): {STRING2}'
   STR_CONFIG_SETTING_INDUSTRY_CARGO_FACTOR_HELPTEXT: Primary industry cargo production is scaled by approximately 2^factor (exponential). This excludes tree-cutting industries.{}This is not guaranteed to be fully compatible with all industry NewGRFs.
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_NAME: 'Show names in industry viewport tooltips: {STRING2}'
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_NAME_HELPTEXT: Show names of industries in viewport tooltips when hovering over industry tiles.
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_PRODUCED: 'Show produced cargoes in industry viewport tooltips: {STRING2}'
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_PRODUCED_HELPTEXT: Show a list of cargoes produced by industries in viewport tooltips when hovering over industry tiles.
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_REQUIRED: 'Show required cargoes in industry viewport tooltips: {STRING2}'
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_REQUIRED_HELPTEXT: Show a list of cargoes required by industries in viewport tooltips when hovering over industry tiles.
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_SHOW: 'Show viewport tooltips for industries: {STRING2}'
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_SHOW_HELPTEXT: Show tooltips when hovering over industry tiles.
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_STOCKPILED: 'Show stockpiled cargoes in industry viewport tooltips: {STRING2}'
+  STR_CONFIG_SETTING_INDUSTRY_TOOLTIP_STOCKPILED_HELPTEXT: Show a list of cargoes stockpiled by industries in viewport tooltips when hovering over industry tiles.
   STR_CONFIG_SETTING_INFLATION_FIXED_DATES: 'Apply inflation from 1920 to 2090: {STRING2}'
   STR_CONFIG_SETTING_INFLATION_FIXED_DATES_HELPTEXT: If enabled, inflation is always applied from 1920 to 2090, regardless of the game start date. This is the inflation model used since OpenTTD 1.11.{}If disabled, inflation is applied from the game start date for 170 years. This is the inflation model used until OpenTTD 1.10.
   STR_CONFIG_SETTING_INFRA_OTHERS_BUY_IN_DEPOT_AIR: 'Enable competitors to buy and renew aircraft in hangars: {STRING2}'
   STR_CONFIG_SETTING_INFRA_OTHERS_BUY_IN_DEPOT_RAIL: 'Enable competitors to buy and renew trains in depots: {STRING2}'
   STR_CONFIG_SETTING_INFRA_OTHERS_BUY_IN_DEPOT_ROAD: 'Enable competitors to buy and renew road vehicles in depots: {STRING2}'
   STR_CONFIG_SETTING_INFRA_OTHERS_BUY_IN_DEPOT_WATER: 'Enable competitors to buy and renew ships in depots: {STRING2}'
+  STR_CONFIG_SETTING_INSTANT_TILE_TOOLTIP: 'Show viewport tooltips for tiles without a right-click: {STRING2}'
+  STR_CONFIG_SETTING_INSTANT_TILE_TOOLTIP_HELPTEXT: Show viewport tooltips for tile types such as industries without requiring a right-click, when the show tooltips setting is set to right-click.
   STR_CONFIG_SETTING_INTERFACE_ADV_SIGNALS: '{ORANGE}Signals (advanced)'
   STR_CONFIG_SETTING_INTERFACE_DEPARTUREBOARDS: '{ORANGE}Departure boards'
+  STR_CONFIG_SETTING_INTERFACE_SAVE: '{ORANGE}Save & Autosave'
   STR_CONFIG_SETTING_INTERFACE_TIMETABLE: '{ORANGE}Timetables'
   STR_CONFIG_SETTING_INTERFACE_TIME_CLIENT: '{ORANGE}Client settings'
   STR_CONFIG_SETTING_INTERFACE_TIME_SAVEGAME: '{ORANGE}Savegame settings'
+  STR_CONFIG_SETTING_INTERFACE_TOOLTIPS: '{ORANGE}Tooltips'
+  STR_CONFIG_SETTING_INTERFACE_VEHICLE_WINDOWS: '{ORANGE}Vehicle windows'
   STR_CONFIG_SETTING_INTERFACE_WALLCLOCK: '{ORANGE}Wall clock'
   STR_CONFIG_SETTING_LAKES_ALLOWED_IN_DESERTS: 'Lakes and rivers can be generated in sub-tropic climate deserts: {STRING}'
   STR_CONFIG_SETTING_LAKES_ALLOWED_IN_DESERTS_HELPTEXT: Choose whether lakes and rivers are allowed to spawn in sub-tropic climate deserts.
@@ -246,8 +274,6 @@ weblate:
   STR_CONFIG_SETTING_LAKE_SIZE_ZERO: No lakes
   STR_CONFIG_SETTING_LAKE_TROPICS_WIDTH: 'Tropics width around lakes: {STRING}'
   STR_CONFIG_SETTING_LAKE_TROPICS_WIDTH_HELPTEXT: Controls the width of the tropic zone that surrounds lakes in sub-tropic landscape.{}This is the total width of the zone on both sides of the lake.
-  STR_CONFIG_SETTING_LINKGRAPH_NOT_DAYLENGTH_SCALED: 'Do not scale the linkgraph days by the day length factor: {STRING2}'
-  STR_CONFIG_SETTING_LINKGRAPH_NOT_DAYLENGTH_SCALED_HELPTEXT: When enabled, the linkgraph recalculation interval and time are in units of unscaled, original days, instead of day-length scaled calendar days.
   STR_CONFIG_SETTING_MAX_SIGNAL_EVALUATIONS: 'Maximum number of programmable pre-signal changes permitted at once: {STRING2}'
   STR_CONFIG_SETTING_MAX_SIGNAL_EVALUATIONS_HELPTEXT: Sets the maximum number of programmable pre-signal changes permitted at once
   STR_CONFIG_SETTING_MIN_CITY_LAND_AREA: 'Minimum contiguous land area for cities: {STRING2}'
@@ -256,6 +282,10 @@ weblate:
   STR_CONFIG_SETTING_MIN_LAND_AREA_ZERO: 'Off'
   STR_CONFIG_SETTING_MIN_TOWN_LAND_AREA: 'Minimum contiguous land area for towns: {STRING2}'
   STR_CONFIG_SETTING_MIN_TOWN_LAND_AREA_HELPTEXT: Towns can only be placed on contiguous landmasses of at least this many tiles.
+  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES: 'Minimum company age to trade shares: {STRING2}'
+  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT: Set the minimum age of a company for others to be able to buy and sell shares from them.
+  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_NO_MIN: No minimum
+  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_VALUE: '{COMMA} year{P "" s}'
   STR_CONFIG_SETTING_MONEY_CHEAT_MULTIPLAYER: 'Allow multiplayer clients to use the money cheat: {STRING2}'
   STR_CONFIG_SETTING_MONEY_CHEAT_MULTIPLAYER_HELPTEXT: If enabled, non-admin multiplayer clients can use the money cheat. The money cheat is always available in single-player mode, and to the multiplayer server admin.
   STR_CONFIG_SETTING_NETWORK_CHANGE_NOT_ALLOWED: '{WHITE}Can''t change setting...'
@@ -377,6 +407,8 @@ weblate:
   STR_CONFIG_SETTING_SHOW_NOENTRYSIG_FEATURES_HELPTEXT: Show no-entry signal feature. When disabled, the buttons to build and configure no-entry signals are not shown in the UI, but are still available to all players.
   STR_CONFIG_SETTING_SHOW_ORDER_MANAGEMENT_BY_DEFAULT: 'Show order management button: {STRING2}'
   STR_CONFIG_SETTING_SHOW_ORDER_MANAGEMENT_BY_DEFAULT_HELPTEXT: Show a button for order management in the vehicle order window
+  STR_CONFIG_SETTING_SHOW_ORDER_NUMBER_IN_VEHICLE_VIEW: 'Show order number in vehicle view window: {STRING2}'
+  STR_CONFIG_SETTING_SHOW_ORDER_NUMBER_IN_VEHICLE_VIEW_HELPTEXT: When enabled, the current vehicle order is shown in the vehicle view window start/stop bar
   STR_CONFIG_SETTING_SHOW_ORDER_OCCUPANCY_BY_DEFAULT: 'Show order occupancy by default: {STRING2}'
   STR_CONFIG_SETTING_SHOW_ORDER_OCCUPANCY_BY_DEFAULT_HELPTEXT: Show detailed per-order occupancy by default when opening a vehicle's orders window
   STR_CONFIG_SETTING_SHOW_PROGSIG_FEATURES: 'Show programmable pre-signal feature: {STRING2}'
@@ -420,12 +452,23 @@ weblate:
   STR_CONFIG_SETTING_STATION_RATING_TOOLTIP_MODE_HELPTEXT: Set whether station rating tooltips are shown and the level of information detail.
   STR_CONFIG_SETTING_STATION_RATING_TOOLTIP_MODE_OFF: 'Off'
   STR_CONFIG_SETTING_STATION_RATING_TOOLTIP_MODE_SIMPLE: Simple
+  STR_CONFIG_SETTING_STATION_VIEWPORT_TOOLTIP_CARGO: 'Show cargo details in station viewport tooltips: {STRING2}'
+  STR_CONFIG_SETTING_STATION_VIEWPORT_TOOLTIP_CARGO_HELPTEXT: Show the list of amounts and ratings of cargo that had ever been delivered to the station by industries, towns or by vehicles via unload/transfer order that doesn't result in the final delivery.
+  STR_CONFIG_SETTING_STATION_VIEWPORT_TOOLTIP_NAME: 'Show names in station viewport tooltips: {STRING2}'
+  STR_CONFIG_SETTING_STATION_VIEWPORT_TOOLTIP_NAME_ALWAYS_ON: Always on
+  STR_CONFIG_SETTING_STATION_VIEWPORT_TOOLTIP_NAME_HELPTEXT: Show the name of the station in a viewport tooltip when hovering over it.
+  STR_CONFIG_SETTING_STATION_VIEWPORT_TOOLTIP_NAME_OFF: 'Off'
+  STR_CONFIG_SETTING_STATION_VIEWPORT_TOOLTIP_NAME_ON_IF_HIDDEN: On, if station names are hidden
   STR_CONFIG_SETTING_SYNC_LOCALE_SETTINGS_NETWORK_SERVER: 'Sync localisation settings with server in multiplayer: {STRING2}'
   STR_CONFIG_SETTING_SYNC_LOCALE_SETTINGS_NETWORK_SERVER_HELPTEXT: When joining a multiplayer game as a network client, change the localisation settings to match the server
   STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT: 'Train through load maximum speed: {STRING2}'
   STR_CONFIG_SETTING_THROUGH_LOAD_SPEED_LIMIT_HELPTEXT: The maximum permitted speed for trains when through loading at a station
   STR_CONFIG_SETTING_TICKS_PER_MINUTE: 'Ticks per minute: {STRING2}'
   STR_CONFIG_SETTING_TICKS_PER_MINUTE_HELPTEXT: The number of game ticks per minute
+  STR_CONFIG_SETTING_TICK_RATE: 'Game tick rate: {STRING2}'
+  STR_CONFIG_SETTING_TICK_RATE_HELPTEXT: Number of milliseconds per game tick.
+  STR_CONFIG_SETTING_TICK_RATE_MODERN: 27 ms/tick (modern)
+  STR_CONFIG_SETTING_TICK_RATE_TRADITIONAL: 30 ms/tick (traditional)
   STR_CONFIG_SETTING_TIMETABLE_AUTOFILL_ROUNDING_TICKS: 'Round up auto-filled timetable times to multiples of this many ticks: {STRING2}'
   STR_CONFIG_SETTING_TIMETABLE_AUTOFILL_ROUNDING_TICKS_DEFAULT: Default
   STR_CONFIG_SETTING_TIMETABLE_AUTOFILL_ROUNDING_TICKS_HELPTEXT: Timetable times adjusted by timetable automation are not rounded. A day at a day length of 1 is 74 ticks.{}By default the game ticks per minute value is used if using minutes, otherwise 74 ticks is used.
@@ -456,6 +499,11 @@ weblate:
   STR_CONFIG_SETTING_TOWN_MAX_ROAD_SLOPE_ZERO: No limit
   STR_CONFIG_SETTING_TOWN_MIN_DISTANCE: 'Minimum distance between towns: {STRING2}'
   STR_CONFIG_SETTING_TOWN_MIN_DISTANCE_HELPTEXT: Set the minimum distance in tiles between towns for map generation and random founding
+  STR_CONFIG_SETTING_TOWN_NAME_TOOLTIP_MODE: 'Show viewport tooltips with town names: {STRING2}'
+  STR_CONFIG_SETTING_TOWN_NAME_TOOLTIP_MODE_ALWAYS_ON: Always on
+  STR_CONFIG_SETTING_TOWN_NAME_TOOLTIP_MODE_HELPTEXT: Show viewport tooltips for road and house tiles that belong to towns.
+  STR_CONFIG_SETTING_TOWN_NAME_TOOLTIP_MODE_OFF: 'Off'
+  STR_CONFIG_SETTING_TOWN_NAME_TOOLTIP_MODE_ON_IF_HIDDEN: On, if town names are hidden
   STR_CONFIG_SETTING_TOWN_TUNNELS: 'Towns are allowed to build tunnels: {STRING2}'
   STR_CONFIG_SETTING_TOWN_TUNNELS_ALLOWED: Allowed
   STR_CONFIG_SETTING_TOWN_TUNNELS_ALLOWED_OBSTRUCTION: Allowed only for small obstructions
@@ -493,6 +541,7 @@ weblate:
   STR_CONFIG_SETTING_TREE_GROWTH_SLOW: Slow
   STR_CONFIG_SETTING_TREE_GROWTH_STATIC: None
   STR_CONFIG_SETTING_TREE_GROWTH_VERY_SLOW: Very slow
+  STR_CONFIG_SETTING_TREE_PLACER_HELPTEXT_EXTRA: '{STRING}, ''Perfect'' improves spreading and grouping'
   STR_CONFIG_SETTING_TREE_PLACER_PERFECT: Perfect
   STR_CONFIG_SETTING_VEHICLE_NAMES: 'Vehicle names: {STRING2}'
   STR_CONFIG_SETTING_VEHICLE_NAMES_HELPTEXT: Set the naming scheme used for vehicle names. This does not apply to vehicles which have a custom name.
@@ -502,32 +551,45 @@ weblate:
   STR_CONFIG_SETTING_VEHICLE_ROUTE_OVERLAY: '{ORANGE}Vehicle route overlay'
   STR_CONFIG_SETTING_VIEWPORT_MAP_ACTION_DBLCLICK: 'Function of double-click: {STRING2}'
   STR_CONFIG_SETTING_VIEWPORT_MAP_ACTION_DBLCLICK_DO_NOTHING: Do nothing
+  STR_CONFIG_SETTING_VIEWPORT_MAP_ACTION_DBLCLICK_HELPTEXT: What action to take when double-clicking on a viewport, when zoomed out into map mode.
   STR_CONFIG_SETTING_VIEWPORT_MAP_ACTION_DBLCLICK_NEW_EXTRA: Open an extra viewport
   STR_CONFIG_SETTING_VIEWPORT_MAP_ACTION_DBLCLICK_ZOOM_MAIN: Zoom in directly to 1X
   STR_CONFIG_SETTING_VIEWPORT_MAP_DEFAULT_MODE: 'Default mode: {STRING2}'
   STR_CONFIG_SETTING_VIEWPORT_MAP_DEFAULT_MODE_HELPTEXT: Default display mode for the main viewport and any extra viewport windows, when zoomed out into map mode.
-  STR_CONFIG_SETTING_VIEWPORT_MAP_DRAW_ROUTE_DASH: 'Drawing style of vehicle''s route: {STRING}'
+  STR_CONFIG_SETTING_VIEWPORT_MAP_DRAW_ROUTE_DASH: 'Drawing style of vehicle route overlay lines: {STRING2}'
   STR_CONFIG_SETTING_VIEWPORT_MAP_DRAW_ROUTE_DASH_DISABLED: plain lines
+  STR_CONFIG_SETTING_VIEWPORT_MAP_DRAW_ROUTE_DASH_HELPTEXT: How to draw the lines between the locations of each of the vehicle's orders, when showing a vehicle route overlay.
   STR_CONFIG_SETTING_VIEWPORT_MAP_DRAW_ROUTE_DASH_VALUE: dashed lines of {COMMA} pixel{P "" s}
   STR_CONFIG_SETTING_VIEWPORT_MAP_OPTIONS: '{ORANGE}Map mode'
-  STR_CONFIG_SETTING_VIEWPORT_MAP_SCAN_SURROUNDINGS: 'Scan surroundings (better for high zoom out levels): {STRING2}'
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_BRIDGES: 'Show bridges: {STRING2}'
+  STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_BRIDGES_HELPTEXT: Whether to show a dotted line for bridges, when zoomed out into map mode.
+  STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_HEIGHT: 'Show height: {STRING2}'
+  STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_HEIGHT_HELPTEXT: Whether to shade height levels, when zoomed out into map mode and not in vegetation mode.
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SCROLLING_VP: 'Show scrolling viewport: {STRING2}'
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SCROLLING_VP_ALL: Blend + contour
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SCROLLING_VP_BLEND: Blend with some white (32bpp only)
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SCROLLING_VP_CONTOUR: Contour
+  STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SCROLLING_VP_HELPTEXT: When scrolling a viewport which is not in map mode, show an indication of where the scrolling viewport is on any map mode viewports.
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SCROLLING_VP_NOTHING: 'No'
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SLOPES: 'Show slopes: {STRING2}'
+  STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_SLOPES_HELPTEXT: Whether to shade slopes, when zoomed out into map mode.
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_TUNNELS: 'Show tunnels: {STRING2}'
+  STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_TUNNELS_HELPTEXT: Whether to show a dotted line for tunnels, when zoomed out into map mode.
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_VEHICLE_ROUTE: 'Show vehicle route overlay lines: {STRING2}'
   STR_CONFIG_SETTING_VIEWPORT_MAP_SHOW_VEHICLE_ROUTE_HELPTEXT: When enabled, and a vehicle window is focused, lines are drawn between the locations of each of the vehicle's orders. (Conditional order branches are shown using yellow lines).
   STR_CONFIG_SETTING_VIEWPORT_MAP_USE_OWNER_COLOUR_BRIDGE_TUNNEL: 'Use owner''s colour for bridges and tunnels: {STRING2}'
+  STR_CONFIG_SETTING_VIEWPORT_MAP_USE_OWNER_COLOUR_BRIDGE_TUNNEL_HELPTEXT: Whether to use the owner's colour for bridge and tunnel dotted lines, when zoomed out into map mode in the owner display mode.
   STR_CONFIG_SETTING_VIEWPORT_SIGNALS: '{ORANGE}Signals'
   STR_CONFIG_SETTING_WARN_NO_DEPOT_ORDER: 'Warn if a vehicle does not have a depot order: {STRING2}'
   STR_CONFIG_SETTING_WARN_NO_DEPOT_ORDER_HELPTEXT: When enabled and when reviewing vehicle orders is also enabled, a news message gets sent when a train, road vehicle or ship does not have a depot order in its schedule
   STR_CONFIG_SETTING_WARN_NO_DEPOT_ORDER_IF_BREAKDOWNS_ON: If vehicle breakdowns enabled
   STR_CONFIG_SETTING_WARN_RESTRICTION_WAIT_VEHICLE: 'Warn if train is stuck due to a routing restriction: {STRING2}'
   STR_CONFIG_SETTING_WARN_RESTRICTION_WAIT_VEHICLE_HELPTEXT: Trigger messages about trains which are stuck waiting at a PBS signal for a long time because of a routing restriction
+  STR_CONFIG_SETTING_WAYPOINT_VIEWPORT_TOOLTIP_NAME: 'Show viewport tooltips for waypoints and buoys: {STRING2}'
+  STR_CONFIG_SETTING_WAYPOINT_VIEWPORT_TOOLTIP_NAME_ALWAYS_ON: Always on
+  STR_CONFIG_SETTING_WAYPOINT_VIEWPORT_TOOLTIP_NAME_HELPTEXT: Show the name of the waypoint or buoy in a viewport tooltip when hovering over it.
+  STR_CONFIG_SETTING_WAYPOINT_VIEWPORT_TOOLTIP_NAME_OFF: 'Off'
+  STR_CONFIG_SETTING_WAYPOINT_VIEWPORT_TOOLTIP_NAME_ON_IF_HIDDEN: On, if waypoint names are hidden
   STR_CONFIG_SETTING_ZOOM_LVL_OUT_128X: 128x
   STR_CONFIG_SETTING_ZOOM_LVL_OUT_16X: 16x
   STR_CONFIG_SETTING_ZOOM_LVL_OUT_32X: 32x
@@ -595,6 +657,14 @@ weblate:
   STR_DEPARTURES_VIA_BUTTON: '{BLACK}{TINY_FONT}via'
   STR_DEPARTURES_VIA_DESCRIPTOR: '{STRING1}{STRING}'
   STR_DEPARTURES_VIA_TOOLTIP: '{BLACK}Show timetabled vehicles that do not stop here'
+  STR_DEPOT_VIEW_COUNT_STOPPED_TOOLTIP: '{BLACK}{COMMA} stopped vehicle{P "" s} inside'
+  STR_DEPOT_VIEW_COUNT_TOOLTIP: '{BLACK}{COMMA} vehicle{P "" s} inside'
+  STR_DEPOT_VIEW_COUNT_WAITING_TOOLTIP: '{BLACK}{COMMA} waiting vehicle{P "" s} inside'
+  STR_DEPOT_VIEW_FREE_WAGONS_TOOLTIP: '{BLACK}{COMMA} wagon{P "" s} inside'
+  STR_DEPOT_VIEW_MIXED_CONTENTS_TOOLTIP: '{BLACK}{STRING1}{}{STRING1}'
+  STR_DEPOT_VIEW_STOPPED_TOOLTIP: '{}{COMMA} {P is are} stopped'
+  STR_DEPOT_VIEW_TOTAL_TOOLTIP: '{BLACK}{COMMA} vehicles inside:'
+  STR_DEPOT_VIEW_WAITING_TOOLTIP: '{}{COMMA} {P is are} waiting'
   STR_ERROR_ANOTHER_TUNNEL_IN_THE_WAY_FOR_CHUNNEL: '{WHITE}Three tiles are needed to pass under the other tunnel.'
   STR_ERROR_BRIDGE_PILLARS_OBSTRUCT_STATION: '{WHITE}Bridge pillars obstruct station'
   STR_ERROR_BRIDGE_TOO_LOW_FOR_STATION: '{WHITE}Bridge is too low for station'
@@ -609,6 +679,7 @@ weblate:
   STR_ERROR_CANT_PURCHASE_OTHER_COMPANY_DEPOT: '{WHITE}Depot is owned by another company, and building vehicles there is not allowed.'
   STR_ERROR_CAN_T_BUILD_HOUSE_HERE: '{WHITE}Can''t build house here...'
   STR_ERROR_CAN_T_BUILD_ROAD_WAYPOINT: '{WHITE}Can''t build road waypoint here...'
+  STR_ERROR_CAN_T_BUY_25_SHARE_IN_THIS: '{WHITE}Can''t buy 25% share in this company...'
   STR_ERROR_CAN_T_DEPEND_UPON_BIDIRECTIONAL_SIGNALS: '{WHITE}Cannot conditionally depend upon bidirectional signals'
   STR_ERROR_CAN_T_EXCHANGE_STATION_NAMES: '{WHITE}Can''t exchange station names...'
   STR_ERROR_CAN_T_GOTO_UNDEFINED_SIGNAL: '{WHITE}Can''t go to undefined signal'
@@ -618,6 +689,7 @@ weblate:
   STR_ERROR_CAN_T_REMOVE_ROAD_WAYPOINT: '{WHITE}Can''t remove road waypoint here...'
   STR_ERROR_CAN_T_RENAME_PLAN: '{WHITE}Can''t rename plan...'
   STR_ERROR_CAN_T_RENAME_SCHEDULE: '{WHITE}Can''t name schedule...'
+  STR_ERROR_CAN_T_SELL_25_SHARE_IN: '{WHITE}Can''t sell 25% share in this company...'
   STR_ERROR_CHUNNEL_ONLY_OVER_SEA: '{WHITE}Underwater tunnels are only allowed to cross sea...'
   STR_ERROR_CHUNNEL_RAMP: '{WHITE}... only ramp length between 5 and {NUM} tiles is allowed for tunnels under water.'
   STR_ERROR_CHUNNEL_THROUGH_MAP_BORDER: '{WHITE}Tunnel under water would end out of the map'
@@ -631,6 +703,7 @@ weblate:
   STR_ERROR_NO_MORE_SPACE_FOR_LINES: '{WHITE}No more space for lines'
   STR_ERROR_NO_ROAD_WAYPOINT: '{WHITE}There is no road waypoint'
   STR_ERROR_ONLY_ONE_BUILDING_ALLOWED_PER_TOWN: '{WHITE}... only one building of this type is allowed in a town.'
+  STR_ERROR_PROTECTED: '{WHITE}This company is not old enough to trade shares yet...'
   STR_ERROR_PURCHASE_LAND_LIMIT_REACHED: '{WHITE}... land area purchasing limit reached'
   STR_ERROR_SCHDISPATCH_ADJUSTMENT_TOO_LARGE: '{WHITE}Departure slot adjustment is too large'
   STR_ERROR_SCHDISPATCH_TRIED_TO_ADD_TOO_MANY_SLOTS: '{WHITE}Tried to add too many departure slots at once'
@@ -666,12 +739,18 @@ weblate:
   STR_FORMAT_DATE_MINUTES_WITH_YMD: '{0:RAW_STRING}:{1:RAW_STRING} / {2:DATE_LONG}'
   STR_FORMAT_GROUP_VEHICLE_NAME_LONG: '{GROUP} - {STRING1}'
   STR_GAME_OPTIONS_AUTOSAVE_DAYS_QUERY_CAPT: '{WHITE}Autosave interval in days'
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_12_MONTHS: Every 12 months
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_1_MONTH: Every month
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_3_MONTHS: Every 3 months
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_6_MONTHS: Every 6 months
   STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM: Every {COMMA}{NBSP}days
   STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_LABEL: Custom interval (days)
   STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_DAYS_CUSTOM_SINGULAR: Every day
   STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM: Every {COMMA} real-time minutes
   STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_MINUTES_CUSTOM_LABEL: Custom interval (real-time minutes)
   STR_GAME_OPTIONS_AUTOSAVE_MINUTES_QUERY_CAPT: '{WHITE}Autosave interval in real-time minutes'
+  STR_GAME_OPTIONS_GUI_SCALE_MAIN_TOOLBAR: '{BLACK}Bigger main toolbar'
+  STR_GAME_OPTIONS_GUI_SCALE_MAIN_TOOLBAR_TOOLTIP: '{BLACK}Check this box to increase the scale of the main toolbar'
   STR_GAME_SAVELOAD_ERROR_HELI_OILRIG_BUG: Savegame has a helicopter on approach to a buggy oil rig
   STR_GAME_SAVELOAD_ERROR_HUGE_AIRPORTS_PRESENT: Savegame uses huge airports
   STR_GAME_SAVELOAD_ERROR_TOO_NEW_FEATURE_VERSION: Savegame{0:STRING1} has version {PUSH_COLOUR}{ORANGE}{2:NUM}{POP_COLOUR} of feature '{PUSH_COLOUR}{ORANGE}{1:RAW_STRING}{POP_COLOUR}', but the maximum supported version is {PUSH_COLOUR}{ORANGE}{3:NUM}{POP_COLOUR}
@@ -680,10 +759,15 @@ weblate:
   STR_GENERATION_PUBLIC_ROADS_GENERATION: '{BLACK}Public roads generation'
   STR_GRAPH_CARGO_DAYS_MODE: '{TINY_FONT}{BLACK}Days in transit'
   STR_GRAPH_CARGO_PAYMENT_RATES_TITLE_AVG_SPEED: '{TINY_FONT}{BLACK}Payment for delivering 1 unit (or 1,000 litres) of cargo a distance of 200 squares'
+  STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL_MINUTES: '{TINY_FONT}{BLACK}Minutes in transit'
   STR_GRAPH_CARGO_PAYMENT_RATES_X_LABEL_SPEED: '{TINY_FONT}{BLACK}Average transit speed ({STRING})'
   STR_GRAPH_CARGO_SPEED_MODE: '{TINY_FONT}{BLACK}Average speed'
   STR_GRAPH_CARGO_TOOLTIP_DAYS_MODE: '{BLACK}Display days in transit on the x-axis of the graph'
   STR_GRAPH_CARGO_TOOLTIP_SPEED_MODE: '{BLACK}Display average transit speed on the x-axis of the graph'
+  STR_GRAPH_DELIVERED_CARGO_BY_CARGO_MODE: '{TINY_FONT}{BLACK}Cargoes'
+  STR_GRAPH_DELIVERED_CARGO_BY_CARGO_MODE_TOOLTIP: '{BLACK}Display one line for each selected cargo'
+  STR_GRAPH_DELIVERED_CARGO_BY_COMPANY_MODE: '{TINY_FONT}{BLACK}Companies'
+  STR_GRAPH_DELIVERED_CARGO_BY_COMPANY_MODE_TOOLTIP: '{BLACK}Display one line for each selected company'
   STR_GRAPH_STATION_CARGO_CAPTION: '{WHITE}{STATION} - Waiting Cargo History'
   STR_GRAPH_STATION_CARGO_TITLE: '{TINY_FONT}{BLACK}Units of cargo waiting at the station'
   STR_GRAPH_STATION_CARGO_X_LABEL: '{TINY_FONT}{BLACK}Development over the last {NUM} days'
@@ -714,13 +798,15 @@ weblate:
   STR_HOUSE_BUILD_YEARS_BAD_YEAR: '{RED}{NUM}'
   STR_HOUSE_BUILD_YEARS_GOOD_YEAR: '{GOLD}{NUM}'
   STR_INDUSTRY_CARGOES_NOTIFY_SMALLMAP_ALL: All industries
-  STR_INDUSTRY_VIEW_TRANSPORTED_TOOLTIP: '{BLACK}{STRING}{RAW_STRING}'
-  STR_INDUSTRY_VIEW_TRANSPORTED_TOOLTIP_EXTENSION: '{}{BLACK}{CARGO_LONG} ({COMMA}%)'
+  STR_INDUSTRY_VIEW_NAME_TOOLTIP: '{STRING}'
+  STR_INDUSTRY_VIEW_REQUIRED_TOOLTIP_FIRST: '{STRING}{RAW_STRING}'
+  STR_INDUSTRY_VIEW_REQUIRED_TOOLTIP_NEXT: ', {STRING}{RAW_STRING}'
+  STR_INDUSTRY_VIEW_STOCKPILED_TOOLTIP: '{CARGO_LONG} waiting{RAW_STRING}'
+  STR_INDUSTRY_VIEW_TRANSPORTED_TOOLTIP_EXTENSION: '{CARGO_LONG}{RAW_STRING} ({COMMA}%)'
   STR_JUST_DATE_WALLCLOCK_ISO: '{DATE_WALLCLOCK_ISO}'
   STR_JUST_DATE_WALLCLOCK_LONG: '{DATE_WALLCLOCK_LONG}'
   STR_JUST_DATE_WALLCLOCK_SHORT: '{DATE_WALLCLOCK_SHORT}'
   STR_JUST_DATE_WALLCLOCK_TINY: '{DATE_WALLCLOCK_TINY}'
-  STR_JUST_DECIMAL: '{DECIMAL}'
   STR_JUST_DECIMAL1: '{DECIMAL1}'
   STR_JUST_STRING1: '{STRING1}'
   STR_JUST_STRING2: '{STRING2}'
@@ -754,6 +840,7 @@ weblate:
   STR_LAI_TUNNEL_DESCRIPTION_ROAD_CHUNNEL: Road tunnel (underwater)
   STR_LANDSCAPING_TOOLTIP_RULER_TOOL: '{BLACK}Use a virtual ruler to measure distance and height'
   STR_LINKGRAPH_STATS_TOOLTIP_CAPACITY: '{}Capacity: {CARGO_LONG}'
+  STR_LINKGRAPH_STATS_TOOLTIP_DISTANCE: 'Manhattan Distance: {COMMA} tile{P 0 "" s}{}Bird Fly Distance: {COMMA} tile{P 1 "" s}'
   STR_LINKGRAPH_STATS_TOOLTIP_TIME_EXTENSION_GENERAL: '{}Average travel time: {STRING1}'
   STR_LOCAL_AUTHORITY_SETTING_OVERRIDE_ALLOW_LEVEL_CROSSINGS: Allowed to build level crossings
   STR_LOCAL_AUTHORITY_SETTING_OVERRIDE_ALLOW_ROADS: Allowed to build roads
@@ -818,6 +905,7 @@ weblate:
   STR_ORDERS_OCCUPANCY_LIST_TOOLTIP: '{BLACK}Order occupancy - this shows running averages of recent occupancy levels when leaving a station, for all vehicles sharing these orders'
   STR_ORDERS_OCCUPANCY_PERCENT: '{NUM}%'
   STR_ORDERS_TOGGLE_MANAGEMENT_BUTTON_TOOLTIP: '{BLACK}Toggle showing order management button'
+  STR_ORDERS_VEH_WITH_SHARED_ORDERS_LIST_TOOLTIP_EXTRA: '{STRING}{}{BLACK}Ctrl+Click to create group from single vehicle'
   STR_ORDER_APPEND_REVERSED_ORDER_LIST: Append reversed order list
   STR_ORDER_CARGO_TYPE_LOAD: (Load by cargo type)
   STR_ORDER_CARGO_TYPE_LOAD_REFIT: (Load by cargo type with refit to {STRING})
@@ -858,6 +946,8 @@ weblate:
   STR_ORDER_CONDITIONAL_COMPARATOR_HAS_MORE_THAN: has more than
   STR_ORDER_CONDITIONAL_COMPARATOR_HAS_NO: does not have
   STR_ORDER_CONDITIONAL_COMPARATOR_NOT_YET_FULLY_OCCUPIED: is not fully occupied
+  STR_ORDER_CONDITIONAL_COMPARATOR_OCCUPANCY_EMPTY: is empty
+  STR_ORDER_CONDITIONAL_COMPARATOR_OCCUPANCY_NOT_EMPTY: is not empty
   STR_ORDER_CONDITIONAL_COMPARATOR_TRAIN_IN_ACQUIRE_SLOT: train is in/acquire
   STR_ORDER_CONDITIONAL_COMPARATOR_TRAIN_IN_SLOT: train is in
   STR_ORDER_CONDITIONAL_COMPARATOR_TRAIN_NOT_IN_ACQUIRE_SLOT: train is not in/can't acquire
@@ -958,7 +1048,7 @@ weblate:
   STR_PROGSIG_CONDVAR_NUM_GREEN: green signals
   STR_PROGSIG_CONDVAR_NUM_RED: red signals
   STR_PROGSIG_CONDVAR_SIGNAL_STATE_SPECIFIED: signal at {NUM} x {NUM} is green
-  STR_PROGSIG_CONDVAR_SIGNAL_STATE_UNSPECIFIED: '{RED}unspecified signal{STRING} is green'
+  STR_PROGSIG_CONDVAR_SIGNAL_STATE_UNSPECIFIED: '{PUSH_COLOUR}{RED}unspecified signal{POP_COLOUR} is green'
   STR_PROGSIG_COND_ALWAYS: always
   STR_PROGSIG_COND_COMPARATOR_TOOLTIP: '{BLACK}Operator to use to compare variable'
   STR_PROGSIG_COND_COMPARE: '{STRING} {STRING} {NUM}'
@@ -1020,7 +1110,10 @@ weblate:
   STR_RUNNING: '{LTBLUE}Running'
   STR_SAVELOAD_DIFFERENT_ID: '{YELLOW}This file is from a different game.'
   STR_SAVELOAD_OVERWRITE_TITLE_DIFFERENT_ID: '{WHITE}Overwrite File (Different Game)'
+  STR_SAVELOAD_OVERWRITE_TITLE_DIFFERENT_VERSION_SUFFIX: '{STRING} (Different Version)'
   STR_SAVELOAD_OVERWRITE_WARNING_DIFFERENT_ID: '{YELLOW}Are you sure you want to overwrite the existing file?{}{}The file is from a different game.'
+  STR_SAVELOAD_OVERWRITE_WARNING_DIFFERENT_VERSION_SUFFIX: '{STRING}{}{}The file is from a different version{STRING1}.{}If overwritten the file will no longer be readable by the original version.'
+  STR_SAVELOAD_OVERWRITE_WARNING_VERSION_NAME: ({RAW_STRING})
   STR_SAVELOAD_UNKNOWN_ID: '{YELLOW}This file may be from a different game.'
   STR_SCENEDIT_TOOLBAR_PLACE_HOUSE: '{BLACK}Place house'
   STR_SCHDISPATCH_ADD: '{BLACK}Add Departure Slot'
@@ -1109,11 +1202,7 @@ weblate:
   STR_STATION_RATING_MAX_PERCENTAGE: (max {PLUS_NUM}%)
   STR_STATION_RATING_MAX_PERCENTAGE_COMMA: ', max {PLUS_NUM}%'
   STR_STATION_RATING_PERCENTAGE_COMMA: ', {PLUS_NUM}%'
-  STR_STATION_RATING_TOOLTIP_AGE: 'Age of last vehicle{STRING1}: {STRING3}'
-  STR_STATION_RATING_TOOLTIP_AGE_0: '{ORANGE}{NUM} year{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_AGE_1: '{GOLD}{NUM} year{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_AGE_2: '{YELLOW}{NUM} year{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_AGE_3: '{GREEN}{NUM} year{P "" s}{STRING1}'
+  STR_STATION_RATING_TOOLTIP_AGE: 'Age of last vehicle{STRING1}: {SET_COLOUR}{NUM} year{P "" s}{STRING1}'
   STR_STATION_RATING_TOOLTIP_AIRCRAFT: Aircraft
   STR_STATION_RATING_TOOLTIP_INVALID: N/A
   STR_STATION_RATING_TOOLTIP_NEWGRF_RATING: 'NewGRF station rating: {STRING1} {BLACK}based on'
@@ -1125,36 +1214,23 @@ weblate:
   STR_STATION_RATING_TOOLTIP_RATING_DETAILS: '{STRING} Rating Details'
   STR_STATION_RATING_TOOLTIP_ROAD_VEHICLE: Road Vehicle
   STR_STATION_RATING_TOOLTIP_SHIP: Ship
-  STR_STATION_RATING_TOOLTIP_SPEED: 'Max speed of last vehicle{STRING1}: {STRING3} ({STRING})'
-  STR_STATION_RATING_TOOLTIP_SPEED_0: '{ORANGE}{VELOCITY}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_SPEED_1: '{GOLD}{VELOCITY}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_SPEED_2: '{YELLOW}{VELOCITY}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_SPEED_3: '{GREEN}{VELOCITY}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_SPEED_ZERO: '{RED}{VELOCITY}{STRING1}'
+  STR_STATION_RATING_TOOLTIP_SPEED: 'Max speed of last vehicle{STRING1}: {SET_COLOUR}{VELOCITY}{STRING1} ({STRING})'
   STR_STATION_RATING_TOOLTIP_STATUE: 'Statue in town{STRING1}: {STRING2}'
   STR_STATION_RATING_TOOLTIP_STATUE_NO: '{GOLD}no{STRING1}'
   STR_STATION_RATING_TOOLTIP_STATUE_YES: '{GREEN}yes{STRING1}'
   STR_STATION_RATING_TOOLTIP_TOTAL_RATING: 'Total target rating: {LTBLUE}{NUM}%'
   STR_STATION_RATING_TOOLTIP_TRAIN: Train
   STR_STATION_RATING_TOOLTIP_USING_CHEAT: Cheat active
-  STR_STATION_RATING_TOOLTIP_WAITTIME: 'Time since last pickup{STRING1}: {STRING3}'
-  STR_STATION_RATING_TOOLTIP_WAITTIME_0: '{RED}{NUM} day{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITTIME_1: '{ORANGE}{NUM} day{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITTIME_2: '{GOLD}{NUM} day{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITTIME_3: '{YELLOW}{NUM} day{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITTIME_4: '{GREEN}{NUM} day{P "" s}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITTIME_SHIP: 'Time since last pickup{STRING1}: {STRING3} (by ship)'
-  STR_STATION_RATING_TOOLTIP_WAITUNITS: 'Cargo waiting (on average per next stop{STRING1}): {STRING3}'
-  STR_STATION_RATING_TOOLTIP_WAITUNITS_0: '{RED}{NUM}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITUNITS_1: '{ORANGE}{NUM}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITUNITS_2: '{GOLD}{NUM}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITUNITS_3: '{YELLOW}{NUM}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITUNITS_4: '{YELLOW}{NUM}{STRING1}'
-  STR_STATION_RATING_TOOLTIP_WAITUNITS_5: '{GREEN}{NUM}{STRING1}'
+  STR_STATION_RATING_TOOLTIP_WAITTIME: 'Time since last pickup{STRING1}: {STRING4}'
+  STR_STATION_RATING_TOOLTIP_WAITTIME_SHIP: 'Time since last pickup{STRING1}: {STRING4} (by ship)'
+  STR_STATION_RATING_TOOLTIP_WAITTIME_VALUE: '{SET_COLOUR}{NUM} day{P "" s}{STRING1}'
+  STR_STATION_RATING_TOOLTIP_WAITUNITS: 'Cargo waiting (on average per next stop{STRING1}): {SET_COLOUR}{NUM}{STRING1}'
+  STR_STATION_VIEW_CARGO_LINE_TOOLTIP: '{STRING} ({COMMA}%): {CARGO_SHORT}'
   STR_STATION_VIEW_DEPARTURES_BUTTON: '{BLACK}Departures'
   STR_STATION_VIEW_DEPARTURES_TOOLTIP: '{BLACK}Show list of scheduled departures'
   STR_STATION_VIEW_HISTORY_BUTTON: '{BLACK}History'
   STR_STATION_VIEW_HISTORY_TOOLTIP: '{BLACK}Show waiting cargo history'
+  STR_STATION_VIEW_NAME_TOOLTIP: '{STATION}{NBSP}{STATION_FEATURES}'
   STR_STATION_VIEW_RENAME_TOOLTIP_EXTRA: '{BLACK}{STRING}{}(Ctrl+Click "{STRING}" button to generate new default name).{}{}Ctrl+Click to exchange name with another station.'
   STR_TERRAFORM_PUBLIC_ROADS: '{BLACK}Build public roads'
   STR_TERRAFORM_PUBLIC_ROADS_TOOLTIP: '{BLACK}Build public roads between the towns on the map'
@@ -1272,6 +1348,9 @@ weblate:
   STR_TMPL_WARNING_VEH_UNAVAILABLE: '{RED}Train not buildable: vehicle unavailable!'
   STR_TMP_TEMPLATE_FROM_PARENT_GROUP: Using template from parent group
   STR_TMP_TEMPLATE_IN_USE: Template is in use
+  STR_TOWN_DIRECTORY_INFO: '{BLACK}{STRING1}, Towns: {COMMA}'
+  STR_TOWN_NAME_POP_TOOLTIP: '{BLACK}{TOWN}: {COMMA}'
+  STR_TOWN_NAME_RATING_TOOLTIP: '{STRING2}{}Your rating is {STRING}'
   STR_TOWN_NAME_TOOLTIP: '{BLACK}{TOWN}'
   STR_TOWN_VIEW_NOISE_IN_TOWN_NO_LIMIT: '{BLACK}Noise limit in town: {ORANGE}{COMMA}'
   STR_TRACE_RESTRICT_APPEND: '{BLACK}Append'
@@ -1330,7 +1409,7 @@ weblate:
   STR_TRACE_RESTRICT_COND_COMPARATOR_TOOLTIP: '{BLACK}Comparison operator'
   STR_TRACE_RESTRICT_COND_VALUE_TOOLTIP: '{BLACK}Value'
   STR_TRACE_RESTRICT_COPY: '{BLACK}Copy'
-  STR_TRACE_RESTRICT_COPY_TOOLTIP: '{BLACK}Copy program from another signal{}Ctrl+click to append program from another signal'
+  STR_TRACE_RESTRICT_COPY_TOOLTIP: '{BLACK}Copy program from another signal{}Ctrl+Click to append program from another signal'
   STR_TRACE_RESTRICT_COUNTER_CAPTION: '{WHITE}Routing Restrictions - Counter Management'
   STR_TRACE_RESTRICT_COUNTER_CREATE: '{BLACK}Create'
   STR_TRACE_RESTRICT_COUNTER_CREATE_CAPTION: '{BLACK}Create a counter'
@@ -1370,7 +1449,7 @@ weblate:
   STR_TRACE_RESTRICT_DISPATCH_SLOT_SHORT_NEXT: next
   STR_TRACE_RESTRICT_DOWN_BTN_TOOLTIP: '{BLACK}Move the selected instruction down{}Ctrl+Click to move conditional instruction instead of whole block'
   STR_TRACE_RESTRICT_DUPLICATE: '{BLACK}Duplicate'
-  STR_TRACE_RESTRICT_DUPLICATE_TOOLTIP: '{BLACK}Duplicate the selected instruction{}Ctrl+click to append program from another signal'
+  STR_TRACE_RESTRICT_DUPLICATE_TOOLTIP: '{BLACK}Duplicate the selected instruction{}Ctrl+Click to append program from another signal'
   STR_TRACE_RESTRICT_END: End
   STR_TRACE_RESTRICT_ERROR_CAN_T_CHANGE_CONDITIONALITY: Can't change conditionality
   STR_TRACE_RESTRICT_ERROR_CAN_T_COPY_APPEND_PROGRAM: '{WHITE}Can''t append program'
@@ -1389,7 +1468,7 @@ weblate:
   STR_TRACE_RESTRICT_ERROR_COUNTER_CAN_T_DELETE: '{WHITE}Can''t delete this counter...'
   STR_TRACE_RESTRICT_ERROR_COUNTER_CAN_T_MODIFY: '{WHITE}Can''t modify this counter...'
   STR_TRACE_RESTRICT_ERROR_COUNTER_CAN_T_RENAME: '{WHITE}Can''t rename counter...'
-  STR_TRACE_RESTRICT_ERROR_NO_PROGRAM: No trace restrict program exists
+  STR_TRACE_RESTRICT_ERROR_NO_PROGRAM: No program exists
   STR_TRACE_RESTRICT_ERROR_OFFSET_TOO_LARGE: Offset too large
   STR_TRACE_RESTRICT_ERROR_SLOT_CAN_T_ADD_VEHICLE: '{WHITE}Can''t add the vehicle to this slot...'
   STR_TRACE_RESTRICT_ERROR_SLOT_CAN_T_CREATE: '{WHITE}Can''t create slot...'
@@ -1398,6 +1477,7 @@ weblate:
   STR_TRACE_RESTRICT_ERROR_SLOT_CAN_T_RENAME: '{WHITE}Can''t rename slot...'
   STR_TRACE_RESTRICT_ERROR_SLOT_CAN_T_SET_MAX_OCCUPANCY: '{WHITE}Can''t set maximum occupancy of this slot...'
   STR_TRACE_RESTRICT_ERROR_SOURCE_SAME_AS_TARGET: Source and target signals are the same
+  STR_TRACE_RESTRICT_ERROR_TARGET_ALREADY_HAS_PROGRAM: Target signal already has a program
   STR_TRACE_RESTRICT_ERROR_VALIDATE_DUP_ELSE: 'Validation failed: duplicate else'
   STR_TRACE_RESTRICT_ERROR_VALIDATE_ELIF_NO_IF: 'Validation failed: else if without opening if'
   STR_TRACE_RESTRICT_ERROR_VALIDATE_END_CONDSTACK: 'Validation failed: condstack non-empty at exit'
@@ -1450,7 +1530,9 @@ weblate:
   STR_TRACE_RESTRICT_SELECT_TILE: '{BLACK}Select Tile'
   STR_TRACE_RESTRICT_SET_SPEED_RESTRICTION: 'Restrict train speed to: {VELOCITY}'
   STR_TRACE_RESTRICT_SHARE: '{BLACK}Share'
+  STR_TRACE_RESTRICT_SHARE_ONTO: '{BLACK}Share Onto'
   STR_TRACE_RESTRICT_SHARE_TOOLTIP: '{BLACK}Share program with another signal'
+  STR_TRACE_RESTRICT_SHARE_TOOLTIP_EXTRA: '{STRING}{}{BLACK}Ctrl+Click to set other signals to share with this program'
   STR_TRACE_RESTRICT_SIGNAL_GUI_TOOLTIP: '{BLACK}Routefinding restriction'
   STR_TRACE_RESTRICT_SIGNAL_MODE_CONTROL: Signal mode control
   STR_TRACE_RESTRICT_SLOT_ACQUIRE_WAIT: Acquire or wait
@@ -1647,6 +1729,7 @@ weblate:
   STR_VEHICLE_TYPE_ROAD_VEHICLES: Road Vehicles
   STR_VEHICLE_TYPE_SHIPS: Ships
   STR_VEHICLE_TYPE_TRAINS: Trains
+  STR_VEHICLE_VIEW_ORDER_NUMBER: '{COMMA}: {STRING}'
   STR_VEHICLE_VIEW_SEND_TO_DEPOT_MENU: '{BLACK}Cancel send vehicle to depot/hangar. Ctrl+Click for menu. Shift+Click to select depot/hangar'
   STR_VEHICLE_VIEW_SEND_TO_DEPOT_TOOLTIP_SHIFT: '{STRING}. Shift+Click to select which'
   STR_VEHICLE_VIEW_TRAIN_CENTER_TOOLTIP_EXTRA: '{STRING}{BLACK}{}Shift+Click to toggle showing route overlay even when window is not focused'
@@ -1657,24 +1740,15 @@ weblate:
   STR_VIEWPORT_SHOW_VEHICLE_ROUTE_STEP_OVERFLOW: '{RED}{NUM}x'
   STR_VIEWPORT_SHOW_VEHICLE_ROUTE_STEP_STATION: '{BLACK}ST'
   STR_VIEWPORT_SHOW_VEHICLE_ROUTE_STEP_WAYPOINT: '{GRAY}WP'
-  STR_VIEWPORT_TOWN_EXCELLENT_RATING: '{GREEN}{TOWN}'
-  STR_VIEWPORT_TOWN_GOOD_RATING: '{YELLOW}{TOWN}'
-  STR_VIEWPORT_TOWN_MEDIOCRE_RATING: '{ORANGE}{TOWN}'
-  STR_VIEWPORT_TOWN_POP_EXCELLENT_RATING: '{WHITE}{TOWN} {GREEN}({COMMA})'
-  STR_VIEWPORT_TOWN_POP_GOOD_RATING: '{WHITE}{TOWN} {YELLOW}({COMMA})'
-  STR_VIEWPORT_TOWN_POP_MEDIOCRE_RATING: '{WHITE}{TOWN} {ORANGE}({COMMA})'
-  STR_VIEWPORT_TOWN_POP_VERY_POOR_RATING: '{WHITE}{TOWN} {RED}({COMMA})'
-  STR_VIEWPORT_TOWN_TINY_EXCELLENT_RATING: '{TINY_FONT}{GREEN}{TOWN}'
-  STR_VIEWPORT_TOWN_TINY_GOOD_RATING: '{TINY_FONT}{YELLOW}{TOWN}'
-  STR_VIEWPORT_TOWN_TINY_MEDIOCRE_RATING: '{TINY_FONT}{ORANGE}{TOWN}'
-  STR_VIEWPORT_TOWN_TINY_VERY_POOR_RATING: '{TINY_FONT}{RED}{TOWN}'
-  STR_VIEWPORT_TOWN_VERY_POOR_RATING: '{RED}{TOWN}'
+  STR_VIEWPORT_TOWN_COLOUR: '{1:SET_COLOUR}{0:TOWN}'
+  STR_VIEWPORT_TOWN_COLOUR_CITY: '{1:SET_COLOUR}{0:TOWN} (City)'
+  STR_VIEWPORT_TOWN_COLOUR_CITY_POP: '{WHITE}{TOWN} {SET_COLOUR}(City, {COMMA})'
+  STR_VIEWPORT_TOWN_COLOUR_POP: '{WHITE}{TOWN} {SET_COLOUR}({COMMA})'
+  STR_VIEWPORT_TOWN_LABEL: '{VP_TOWN_LABEL1}'
+  STR_VIEWPORT_TOWN_LABEL_TINY: '{TINY_FONT}{VP_TOWN_LABEL2}'
   STR_WARNING_LOADGAME_REMOVED_UNCORRECTABLE_VEHICLES: '{WHITE}Removed {NUM} vehicles found to be uncorrectably invalid during load'
   STR_WATERWAYS_TOOLBAR_CREATE_RIVER_IN_GAME_TOOLTIP: '{BLACK}Place rivers'
   STR_WAYPOINT_VIEW_HIDE_VIEWPORT_LABEL: '{BLACK}Hide the name label for this waypoint'
-  STR_WHITE: '{WHITE}'
-  STR_WHITE_DATE_WALLCLOCK_LONG: '{WHITE}{DATE_WALLCLOCK_LONG}'
-  STR_WHITE_DATE_WALLCLOCK_SHORT: '{WHITE}{DATE_WALLCLOCK_SHORT}'
   STR_ZONING_2x2_GRID: 2x2 town road grid
   STR_ZONING_3x3_GRID: 3x3 town road grid
   STR_ZONING_AUTHORITY: Authority

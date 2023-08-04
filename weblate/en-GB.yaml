@@ -2,40 +2,40 @@ weblate:
   STR_ABANDON_GAME_CAPTION: '{WHITE}Abandon Game'
   STR_ABANDON_GAME_QUERY: '{YELLOW}Are you sure you want to abandon this game?'
   STR_ABANDON_SCENARIO_QUERY: '{YELLOW}Are you sure you want to abandon this scenario?'
-  STR_ABBREV_ALL: '{TINY_FONT}ALL'
-  STR_ABBREV_BATTERIES: '{TINY_FONT}BA'
-  STR_ABBREV_BUBBLES: '{TINY_FONT}BU'
-  STR_ABBREV_CANDYFLOSS: '{TINY_FONT}CF'
-  STR_ABBREV_COAL: '{TINY_FONT}CL'
-  STR_ABBREV_COLA: '{TINY_FONT}CL'
-  STR_ABBREV_COPPER_ORE: '{TINY_FONT}CO'
-  STR_ABBREV_DIAMONDS: '{TINY_FONT}DM'
-  STR_ABBREV_FIZZY_DRINKS: '{TINY_FONT}FZ'
-  STR_ABBREV_FOOD: '{TINY_FONT}FD'
-  STR_ABBREV_FRUIT: '{TINY_FONT}FT'
-  STR_ABBREV_GOLD: '{TINY_FONT}GD'
-  STR_ABBREV_GOODS: '{TINY_FONT}GD'
-  STR_ABBREV_GRAIN: '{TINY_FONT}GR'
-  STR_ABBREV_IRON_ORE: '{TINY_FONT}OR'
-  STR_ABBREV_LIVESTOCK: '{TINY_FONT}LV'
-  STR_ABBREV_MAIL: '{TINY_FONT}ML'
-  STR_ABBREV_MAIZE: '{TINY_FONT}MZ'
-  STR_ABBREV_NONE: '{TINY_FONT}NO'
+  STR_ABBREV_ALL: ALL
+  STR_ABBREV_BATTERIES: BA
+  STR_ABBREV_BUBBLES: BU
+  STR_ABBREV_CANDYFLOSS: CF
+  STR_ABBREV_COAL: CL
+  STR_ABBREV_COLA: CL
+  STR_ABBREV_COPPER_ORE: CO
+  STR_ABBREV_DIAMONDS: DM
+  STR_ABBREV_FIZZY_DRINKS: FZ
+  STR_ABBREV_FOOD: FD
+  STR_ABBREV_FRUIT: FT
+  STR_ABBREV_GOLD: GD
+  STR_ABBREV_GOODS: GD
+  STR_ABBREV_GRAIN: GR
+  STR_ABBREV_IRON_ORE: OR
+  STR_ABBREV_LIVESTOCK: LV
+  STR_ABBREV_MAIL: ML
+  STR_ABBREV_MAIZE: MZ
+  STR_ABBREV_NONE: 'NO'
   STR_ABBREV_NOTHING: ''
-  STR_ABBREV_OIL: '{TINY_FONT}OL'
-  STR_ABBREV_PAPER: '{TINY_FONT}PR'
-  STR_ABBREV_PASSENGERS: '{TINY_FONT}PS'
-  STR_ABBREV_PLASTIC: '{TINY_FONT}PL'
-  STR_ABBREV_RUBBER: '{TINY_FONT}RB'
-  STR_ABBREV_STEEL: '{TINY_FONT}ST'
-  STR_ABBREV_SUGAR: '{TINY_FONT}SG'
-  STR_ABBREV_SWEETS: '{TINY_FONT}SW'
-  STR_ABBREV_TOFFEE: '{TINY_FONT}TF'
-  STR_ABBREV_TOYS: '{TINY_FONT}TY'
-  STR_ABBREV_VALUABLES: '{TINY_FONT}VL'
-  STR_ABBREV_WATER: '{TINY_FONT}WR'
-  STR_ABBREV_WHEAT: '{TINY_FONT}WH'
-  STR_ABBREV_WOOD: '{TINY_FONT}WD'
+  STR_ABBREV_OIL: OL
+  STR_ABBREV_PAPER: PR
+  STR_ABBREV_PASSENGERS: PS
+  STR_ABBREV_PLASTIC: PL
+  STR_ABBREV_RUBBER: RB
+  STR_ABBREV_STEEL: ST
+  STR_ABBREV_SUGAR: SG
+  STR_ABBREV_SWEETS: SW
+  STR_ABBREV_TOFFEE: TF
+  STR_ABBREV_TOYS: TY
+  STR_ABBREV_VALUABLES: VL
+  STR_ABBREV_WATER: WR
+  STR_ABBREV_WHEAT: WH
+  STR_ABBREV_WOOD: WD
   STR_ABOUT_COPYRIGHT_OPENTTD: '{BLACK}OpenTTD {COPYRIGHT} 2002-{RAW_STRING} The OpenTTD team'
   STR_ABOUT_MENU_ABOUT_OPENTTD: About 'OpenTTD'
   STR_ABOUT_MENU_AI_DEBUG: AI/Game script debug
@@ -71,6 +71,7 @@ weblate:
   STR_AI_CONFIG_CHANGE_AI: '{BLACK}Select AI'
   STR_AI_CONFIG_CHANGE_GAMESCRIPT: '{BLACK}Select Game Script'
   STR_AI_CONFIG_CHANGE_TOOLTIP: '{BLACK}Load another script. Ctrl+Click to show all available versions'
+  STR_AI_CONFIG_COMPETITORS_INTERVAL: '{LTBLUE}Interval between starting of competitors: {ORANGE}{COMMA} minute{P "" s}'
   STR_AI_CONFIG_CONFIGURE: '{BLACK}Configure'
   STR_AI_CONFIG_CONFIGURE_TOOLTIP: '{BLACK}Configure the parameters of the Script'
   STR_AI_CONFIG_GAMELIST_TOOLTIP: '{BLACK}The Game Script that will be loaded in the next game'
@@ -120,7 +121,6 @@ weblate:
   STR_AI_SETTINGS_CLOSE: '{BLACK}Close'
   STR_AI_SETTINGS_RESET: '{BLACK}Reset'
   STR_AI_SETTINGS_SETTING: '{RAW_STRING}: {ORANGE}{STRING1}'
-  STR_AI_SETTINGS_START_DELAY: 'Number of days to start this AI after the previous one (give or take): {ORANGE}{STRING1}'
   STR_AI_SPEED_FAST: Fast
   STR_AI_SPEED_MEDIUM: Medium
   STR_AI_SPEED_SLOW: Slow
@@ -144,12 +144,6 @@ weblate:
   STR_BLACK_5: '{BLACK}5'
   STR_BLACK_6: '{BLACK}6'
   STR_BLACK_7: '{BLACK}7'
-  STR_BLACK_COMMA: '{BLACK}{COMMA}'
-  STR_BLACK_DATE_LONG: '{BLACK}{DATE_LONG}'
-  STR_BLACK_INT: '{BLACK}{NUM}'
-  STR_BLACK_RAW_STRING: '{BLACK}{RAW_STRING}'
-  STR_BLACK_STRING: '{BLACK}{STRING}'
-  STR_BLUE_COMMA: '{BLUE}{COMMA}'
   STR_BRIDGE_NAME_CANTILEVER_STEEL: Cantilever, Steel
   STR_BRIDGE_NAME_CONCRETE: Concrete
   STR_BRIDGE_NAME_GIRDER_STEEL: Girder, Steel
@@ -191,6 +185,7 @@ weblate:
   STR_BUTTON_DEFAULT: '{BLACK}Default'
   STR_BUTTON_OK: '{BLACK}OK'
   STR_BUTTON_SORT_BY: '{BLACK}Sort by'
+  STR_BUY_COMPANY_HOSTILE_TAKEOVER: '{WHITE}In a hostile takeover of {COMPANY} you will purchase all assets, pay off all loans, and pay two years worth of profits.{}{}The total is estimated to be {CURRENCY_LONG}.{}{}Do you want to continue this hostile takeover?'
   STR_BUY_COMPANY_MESSAGE: '{WHITE}We are looking for a transport company to take-over our company.{}{}Do you want to purchase {COMPANY} for {CURRENCY_LONG}?'
   STR_BUY_VEHICLE_AIRCRAFT_BUY_REFIT_VEHICLE_BUTTON: '{BLACK}Buy and Refit Aircraft'
   STR_BUY_VEHICLE_AIRCRAFT_BUY_REFIT_VEHICLE_TOOLTIP: '{BLACK}Buy and refit the highlighted aircraft. Shift+Click shows estimated cost without purchase'
@@ -378,7 +373,6 @@ weblate:
   STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_TRANSPORT_COORDINATOR: Transport Coordinator
   STR_COMPANY_LEAGUE_PERFORMANCE_TITLE_TYCOON: Tycoon
   STR_COMPANY_LEAGUE_TABLE_CAPTION: '{WHITE}Company League Table'
-  STR_COMPANY_MONEY: '{WHITE}{CURRENCY_LONG}'
   STR_COMPANY_NAME: '{COMPANY}'
   STR_COMPANY_NAME_COMPANY_NUM: '{COMPANY} {COMPANY_NUM}'
   STR_COMPANY_PASSWORD_CANCEL: '{BLACK}Do not save the entered password'
@@ -390,8 +384,6 @@ weblate:
   STR_COMPANY_VIEW_AIRCRAFT: '{WHITE}{COMMA} aircraft'
   STR_COMPANY_VIEW_BUILD_HQ_BUTTON: '{BLACK}Build HQ'
   STR_COMPANY_VIEW_BUILD_HQ_TOOLTIP: '{BLACK}Build company headquarters'
-  STR_COMPANY_VIEW_BUY_SHARE_BUTTON: '{BLACK}Buy 25% share in company'
-  STR_COMPANY_VIEW_BUY_SHARE_TOOLTIP: '{BLACK}Buy 25% share in this company. Shift+Click shows estimated cost without purchasing any share'
   STR_COMPANY_VIEW_CAPTION: '{WHITE}{COMPANY} {BLACK}{COMPANY_NUM}'
   STR_COMPANY_VIEW_COLOUR_SCHEME_BUTTON: '{BLACK}Colour Scheme'
   STR_COMPANY_VIEW_COLOUR_SCHEME_TITLE: '{GOLD}Colour Scheme:'
@@ -403,6 +395,8 @@ weblate:
   STR_COMPANY_VIEW_GIVE_MONEY_BUTTON: '{BLACK}Give money'
   STR_COMPANY_VIEW_GIVE_MONEY_QUERY_CAPTION: Enter the amount of money you want to give
   STR_COMPANY_VIEW_GIVE_MONEY_TOOLTIP: '{BLACK}Give money to this company'
+  STR_COMPANY_VIEW_HOSTILE_TAKEOVER_BUTTON: '{BLACK}Hostile takeover'
+  STR_COMPANY_VIEW_HOSTILE_TAKEOVER_TOOLTIP: '{BLACK}Do a hostile takeover of this company'
   STR_COMPANY_VIEW_INAUGURATED_TITLE: '{GOLD}Inaugurated: {WHITE}{NUM}'
   STR_COMPANY_VIEW_INFRASTRUCTURE: '{GOLD}Infrastructure:'
   STR_COMPANY_VIEW_INFRASTRUCTURE_AIRPORT: '{WHITE}{COMMA} airport{P "" s}'
@@ -426,10 +420,7 @@ weblate:
   STR_COMPANY_VIEW_RELOCATE_COMPANY_HEADQUARTERS: '{BLACK}Rebuild company headquarters elsewhere for 1% cost of company value. Shift+Click shows estimated cost without relocating HQ'
   STR_COMPANY_VIEW_RELOCATE_HQ: '{BLACK}Relocate HQ'
   STR_COMPANY_VIEW_ROAD_VEHICLES: '{WHITE}{COMMA} road vehicle{P "" s}'
-  STR_COMPANY_VIEW_SELL_SHARE_BUTTON: '{BLACK}Sell 25% share in company'
-  STR_COMPANY_VIEW_SELL_SHARE_TOOLTIP: '{BLACK}Sell 25% share in this company. Shift+Click shows estimated income without selling any share'
   STR_COMPANY_VIEW_SET_PASSWORD: '{BLACK}Set company password'
-  STR_COMPANY_VIEW_SHARES_OWNED_BY: '{WHITE}({COMMA}% owned by {COMPANY})'
   STR_COMPANY_VIEW_SHIPS: '{WHITE}{COMMA} ship{P "" s}'
   STR_COMPANY_VIEW_TRAINS: '{WHITE}{COMMA} train{P "" s}'
   STR_COMPANY_VIEW_VEHICLES_NONE: '{WHITE}None'
@@ -487,8 +478,6 @@ weblate:
   STR_CONFIG_SETTING_ALLOW_FUND_ROAD_HELPTEXT: Allow companies to give money to towns for road re-construction to sabotage road-based services in the town
   STR_CONFIG_SETTING_ALLOW_GIVE_MONEY: 'Allow sending money to other companies: {STRING2}'
   STR_CONFIG_SETTING_ALLOW_GIVE_MONEY_HELPTEXT: Allow transfer of money between companies in multiplayer mode
-  STR_CONFIG_SETTING_ALLOW_SHARES: 'Allow buying shares from other companies: {STRING2}'
-  STR_CONFIG_SETTING_ALLOW_SHARES_HELPTEXT: When enabled, allow buying and selling of company shares. Shares will only be available for companies reaching a certain age
   STR_CONFIG_SETTING_ALLOW_TOWN_LEVEL_CROSSINGS: 'Towns are allowed to build level crossings: {STRING2}'
   STR_CONFIG_SETTING_ALLOW_TOWN_LEVEL_CROSSINGS_HELPTEXT: Enabling this setting allows towns to build level crossings
   STR_CONFIG_SETTING_ALLOW_TOWN_ROADS: 'Towns are allowed to build roads: {STRING2}'
@@ -674,10 +663,10 @@ weblate:
   STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREYSCALE: Greyscale
   STR_CONFIG_SETTING_LINKGRAPH_COLOURS_GREY_TO_RED: Grey to red
   STR_CONFIG_SETTING_LINKGRAPH_COLOURS_HELPTEXT: Set the colour scheme used for the cargo flow overlay.
-  STR_CONFIG_SETTING_LINKGRAPH_INTERVAL: Update distribution graph every {STRING2}{NBSP}day{P 0:2 "" s}
-  STR_CONFIG_SETTING_LINKGRAPH_INTERVAL_HELPTEXT: Time between subsequent recalculations of the link graph. Each recalculation calculates the plans for one component of the graph. That means that a value X for this setting does not mean the whole graph will be updated every X days. Only some component will. The shorter you set it the more CPU time will be necessary to calculate it. The longer you set it the longer it will take until the cargo distribution starts on new routes.
-  STR_CONFIG_SETTING_LINKGRAPH_TIME: Take {STRING2}{NBSP}day{P 0:2 "" s} for recalculation of distribution graph
-  STR_CONFIG_SETTING_LINKGRAPH_TIME_HELPTEXT: Time taken for each recalculation of a link graph component. When a recalculation is started, a thread is spawned which is allowed to run for this number of days. The shorter you set this the more likely it is that the thread is not finished when it's supposed to. Then the game stops until it is ("lag"). The longer you set it the longer it takes for the distribution to be updated when routes change.
+  STR_CONFIG_SETTING_LINKGRAPH_RECALC_INTERVAL: Update distribution graph every {STRING2}{NBSP}second{P 0:2 "" s}
+  STR_CONFIG_SETTING_LINKGRAPH_RECALC_INTERVAL_HELPTEXT: Time between subsequent recalculations of the link graph. Each recalculation calculates the plans for one component of the graph. That means that a value X for this setting does not mean the whole graph will be updated every X seconds. Only some component will. The shorter you set it the more CPU time will be necessary to calculate it. The longer you set it the longer it will take until the cargo distribution starts on new routes.
+  STR_CONFIG_SETTING_LINKGRAPH_RECALC_TIME: Take {STRING2}{NBSP}second{P 0:2 "" s} for recalculation of distribution graph
+  STR_CONFIG_SETTING_LINKGRAPH_RECALC_TIME_HELPTEXT: Time taken for each recalculation of a link graph component. When a recalculation is started, a thread is spawned which is allowed to run for this number of seconds. The shorter you set this the more likely it is that the thread is not finished when it's supposed to. Then the game stops until it is ("lag"). The longer you set it the longer it takes for the distribution to be updated when routes change.
   STR_CONFIG_SETTING_LINK_TERRAFORM_TOOLBAR: 'Link landscape toolbar to rail/road/water/airport toolbars: {STRING2}'
   STR_CONFIG_SETTING_LINK_TERRAFORM_TOOLBAR_HELPTEXT: When opening a construction toolbar for a transport type, also open the toolbar for terraforming
   STR_CONFIG_SETTING_LIVERIES: 'Show vehicle-type specific liveries: {STRING2}'
@@ -745,10 +734,6 @@ weblate:
   STR_CONFIG_SETTING_MAX_TUNNEL_LENGTH_HELPTEXT: Maximum length for building tunnels
   STR_CONFIG_SETTING_MEASURE_TOOLTIP: 'Show a measurement tooltip when using various build-tools: {STRING2}'
   STR_CONFIG_SETTING_MEASURE_TOOLTIP_HELPTEXT: Display tile-distances and height differences when dragging during construction operations
-  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES: 'Minimum company age to trade shares: {STRING2}'
-  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_HELPTEXT: Set the minimum age of a company for others to be able to buy and sell shares from them.
-  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_NO_MIN: No minimum
-  STR_CONFIG_SETTING_MIN_YEARS_FOR_SHARES_VALUE: '{COMMA} year{P "" s}'
   STR_CONFIG_SETTING_MULTIPINDTOWN: 'Allow multiple similar industries per town: {STRING2}'
   STR_CONFIG_SETTING_MULTIPINDTOWN_HELPTEXT: Normally, a town does not want more than one industry of each type. With this setting, it will allow several industries of the same type in the same town
   STR_CONFIG_SETTING_NETWORK: '{ORANGE}Network'
@@ -896,7 +881,7 @@ weblate:
   STR_CONFIG_SETTING_SCRIPT_MAX_OPCODES_HELPTEXT: Maximum number of computation steps that a script can take in one turn
   STR_CONFIG_SETTING_SCROLLMODE: 'Viewport scroll behaviour: {STRING2}'
   STR_CONFIG_SETTING_SCROLLMODE_DEFAULT: Move viewport with RMB, mouse position locked
-  STR_CONFIG_SETTING_SCROLLMODE_HELPTEXT: Behaviour when scrolling the map
+  STR_CONFIG_SETTING_SCROLLMODE_HELPTEXT: Behaviour when scrolling the map. The "mouse position locked" options don't work on all systems, like web-based versions, touchscreens, Linux with Wayland, and others
   STR_CONFIG_SETTING_SCROLLMODE_LMB: Move map with LMB
   STR_CONFIG_SETTING_SCROLLMODE_RMB: Move map with RMB
   STR_CONFIG_SETTING_SCROLLMODE_RMB_LOCKED: Move map with RMB, mouse position locked
@@ -917,7 +902,7 @@ weblate:
   STR_CONFIG_SETTING_SERVINT_AIRCRAFT_HELPTEXT: Set the default service interval for new aircraft, if no explicit service interval is set for the vehicle
   STR_CONFIG_SETTING_SERVINT_DISABLED: Disabled
   STR_CONFIG_SETTING_SERVINT_ISPERCENT: 'Service intervals are in percents: {STRING2}'
-  STR_CONFIG_SETTING_SERVINT_ISPERCENT_HELPTEXT: Choose whether servicing of vehicles is triggered by the time passed since last service or by reliability dropping by a certain percentage of the maximum reliability
+  STR_CONFIG_SETTING_SERVINT_ISPERCENT_HELPTEXT: When enabled, vehicles try to service when their reliability drops by a given percentage of the maximum reliability.{}{}For example, if a vehicle's maximum reliability is 90% and the service interval is 20%, the vehicle will try to service when it reaches 72% reliability.
   STR_CONFIG_SETTING_SERVINT_ROAD_VEHICLES: 'Default service interval for road vehicles: {STRING2}'
   STR_CONFIG_SETTING_SERVINT_ROAD_VEHICLES_HELPTEXT: Set the default service interval for new road vehicles, if no explicit service interval is set for the vehicle
   STR_CONFIG_SETTING_SERVINT_SHIPS: 'Default service interval for ships: {STRING2}'
@@ -1075,6 +1060,7 @@ weblate:
   STR_CONFIG_SETTING_USE_RELAY_SERVICE_ASK: Ask
   STR_CONFIG_SETTING_USE_RELAY_SERVICE_HELPTEXT: If creating a connection to the server fails, one can use a relay service to create a connection. "Never" disallows this, "ask" will ask first, "allow" will allow it without asking
   STR_CONFIG_SETTING_USE_RELAY_SERVICE_NEVER: Never
+  STR_CONFIG_SETTING_VALUE: '{PUSH_COLOUR}{ORANGE}{STRING1}{POP_COLOUR}'
   STR_CONFIG_SETTING_VARIETY: 'Variety distribution: {STRING2}'
   STR_CONFIG_SETTING_VARIETY_HELPTEXT: (TerraGenesis only) Control whether the map contains both mountainous and flat areas. Since this only makes the map flatter, other settings should be set to mountainous
   STR_CONFIG_SETTING_VEHICLES: '{ORANGE}Vehicles'
@@ -1179,7 +1165,6 @@ weblate:
   STR_CURRENCY_WINDOW: '{WHITE}Custom currency'
   STR_DATE_CAPTION: '{WHITE}Set date'
   STR_DATE_DAY_TOOLTIP: '{BLACK}Select day'
-  STR_DATE_LONG_SMALL: '{TINY_FONT}{BLACK}{DATE_LONG}'
   STR_DATE_MONTH_TOOLTIP: '{BLACK}Select month'
   STR_DATE_SET_DATE: '{BLACK}Set date'
   STR_DATE_SET_DATE_TOOLTIP: '{BLACK}Use the selected date as starting date for the timetable'
@@ -1379,7 +1364,6 @@ weblate:
   STR_ERROR_CAN_T_BUILD_TRAM_DEPOT: '{WHITE}Can''t build tram vehicle depot here...'
   STR_ERROR_CAN_T_BUILD_TRUCK_STATION: '{WHITE}Can''t build lorry station...'
   STR_ERROR_CAN_T_BUILD_TUNNEL_HERE: '{WHITE}Can''t build tunnel here...'
-  STR_ERROR_CAN_T_BUY_25_SHARE_IN_THIS: '{WHITE}Can''t buy 25% share in this company...'
   STR_ERROR_CAN_T_BUY_AIRCRAFT: '{WHITE}Can''t buy aircraft...'
   STR_ERROR_CAN_T_BUY_COMPANY: '{WHITE}Can''t buy company...'
   STR_ERROR_CAN_T_BUY_ROAD_VEHICLE: '{WHITE}Can''t buy road vehicle...'
@@ -1451,7 +1435,6 @@ weblate:
   STR_ERROR_CAN_T_REVERSE_DIRECTION_RAIL_VEHICLE: '{WHITE}Can''t reverse direction of vehicle...'
   STR_ERROR_CAN_T_REVERSE_DIRECTION_RAIL_VEHICLE_MULTIPLE_UNITS: '{WHITE}... consists of multiple units'
   STR_ERROR_CAN_T_REVERSE_DIRECTION_TRAIN: '{WHITE}Can''t reverse direction of train...'
-  STR_ERROR_CAN_T_SELL_25_SHARE_IN: '{WHITE}Can''t sell 25% share in this company...'
   STR_ERROR_CAN_T_SELL_AIRCRAFT: '{WHITE}Can''t sell aircraft...'
   STR_ERROR_CAN_T_SELL_ROAD_VEHICLE: '{WHITE}Can''t sell road vehicle...'
   STR_ERROR_CAN_T_SELL_SHIP: '{WHITE}Can''t sell ship...'
@@ -1566,7 +1549,6 @@ weblate:
   STR_ERROR_PNGMAP_IMAGE_TYPE: '{WHITE}... could not convert image type. 8 or 24-bit PNG image needed'
   STR_ERROR_PNGMAP_MISC: '{WHITE}... something just went wrong (probably corrupted file)'
   STR_ERROR_PROSPECTING_WAS_UNLUCKY: '{WHITE}The funding failed to prospect due to bad luck; try again'
-  STR_ERROR_PROTECTED: '{WHITE}This company is not old enough to trade shares yet...'
   STR_ERROR_RAIL_VEHICLE_NOT_AVAILABLE: '{WHITE}Vehicle is not available'
   STR_ERROR_REAR_ENGINE_FOLLOW_FRONT: '{WHITE}The rear engine will always follow its front counterpart'
   STR_ERROR_RESOLUTION_LIST_FAILED: '{WHITE}Failed to retrieve a list of supported resolutions'
@@ -1591,6 +1573,7 @@ weblate:
   STR_ERROR_THERE_IS_NO_ROAD: '{WHITE}... there is no road'
   STR_ERROR_THERE_IS_NO_STATION: '{WHITE}... there is no station here'
   STR_ERROR_THERE_IS_NO_TRAMWAY: '{WHITE}... there is no tramway'
+  STR_ERROR_TIMETABLE_INCOMPLETE: '{WHITE}... timetable is incomplete'
   STR_ERROR_TIMETABLE_NOT_STOPPING_HERE: '{WHITE}This vehicle is not stopping at this station'
   STR_ERROR_TIMETABLE_ONLY_WAIT_AT_STATIONS: '{WHITE}Vehicles can only wait at stations'
   STR_ERROR_TOO_CLOSE_TO_ANOTHER_AIRPORT: '{WHITE}Too close to another airport'
@@ -1741,10 +1724,10 @@ weblate:
   STR_FORMAT_BUOY_NAME: '{TOWN} Buoy'
   STR_FORMAT_BUOY_NAME_SERIAL: '{TOWN} Buoy #{COMMA}'
   STR_FORMAT_COMPANY_NUM: (Company {COMMA})
-  STR_FORMAT_DATE_ISO: '{2:NUM}-{1:RAW_STRING}-{0:RAW_STRING}'
+  STR_FORMAT_DATE_ISO: '{2:NUM}-{1:ZEROFILL_NUM}-{0:ZEROFILL_NUM}'
   STR_FORMAT_DATE_LONG: '{STRING} {STRING} {NUM}'
   STR_FORMAT_DATE_SHORT: '{STRING} {NUM}'
-  STR_FORMAT_DATE_TINY: '{RAW_STRING}-{RAW_STRING}-{NUM}'
+  STR_FORMAT_DATE_TINY: '{ZEROFILL_NUM}-{ZEROFILL_NUM}-{NUM}'
   STR_FORMAT_DEPOT_NAME_AIRCRAFT: '{STATION} Hangar'
   STR_FORMAT_DEPOT_NAME_ROAD_VEHICLE: '{TOWN} Road Vehicle Depot'
   STR_FORMAT_DEPOT_NAME_ROAD_VEHICLE_SERIAL: '{TOWN} Road Vehicle Depot #{COMMA}'
@@ -1852,10 +1835,10 @@ weblate:
   STR_FUND_INDUSTRY_REMOVE_ALL_INDUSTRIES_QUERY: '{YELLOW}Are you sure you want to remove all industries?'
   STR_FUND_INDUSTRY_REMOVE_ALL_INDUSTRIES_TOOLTIP: '{BLACK}Remove all industries currently present on the map'
   STR_FUND_INDUSTRY_SELECTION_TOOLTIP: '{BLACK}Choose the appropriate industry from this list'
-  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_12_MONTHS: Every 12 months
-  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_1_MONTH: Every month
-  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_3_MONTHS: Every 3 months
-  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_6_MONTHS: Every 6 months
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_10_MINUTES: Every 10 minutes
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_120_MINUTES: Every 120 minutes
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_30_MINUTES: Every 30 minutes
+  STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_EVERY_60_MINUTES: Every 60 minutes
   STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_OFF: 'Off'
   STR_GAME_OPTIONS_AUTOSAVE_DROPDOWN_TOOLTIP: '{BLACK}Select interval between automatic game saves'
   STR_GAME_OPTIONS_AUTOSAVE_FRAME: '{BLACK}Autosave'
@@ -1932,6 +1915,14 @@ weblate:
   STR_GAME_OPTIONS_LANGUAGE: '{BLACK}Language'
   STR_GAME_OPTIONS_LANGUAGE_PERCENTAGE: '{RAW_STRING} ({NUM}% completed)'
   STR_GAME_OPTIONS_LANGUAGE_TOOLTIP: '{BLACK}Select the interface language to use'
+  STR_GAME_OPTIONS_MUSIC_VOLUME: Music
+  STR_GAME_OPTIONS_PARTICIPATE_SURVEY: '{BLACK}Participate in automated survey'
+  STR_GAME_OPTIONS_PARTICIPATE_SURVEY_FRAME: '{BLACK}Automated survey'
+  STR_GAME_OPTIONS_PARTICIPATE_SURVEY_LINK: '{BLACK}About survey and privacy'
+  STR_GAME_OPTIONS_PARTICIPATE_SURVEY_LINK_TOOLTIP: '{BLACK}This opens a browser with more information about the automated survey'
+  STR_GAME_OPTIONS_PARTICIPATE_SURVEY_PREVIEW: '{BLACK}Preview survey result'
+  STR_GAME_OPTIONS_PARTICIPATE_SURVEY_PREVIEW_TOOLTIP: '{BLACK}Show the survey result of the current running game'
+  STR_GAME_OPTIONS_PARTICIPATE_SURVEY_TOOLTIP: '{BLACK}When enabled, OpenTTD will transmit a survey when leaving a game'
   STR_GAME_OPTIONS_REFRESH_RATE: '{BLACK}Display refresh rate'
   STR_GAME_OPTIONS_REFRESH_RATE_ITEM: '{NUM}Hz'
   STR_GAME_OPTIONS_REFRESH_RATE_TOOLTIP: '{BLACK}Select the screen refresh rate to use'
@@ -1940,12 +1931,25 @@ weblate:
   STR_GAME_OPTIONS_RESOLUTION_ITEM: '{NUM}x{NUM}'
   STR_GAME_OPTIONS_RESOLUTION_OTHER: other
   STR_GAME_OPTIONS_RESOLUTION_TOOLTIP: '{BLACK}Select the screen resolution to use'
+  STR_GAME_OPTIONS_SFX_VOLUME: Sound effects
+  STR_GAME_OPTIONS_TAB_GENERAL: General
+  STR_GAME_OPTIONS_TAB_GENERAL_TT: '{BLACK}Choose general settings'
+  STR_GAME_OPTIONS_TAB_GRAPHICS: Graphics
+  STR_GAME_OPTIONS_TAB_GRAPHICS_TT: '{BLACK}Choose graphics settings'
+  STR_GAME_OPTIONS_TAB_SOUND: Sound
+  STR_GAME_OPTIONS_TAB_SOUND_TT: '{BLACK}Choose sound and music settings'
   STR_GAME_OPTIONS_VIDEO_ACCELERATION: '{BLACK}Hardware acceleration'
   STR_GAME_OPTIONS_VIDEO_ACCELERATION_RESTART: '{WHITE}The setting will only take effect after a game restart'
   STR_GAME_OPTIONS_VIDEO_ACCELERATION_TOOLTIP: '{BLACK}Check this box to allow OpenTTD to try to use hardware acceleration. A changed setting will only be applied upon game restart'
   STR_GAME_OPTIONS_VIDEO_DRIVER_INFO: '{BLACK}Current driver: {RAW_STRING}'
   STR_GAME_OPTIONS_VIDEO_VSYNC: '{BLACK}VSync'
   STR_GAME_OPTIONS_VIDEO_VSYNC_TOOLTIP: '{BLACK}Check this box to v-sync the screen. A changed setting will only be applied upon game restart. Only works with hardware acceleration enabled'
+  STR_GAME_OPTIONS_VOLUME: Volume
+  STR_GAME_OPTIONS_VOLUME_0: 0%
+  STR_GAME_OPTIONS_VOLUME_100: 100%
+  STR_GAME_OPTIONS_VOLUME_25: 25%
+  STR_GAME_OPTIONS_VOLUME_50: 50%
+  STR_GAME_OPTIONS_VOLUME_75: 75%
   STR_GAME_SAVELOAD_ERROR_BROKEN_INTERNAL_ERROR: 'Internal error: {RAW_STRING}'
   STR_GAME_SAVELOAD_ERROR_BROKEN_SAVEGAME: Broken savegame - {RAW_STRING}
   STR_GAME_SAVELOAD_ERROR_DATA_INTEGRITY_CHECK_FAILED: Data integrity check failed
@@ -2216,9 +2220,11 @@ weblate:
   STR_JUST_DATE_LONG: '{DATE_LONG}'
   STR_JUST_DATE_SHORT: '{DATE_SHORT}'
   STR_JUST_DATE_TINY: '{DATE_TINY}'
+  STR_JUST_DECIMAL: '{DECIMAL}'
   STR_JUST_INT: '{NUM}'
   STR_JUST_NOTHING: Nothing
   STR_JUST_RAW_STRING: '{RAW_STRING}'
+  STR_JUST_RIGHT_ARROW: '{RIGHT_ARROW}'
   STR_JUST_STRING: '{STRING}'
   STR_JUST_STRING_STRING: '{STRING}{STRING}'
   STR_LAI_BRIDGE_DESCRIPTION_AQUEDUCT: Aqueduct
@@ -2405,7 +2411,6 @@ weblate:
   STR_LOCAL_AUTHORITY_ZONE: '{BLACK}Zone'
   STR_LOCAL_AUTHORITY_ZONE_TOOLTIP: '{BLACK}Show zone within local authority boundaries'
   STR_LORRY: '{BLACK}{LORRY}'
-  STR_LTBLUE_STRING: '{LTBLUE}{STRING}'
   STR_MAPGEN_AI_SETTINGS: '{BLACK}AI Settings'
   STR_MAPGEN_AI_SETTINGS_TOOLTIP: '{BLACK}Display AI settings'
   STR_MAPGEN_BORDER_FREEFORM: '{BLACK}Freeform'
@@ -2561,6 +2566,12 @@ weblate:
   STR_NETWORK_ASK_RELAY_TEXT: '{YELLOW}Failed to establish a connection between you and server ''{RAW_STRING}''.{}Would you like to relay this session via ''{RAW_STRING}''?'
   STR_NETWORK_ASK_RELAY_YES_ALWAYS: '{BLACK}Yes, don''t ask again'
   STR_NETWORK_ASK_RELAY_YES_ONCE: '{BLACK}Yes, this once'
+  STR_NETWORK_ASK_SURVEY_CAPTION: Participate in automated survey?
+  STR_NETWORK_ASK_SURVEY_LINK: About survey and privacy
+  STR_NETWORK_ASK_SURVEY_NO: 'No'
+  STR_NETWORK_ASK_SURVEY_PREVIEW: Preview survey result
+  STR_NETWORK_ASK_SURVEY_TEXT: Would you like to participate in the automated survey?{}OpenTTD will transmit a survey when leaving a game.{}You can change this at any time under "Game Options".
+  STR_NETWORK_ASK_SURVEY_YES: 'Yes'
   STR_NETWORK_CHAT_ALL: '[All] {RAW_STRING}: {WHITE}{RAW_STRING}'
   STR_NETWORK_CHAT_ALL_CAPTION: '[All] :'
   STR_NETWORK_CHAT_CLIENT: '[Private] {RAW_STRING}: {WHITE}{RAW_STRING}'
@@ -2941,7 +2952,7 @@ weblate:
   STR_NEWS_MENU_DELETE_ALL_MESSAGES: Delete all messages
   STR_NEWS_MENU_LAST_MESSAGE_NEWS_REPORT: Last message/news report
   STR_NEWS_MENU_MESSAGE_HISTORY_MENU: Message history
-  STR_NEWS_MERGER_TAKEOVER_TITLE: '{BIG_FONT}{BLACK}{RAW_STRING} has been taken over by {RAW_STRING}!'
+  STR_NEWS_MERGER_TAKEOVER_TITLE: '{BIG_FONT}{BLACK}{RAW_STRING} has been taken over by {RAW_STRING} for an undisclosed amount!'
   STR_NEWS_MESSAGE_CAPTION: '{WHITE}Message'
   STR_NEWS_NEW_TOWN: '{BLACK}{BIG_FONT}{RAW_STRING} sponsored construction of new town {TOWN}!'
   STR_NEWS_NEW_TOWN_UNSPONSORED: '{BLACK}{BIG_FONT}A new town called {TOWN} has been constructed!'
@@ -2996,10 +3007,6 @@ weblate:
   STR_OBJECT_BUILD_TOOLTIP: '{BLACK}Select object to build. Ctrl selects the area diagonally. Shift toggles building/showing cost estimate'
   STR_OBJECT_CLASS_LTHS: Lighthouses
   STR_OBJECT_CLASS_TRNS: Transmitters
-  STR_ORANGE_INT: '{ORANGE}{NUM}'
-  STR_ORANGE_STRING: '{ORANGE}{STRING}'
-  STR_ORANGE_STRING1_LTBLUE: '{ORANGE}{STRING1}{LTBLUE}'
-  STR_ORANGE_STRING1_WHITE: '{ORANGE}{STRING1}{WHITE}'
   STR_ORDERS_CAPTION: '{WHITE}{VEHICLE} (Orders)'
   STR_ORDERS_DELETE_ALL_TOOLTIP: '{BLACK}Delete all orders'
   STR_ORDERS_DELETE_BUTTON: '{BLACK}Delete'
@@ -3285,7 +3292,6 @@ weblate:
   STR_RAIL_TOOLBAR_TOOLTIP_CONVERT_RAIL: '{BLACK}Convert/Upgrade the type of rail. Shift toggles building/showing cost estimate'
   STR_RAIL_TOOLBAR_TOOLTIP_CONVERT_RAIL_TO_WAYPOINT: '{BLACK}Convert rail to waypoint. Ctrl enables joining waypoints. Shift toggles building/showing cost estimate'
   STR_RAIL_TOOLBAR_TOOLTIP_TOGGLE_BUILD_REMOVE_FOR: '{BLACK}Toggle build/remove for railway track, signals, waypoints and stations. Hold Ctrl to also remove the rail of waypoints and stations'
-  STR_RED_COMMA: '{RED}{COMMA}'
   STR_REFIT_AIRCRAFT_LIST_TOOLTIP: '{BLACK}Select type of cargo for aircraft to carry'
   STR_REFIT_AIRCRAFT_REFIT_BUTTON: '{BLACK}Refit aircraft'
   STR_REFIT_AIRCRAFT_REFIT_TOOLTIP: '{BLACK}Refit aircraft to carry highlighted cargo type'
@@ -3476,7 +3482,6 @@ weblate:
   STR_SE_MAPGEN_FLAT_WORLD_TOOLTIP: '{BLACK}Generate a flat land'
   STR_SE_MAPGEN_RANDOM_LAND: '{WHITE}Random land'
   STR_SHIP: '{BLACK}{SHIP}'
-  STR_SHORT_DATE: '{WHITE}{DATE_TINY}'
   STR_SHOW_HIDDEN_ENGINES_VEHICLE_AIRCRAFT: '{BLACK}Show hidden'
   STR_SHOW_HIDDEN_ENGINES_VEHICLE_AIRCRAFT_TOOLTIP: '{BLACK}By enabling this button, the hidden aircraft are also displayed'
   STR_SHOW_HIDDEN_ENGINES_VEHICLE_ROAD_VEHICLE: '{BLACK}Show hidden'
@@ -3643,8 +3648,11 @@ weblate:
   STR_STATION_BUILD_SUPPLIES_CARGO: '{BLACK}Supplies: {GOLD}{CARGO_LIST}'
   STR_STATION_BUILD_TRUCK_ORIENTATION: '{WHITE}Lorry Station Orientation'
   STR_STATION_BUILD_TRUCK_ORIENTATION_TOOLTIP: '{BLACK}Select lorry loading bay orientation'
-  STR_STATION_CLASS_DFLT: Default station
+  STR_STATION_CLASS_DFLT: Default
+  STR_STATION_CLASS_DFLT_ROADSTOP: Default road stop
+  STR_STATION_CLASS_DFLT_STATION: Default station
   STR_STATION_CLASS_WAYP: Waypoints
+  STR_STATION_CLASS_WAYP_WAYPOINT: Default waypoint
   STR_STATION_LIST_CAPTION: '{WHITE}{COMPANY} - {COMMA} Station{P "" s}'
   STR_STATION_LIST_NONE: '{YELLOW}- None -'
   STR_STATION_LIST_NO_WAITING_CARGO: '{BLACK}No cargo of any type is waiting'
@@ -3779,6 +3787,7 @@ weblate:
   STR_TEXTFILE_CHANGELOG_CAPTION: '{WHITE}{STRING} changelog of {RAW_STRING}'
   STR_TEXTFILE_LICENCE_CAPTION: '{WHITE}{STRING} licence of {RAW_STRING}'
   STR_TEXTFILE_README_CAPTION: '{WHITE}{STRING} readme of {RAW_STRING}'
+  STR_TEXTFILE_SURVEY_RESULT_CAPTION: '{WHITE}Preview of survey result'
   STR_TEXTFILE_VIEW_CHANGELOG: '{BLACK}Changelog'
   STR_TEXTFILE_VIEW_LICENCE: '{BLACK}Licence'
   STR_TEXTFILE_VIEW_README: '{BLACK}View readme'
@@ -3828,14 +3837,7 @@ weblate:
   STR_TIMETABLE_TRAVEL_NOT_TIMETABLED: Travel (not timetabled)
   STR_TIMETABLE_TRAVEL_NOT_TIMETABLED_SPEED: Travel (not timetabled) with at most {2:VELOCITY}
   STR_TIMETABLE_WAIT_TIME_TOOLTIP: '{BLACK}Change the amount of time that the highlighted order should take. Ctrl+Click sets the time for all orders'
-  STR_TINY_BLACK_COMA: '{TINY_FONT}{BLACK}{COMMA}'
-  STR_TINY_BLACK_DECIMAL: '{TINY_FONT}{BLACK}{DECIMAL}'
   STR_TINY_BLACK_HEIGHT: '{TINY_FONT}{BLACK}{HEIGHT}'
-  STR_TINY_BLACK_STATION: '{TINY_FONT}{BLACK}{STATION}'
-  STR_TINY_BLACK_VEHICLE: '{TINY_FONT}{BLACK}{VEHICLE}'
-  STR_TINY_COMMA: '{TINY_FONT}{COMMA}'
-  STR_TINY_GROUP: '{TINY_FONT}{GROUP}'
-  STR_TINY_RIGHT_ARROW: '{TINY_FONT}{RIGHT_ARROW}'
   STR_TONS: '{COMMA}{NBSP}tonne{P "" s}'
   STR_TOOLBAR_AIRCRAFT_BUILD_AIRPORT_TOOLTIP: '{BLACK}Build airport. Ctrl enables joining stations. Shift toggles building/showing cost estimate'
   STR_TOOLBAR_AIRCRAFT_CAPTION: '{WHITE}Airports'
@@ -3977,41 +3979,41 @@ weblate:
   STR_TREES_RANDOM_TYPE: '{BLACK}Trees of random type'
   STR_TREES_RANDOM_TYPE_TOOLTIP: '{BLACK}Place trees of random type. Ctrl selects the area diagonally. Shift toggles building/showing cost estimate'
   STR_UNDEFINED: (undefined string)
-  STR_UNITS_FORCE_IMPERIAL: '{COMMA}{NBSP}lbf'
-  STR_UNITS_FORCE_METRIC: '{COMMA}{NBSP}kgf'
-  STR_UNITS_FORCE_SI: '{COMMA}{NBSP}kN'
-  STR_UNITS_HEIGHT_IMPERIAL: '{COMMA}{NBSP}ft'
-  STR_UNITS_HEIGHT_METRIC: '{COMMA}{NBSP}m'
-  STR_UNITS_HEIGHT_SI: '{COMMA}{NBSP}m'
-  STR_UNITS_POWER_IMPERIAL: '{COMMA}{NBSP}hp'
+  STR_UNITS_FORCE_IMPERIAL: '{DECIMAL}{NBSP}lbf'
+  STR_UNITS_FORCE_METRIC: '{DECIMAL}{NBSP}kgf'
+  STR_UNITS_FORCE_SI: '{DECIMAL}{NBSP}kN'
+  STR_UNITS_HEIGHT_IMPERIAL: '{DECIMAL}{NBSP}ft'
+  STR_UNITS_HEIGHT_METRIC: '{DECIMAL}{NBSP}m'
+  STR_UNITS_HEIGHT_SI: '{DECIMAL}{NBSP}m'
+  STR_UNITS_POWER_IMPERIAL: '{DECIMAL}{NBSP}hp'
   STR_UNITS_POWER_IMPERIAL_TO_WEIGHT_IMPERIAL: '{DECIMAL}{NBSP}hp/t'
   STR_UNITS_POWER_IMPERIAL_TO_WEIGHT_METRIC: '{DECIMAL}{NBSP}hp/t'
   STR_UNITS_POWER_IMPERIAL_TO_WEIGHT_SI: '{DECIMAL}{NBSP}hp/Mg'
-  STR_UNITS_POWER_METRIC: '{COMMA}{NBSP}hp'
+  STR_UNITS_POWER_METRIC: '{DECIMAL}{NBSP}hp'
   STR_UNITS_POWER_METRIC_TO_WEIGHT_IMPERIAL: '{DECIMAL}{NBSP}hp/t'
   STR_UNITS_POWER_METRIC_TO_WEIGHT_METRIC: '{DECIMAL}{NBSP}hp/t'
   STR_UNITS_POWER_METRIC_TO_WEIGHT_SI: '{DECIMAL}{NBSP}hp/Mg'
-  STR_UNITS_POWER_SI: '{COMMA}{NBSP}kW'
+  STR_UNITS_POWER_SI: '{DECIMAL}{NBSP}kW'
   STR_UNITS_POWER_SI_TO_WEIGHT_IMPERIAL: '{DECIMAL}{NBSP}kW/t'
   STR_UNITS_POWER_SI_TO_WEIGHT_METRIC: '{DECIMAL}{NBSP}kW/t'
   STR_UNITS_POWER_SI_TO_WEIGHT_SI: '{DECIMAL}{NBSP}W/kg'
   STR_UNITS_VELOCITY_GAMEUNITS: '{DECIMAL}{NBSP}tiles/day'
-  STR_UNITS_VELOCITY_IMPERIAL: '{COMMA}{NBSP}mph'
-  STR_UNITS_VELOCITY_KNOTS: '{COMMA}{NBSP}knots'
-  STR_UNITS_VELOCITY_METRIC: '{COMMA}{NBSP}km/h'
-  STR_UNITS_VELOCITY_SI: '{COMMA}{NBSP}m/s'
-  STR_UNITS_VOLUME_LONG_IMPERIAL: '{COMMA}{NBSP}gallon{P "" s}'
-  STR_UNITS_VOLUME_LONG_METRIC: '{COMMA}{NBSP}litre{P "" s}'
-  STR_UNITS_VOLUME_LONG_SI: '{COMMA}{NBSP}m³'
-  STR_UNITS_VOLUME_SHORT_IMPERIAL: '{COMMA}{NBSP}gal'
-  STR_UNITS_VOLUME_SHORT_METRIC: '{COMMA}{NBSP}l'
-  STR_UNITS_VOLUME_SHORT_SI: '{COMMA}{NBSP}m³'
-  STR_UNITS_WEIGHT_LONG_IMPERIAL: '{COMMA}{NBSP}ton{P "" s}'
-  STR_UNITS_WEIGHT_LONG_METRIC: '{COMMA}{NBSP}tonne{P "" s}'
-  STR_UNITS_WEIGHT_LONG_SI: '{COMMA}{NBSP}kg'
-  STR_UNITS_WEIGHT_SHORT_IMPERIAL: '{COMMA}{NBSP}t'
-  STR_UNITS_WEIGHT_SHORT_METRIC: '{COMMA}{NBSP}t'
-  STR_UNITS_WEIGHT_SHORT_SI: '{COMMA}{NBSP}kg'
+  STR_UNITS_VELOCITY_IMPERIAL: '{DECIMAL}{NBSP}mph'
+  STR_UNITS_VELOCITY_KNOTS: '{DECIMAL}{NBSP}knots'
+  STR_UNITS_VELOCITY_METRIC: '{DECIMAL}{NBSP}km/h'
+  STR_UNITS_VELOCITY_SI: '{DECIMAL}{NBSP}m/s'
+  STR_UNITS_VOLUME_LONG_IMPERIAL: '{DECIMAL}{NBSP}gallon{P "" s}'
+  STR_UNITS_VOLUME_LONG_METRIC: '{DECIMAL}{NBSP}litre{P "" s}'
+  STR_UNITS_VOLUME_LONG_SI: '{DECIMAL}{NBSP}m³'
+  STR_UNITS_VOLUME_SHORT_IMPERIAL: '{DECIMAL}{NBSP}gal'
+  STR_UNITS_VOLUME_SHORT_METRIC: '{DECIMAL}{NBSP}l'
+  STR_UNITS_VOLUME_SHORT_SI: '{DECIMAL}{NBSP}m³'
+  STR_UNITS_WEIGHT_LONG_IMPERIAL: '{DECIMAL}{NBSP}ton{P "" s}'
+  STR_UNITS_WEIGHT_LONG_METRIC: '{DECIMAL}{NBSP}tonne{P "" s}'
+  STR_UNITS_WEIGHT_LONG_SI: '{DECIMAL}{NBSP}kg'
+  STR_UNITS_WEIGHT_SHORT_IMPERIAL: '{DECIMAL}{NBSP}t'
+  STR_UNITS_WEIGHT_SHORT_METRIC: '{DECIMAL}{NBSP}t'
+  STR_UNITS_WEIGHT_SHORT_SI: '{DECIMAL}{NBSP}kg'
   STR_UNKNOWN_STATION: unknown station
   STR_VARIETY_HIGH: High
   STR_VARIETY_LOW: Low
@@ -4076,12 +4078,12 @@ weblate:
   STR_VEHICLE_LIST_AVAILABLE_ROAD_VEHICLES: Available Vehicles
   STR_VEHICLE_LIST_AVAILABLE_SHIPS: Available Ships
   STR_VEHICLE_LIST_AVAILABLE_TRAINS: Available Trains
-  STR_VEHICLE_LIST_CARGO: '{TINY_FONT}{BLACK}[{CARGO_LIST}]'
+  STR_VEHICLE_LIST_CARGO: '[{CARGO_LIST}]'
   STR_VEHICLE_LIST_MANAGE_LIST: '{BLACK}Manage list'
   STR_VEHICLE_LIST_MANAGE_LIST_TOOLTIP: '{BLACK}Send instructions to all vehicles in this list'
   STR_VEHICLE_LIST_MASS_START_LIST_TOOLTIP: '{BLACK}Click to start all the vehicles in the list'
   STR_VEHICLE_LIST_MASS_STOP_LIST_TOOLTIP: '{BLACK}Click to stop all the vehicles in the list'
-  STR_VEHICLE_LIST_NAME_AND_CARGO: '{TINY_FONT}{BLACK}{STRING1} {STRING1}'
+  STR_VEHICLE_LIST_NAME_AND_CARGO: '{STRING1} {STRING1}'
   STR_VEHICLE_LIST_PROFIT_THIS_YEAR_LAST_YEAR: '{TINY_FONT}{BLACK}Profit this year: {CURRENCY_LONG} (last year: {CURRENCY_LONG})'
   STR_VEHICLE_LIST_REPLACE_VEHICLES: Replace vehicles
   STR_VEHICLE_LIST_ROAD_VEHICLE_CAPTION: '{WHITE}{STRING2} - {COMMA} Road Vehicle{P "" s}'
@@ -4405,6 +4407,7 @@ weblate:
   STR_VEHICLE_VIEW_TRAIN_SHOW_DETAILS_TOOLTIP: '{BLACK}Show train details'
   STR_VEHICLE_VIEW_TRAIN_STATUS_START_STOP_TOOLTIP: '{BLACK}Current train action - click to stop/start train'
   STR_VIDEO_DRIVER_ERROR: '{WHITE}Error with video settings...'
+  STR_VIDEO_DRIVER_ERROR_HARDWARE_ACCELERATION_CRASH: '{WHITE}... GPU driver crashed the game. Hardware acceleration disabled'
   STR_VIDEO_DRIVER_ERROR_NO_HARDWARE_ACCELERATION: '{WHITE}... no compatible GPU found. Hardware acceleration disabled'
   STR_VIEWPORT_SIGN_SMALL_BLACK: '{TINY_FONT}{BLACK}{SIGN}'
   STR_VIEWPORT_SIGN_SMALL_WHITE: '{TINY_FONT}{WHITE}{SIGN}'
@@ -4441,8 +4444,5 @@ weblate:
   STR_WAYPOINT_VIEW_CAPTION: '{WHITE}{WAYPOINT}'
   STR_WAYPOINT_VIEW_CENTER_TOOLTIP: '{BLACK}Centre main view on waypoint location. Ctrl+Click opens a new viewport on waypoint location'
   STR_WAYPOINT_VIEW_CHANGE_WAYPOINT_NAME: '{BLACK}Change waypoint name'
-  STR_WHITE_COMMA: '{WHITE}{COMMA}'
-  STR_WHITE_DATE_LONG: '{WHITE}{DATE_LONG}'
   STR_WHITE_SIGN: '{WHITE}{SIGN}'
-  STR_WHITE_STRING: '{WHITE}{STRING}'
 
