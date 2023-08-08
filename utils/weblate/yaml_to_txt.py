@@ -2,48 +2,16 @@
 import sys
 import yaml
 import os.path as path
-from functools import reduce
-
-replacements = [
-    [' ', ''],
-    ['...', '…'],
-    ['..', '‥'],
-    ['.', '。'],
-    [',', '、'],
-    ['?', '？'],
-    ['!', '！'],
-    [':', '：'],
-    [';', '；'],
-]
 
 def get_key(line):
     key = line.split(':')[0]
     return key
 
-def replace_punctuations(acc, src, dst):
-    if len(src) > 1:
-        return acc.replace(src, dst)
-    result = []
-    brace_level = 0
-    for c in acc:
-        if c == '{':
-            brace_level += 1
-        elif c == '}':
-            brace_level -= 1
-        if brace_level == 0 and c == src:
-            result.append(dst)
-        else:
-            result.append(c)
-    return ''.join(result)
-
-def convert_updated(updated):
-    return reduce(lambda acc, rep: replace_punctuations(acc, rep[0], rep[1]), replacements, updated)
-
 def convert_line(line, updated):
     key = get_key(line)
     stripped = key.strip()
     if stripped in updated:
-        return '%s:%s' % (key, convert_updated(updated[stripped]))
+        return '%s:%s' % (key, updated[stripped])
     else:
         return line
 
