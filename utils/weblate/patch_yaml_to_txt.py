@@ -3,13 +3,32 @@ import sys
 import yaml
 import os.path as path
 
+header = """
+##name Korean (Mixed Script)
+##ownname 韓國語
+##isocode ko_Kore
+##plural 11
+##textdir ltr
+##digitsep ,
+##digitsepcur ,
+##decimalsep .
+##winlangid 0x0c12
+##grflangid 0x3b
+##gender m f
+##case case1
+"""
+
 def get_key(line):
     key = line.split(':')[0]
     return key
 
 def convert_line(line, updated):
+    if line == '' or line[0] == '#':
+        return line
+
     key = get_key(line)
     stripped = key.strip()
+
     if stripped in updated:
         return '%s:%s' % (key, updated[stripped])
     else:
@@ -17,8 +36,9 @@ def convert_line(line, updated):
 
 def convert(base, updated):
     lines = base.split('\n')
-    lines = [convert_line(line, updated['weblate']) if line != '' and line[0]!= '#' else line for line in lines]
-    result = '\n'.join(lines)
+    lines = [convert_line(line, updated['weblate']) for line in lines]
+    lines = [line for line in lines if not line.startswith('##')]
+    result = header.strip() + '\n' + '\n'.join(lines)
     return result
 
 def main():
@@ -40,7 +60,7 @@ def main():
         base = f.read()
     with open(updated_file, 'r') as f:
         updated = yaml.load(f, Loader=yaml.FullLoader)
-    
+
     print(convert(base, updated))
 
 if __name__ == '__main__':
