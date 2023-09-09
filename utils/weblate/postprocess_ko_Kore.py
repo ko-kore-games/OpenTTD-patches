@@ -1,27 +1,41 @@
 
 import sys
+import re
 import yaml
 
 replacements = [
-    [r'\ ', ''],
-    [r'\...', '…'],
-    [r'\..', '‥'],
-    [r'\.', '。'],
-    [r'\,', '、'],
-    [r'\?', '？'],
-    [r'\!', '！'],
-    [r'\:', '：'],
-    [r'\;', '；'],
+    [' ', ''],
+    ['...', '…'],
+    ['..', '‥'],
+    ['.', '。'],
+    [',', '、'],
+    ['?', '？'],
+    ['!', '！'],
+    [':', '：'],
+    [';', '；'],
 ]
+
+def replace_value(value):
+    brackets = []
+    def strip(m):
+        idx = len(brackets)
+        brackets.append(m.group(0))
+        return "${%d}" % idx
+    value = re.sub(r'\{([^\n}]+)\}', strip, value)
+    for replacement in replacements:
+        value = value.replace(replacement[0], replacement[1])
+    def restore(m):
+        return brackets[int(m.group(1))]
+    value = re.sub(r'\$\{(\d+)\}', restore, value)
+    return value
 
 def postprocess(input_file, output_file):
     with open(input_file, 'r', encoding='utf-8') as f:
         data = yaml.safe_load(f)
     result = {}
-    for replacement in replacements:
-        result['weblate'] = [(value.replace(replacement[0], replacement[1])) for value in data['weblate']]
+    result['weblate'] = {key: replace_value(value) for key, value in data['weblate'].items()}
     with open(output_file, 'w', encoding='utf-8') as f:
-        yaml.safe_dump(data, f, allow_unicode=True)
+        yaml.safe_dump(result, f, allow_unicode=True)
 
 def main():
     args = sys.argv[1:]

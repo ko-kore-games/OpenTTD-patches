@@ -37,8 +37,11 @@ def convert_line(line, updated):
 def convert(base, updated):
     lines = base.split('\n')
     lines = [convert_line(line, updated['weblate']) for line in lines]
-    lines = [line for line in lines if not line.startswith('##')]
-    result = header.strip() + '\n' + '\n'.join(lines)
+    if lines[0].startswith('##'):
+        lines = lines[12:]
+        result = header.strip() + '\n' + '\n'.join(lines)
+    else:
+        result = '\n'.join(lines)
     return result
 
 def main():
